@@ -53,6 +53,23 @@ export interface ModuleOption {
   default: string;
 }
 
+// What a module needs from the screens, declared by the module itself so the
+// screens stay free of any one language (spec section 7: languages are
+// configuration, not hard-coded).
+export interface SpeechRequirement {
+  // BCP-47 tag of the voice the drill reads aloud with, e.g. "de-DE".
+  tag: string;
+  // Language name for messages, e.g. "tiếng Đức".
+  label: string;
+}
+
+export interface InputConfig {
+  // `lang` attribute of the answer box (spelling/keyboard hints).
+  lang: string;
+  // One-tap buttons for characters that are hard to type on a phone.
+  specialKeys?: string[];
+}
+
 export interface ExerciseContext {
   rng: () => number;
   options: Record<string, string>;
@@ -64,6 +81,13 @@ export interface ExerciseModule extends RegistrableModule {
   languages: Lang[];
   mode: StudyMode;
   options?: ModuleOption[];
+  // Set when the drill reads text aloud: the Learn screen then checks the
+  // device has such a voice and warns/disables the drill if not.
+  speech?: SpeechRequirement;
+  // How the answer box behaves for this language.
+  input?: InputConfig;
+  // Shown when no word has the data this drill needs.
+  unavailableHint?: string;
   // Can this concept (with this example) be drilled? A noun without a
   // gender, for example, can't be used for the gender drill.
   isEligible(concept: Concept, example: Example): boolean;

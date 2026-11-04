@@ -259,7 +259,9 @@ flowchart TD
 | 4 | Trả lời | Chấm, đo thời gian, ghi log như J4 |
 
 - **Khi example có cụm tô sáng:** bài điền che đúng cụm đó; phần còn lại của câu là ngữ cảnh. [GIẢ ĐỊNH G10]
-- **Spec:** mục 5.2 (Rộng), C7, D1, D2. **Mốc:** Bản 2.
+- **Kiểu bài** (spec 5.2): điền cụm tô sáng (`en.cloze`), cho nghĩa gõ từ (`en.meaning-to-word`), cho từ chọn nghĩa (`en.word-to-meaning`), nghe chép (tùy chọn). Đáp án không phân biệt hoa/thường. [ĐỀ XUẤT]
+- **Ngoại lệ:** concept chưa `verified` (nghĩa còn là gợi ý tiếng Anh từ tra cứu) thì không vào bài nghĩa/từ → gợi ý duyệt ở J3; không đủ 4 nghĩa để làm lựa chọn nhiễu → bài chọn nghĩa tự bỏ qua.
+- **Spec:** mục 5.2 (Rộng), C7, D1, D2. **Mốc:** M9a, M9b (Bản 2).
 
 ---
 
@@ -404,12 +406,12 @@ flowchart TD
 | J2 Ghi nhanh | A5, C4, C7 | M2 | 1 |
 | J3 Tra cứu tự động | A8 | M3b | 1 |
 | J4 Tiếng Đức Rộng | B, 5.1, C5, D1, D2 | M4, M5 | 1 |
-| J5 Tiếng Anh Rộng | 5.2 (Rộng) | — | 2 |
+| J5 Tiếng Anh Rộng | 5.2 (Rộng) | M9a, M9b | 2 |
 | J6 Tiếng Anh Sâu | 1.3, 5.2 (Sâu), 8, E5, A9 | M10, Bản 3 | 2 và 3 |
 | J7 Ôn tập hằng ngày | D3, D4 | M6 | 1 |
 | J8 Xem tiến độ | E5, mục 2 | M5, Bản 3 | 1 và 3 |
 | J9 Đồng bộ và sao lưu | E2–E4 | M7, M7b | 1 |
-| J10 Tô sáng cụm và gắn TMRND | C7, A9, F3, 6.6 | M2, M10 | 1 và 2 |
+| J10 Tô sáng cụm và gắn TMRND | C7, A9, F3, 6.6 | M2, M10a, M10b | 1 và 2 |
 | J11 Tìm kiếm | F1–F5, 6.7 | M2b | 1 |
 
 ---

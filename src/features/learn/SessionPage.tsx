@@ -22,8 +22,6 @@ import { ReflexTimer } from '../../exercises/timer';
 import type { SessionConfig } from './LearnPage';
 import styles from './SessionPage.module.css';
 
-const GERMAN_KEYS = ['ä', 'ö', 'ü', 'ß'];
-
 function seconds(ms: number): string {
   return `${(ms / 1000).toFixed(1).replace('.', ',')} s`;
 }
@@ -194,6 +192,7 @@ function Session({ config }: { config: SessionConfig }) {
   if (!exercise) return null;
 
   const result = record?.result;
+  const specialKeys = pair?.module.input?.specialKeys ?? [];
   const hasTextField = exercise.fields.some((f) => f.type === 'text');
 
   return (
@@ -275,7 +274,7 @@ function Session({ config }: { config: SessionConfig }) {
                 className={fieldStyles.input}
                 value={answer[field.key] ?? ''}
                 disabled={!!record}
-                lang="de"
+                lang={pair?.module.input?.lang}
                 autoFocus={field === exercise.fields.find((f) => f.type === 'text')}
                 autoCapitalize="off"
                 autoCorrect="off"
@@ -291,9 +290,9 @@ function Session({ config }: { config: SessionConfig }) {
           </div>
         ))}
 
-        {hasTextField && !record && (
-          <div className={styles.keys} role="group" aria-label="Ký tự tiếng Đức">
-            {GERMAN_KEYS.map((key) => (
+        {hasTextField && !record && specialKeys.length > 0 && (
+          <div className={styles.keys} role="group" aria-label="Ký tự đặc biệt">
+            {specialKeys.map((key) => (
               <button
                 key={key}
                 type="button"

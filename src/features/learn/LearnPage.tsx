@@ -33,7 +33,8 @@ export function LearnPage() {
   const [lessons, setLessons] = useState<string[]>([]);
   const [available, setAvailable] = useState<Record<string, number>>({});
   const [optionValues, setOptionValues] = useState<Record<string, string>>({});
-  const [voiceOk, setVoiceOk] = useState<boolean | null>(null);
+  // Does this device have the voice a drill reads with? Keyed by voice tag.
+  const [voices, setVoices] = useState<Record<string, boolean>>({});
 
   const modules = modulesForLanguage(lang);
 
@@ -67,8 +68,16 @@ export function LearnPage() {
     };
   }, [lang, lesson]);
 
+  // Check every voice the registered drills need (not just German).
   useEffect(() => {
-    void hasVoiceFor('de-DE').then(setVoiceOk);
+    const tags = [...new Set(exerciseModules.list().flatMap((m) => (m.speech ? [m.speech.tag] : [])))];
+    let current = true;
+    void Promise.all(tags.map(async (tag) => [tag, await hasVoiceFor(tag)] as const)).then((entries) => {
+      if (current) setVoices(Object.fromEntries(entries));
+    });
+    return () => {
+      current = false;
+    };
   }, []);
 
   function start(module: ExerciseModule) {
@@ -136,15 +145,14 @@ export function LearnPage() {
 
       {modules.length === 0 && (
         <p className={styles.empty}>
-          Chưa có kiểu bài cho ngôn ngữ này (tiếng Anh sẽ có ở bản sau).
+          Chưa có kiểu bài cho ngôn ngữ này.
         </p>
       )}
 
       <div className={styles.list}>
         {modules.map((module) => {
           const n = available[module.id];
-          const needsVoice = module.id === 'de.dictation';
-          const noVoice = needsVoice && (!isSpeechSupported() || voiceOk === false);
+          const noVoice = !!module.speech && (!isSpeechSupported() || voices[module.speech.tag] === false);
           const disabled = !n || noVoice;
           return (
             <Card key={module.id} className={styles.module}>
@@ -180,14 +188,14 @@ export function LearnPage() {
 
               {noVoice && (
                 <p className={styles.warning}>
-                  Máy này không có giọng đọc tiếng Đức (de-DE) nên chưa thể nghe chép. Hãy cài giọng
-                  Đức trong cài đặt hệ thống (Text-to-speech) rồi mở lại app.
+                  Máy này không có giọng đọc {module.speech?.label} ({module.speech?.tag}) nên chưa
+                  thể dùng bài này. Hãy cài giọng đọc trong cài đặt hệ thống (Text-to-speech) rồi mở
+                  lại app.
                 </p>
               )}
               {n === 0 && !noVoice && (
                 <p className={styles.hint}>
-                  Chưa có từ đủ dữ liệu cho bài này. Nhập từ file có các cột giống/số nhiều/dạng
-                  động từ, hoặc dùng Tra cứu tự động ở Thư viện.
+                  {module.unavailableHint ?? 'Chưa có từ đủ dữ liệu cho bài này.'}
                 </p>
               )}
 

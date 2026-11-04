@@ -13,6 +13,12 @@ import {
 // The four German "Rộng" drills of M4 (spec 5.1). Each is an independent
 // module; none imports another.
 
+// Language-specific UI needs, declared once for all German drills.
+const GERMAN_SPEECH = { tag: 'de-DE', label: 'tiếng Đức' };
+const GERMAN_INPUT = { lang: 'de', specialKeys: ['ä', 'ö', 'ü', 'ß'] };
+const GERMAN_DATA_HINT =
+  'Chưa có từ đủ dữ liệu cho bài này. Nhập từ file có các cột giống/số nhiều/dạng động từ, hoặc dùng Tra cứu tự động ở Thư viện.';
+
 // Article choices live here (German-specific), not in the screens.
 const ARTICLES = ['der', 'die', 'das'];
 
@@ -47,6 +53,9 @@ export const germanDictation: ExerciseModule = {
   description: 'Nghe phát âm rồi gõ đúng chính tả.',
   languages: ['de'],
   mode: 'breadth',
+  input: GERMAN_INPUT,
+  speech: GERMAN_SPEECH,
+  unavailableHint: GERMAN_DATA_HINT,
   options: [
     {
       id: 'scope',
@@ -68,7 +77,7 @@ export const germanDictation: ExerciseModule = {
       title: 'Nghe và chép',
       prompt: 'Nghe rồi gõ lại đúng chính tả.',
       detail: meaningHint(concept),
-      speak: { text: target, lang: 'de-DE' },
+      speak: { text: target, lang: GERMAN_SPEECH.tag },
       fields: [{ key: 'answer', label: 'Bạn nghe được', type: 'text' }],
       expected: { answer: [target] },
     };
@@ -85,6 +94,8 @@ export const germanNounGenderPlural: ExerciseModule = {
   description: 'Chọn der/die/das và gõ dạng số nhiều của danh từ.',
   languages: ['de'],
   mode: 'breadth',
+  input: GERMAN_INPUT,
+  unavailableHint: GERMAN_DATA_HINT,
   isEligible: (concept) => !!concept.grammar?.gender && ARTICLES.includes(concept.grammar.gender),
   generate(concept, example): Exercise {
     const gender = concept.grammar!.gender!;
@@ -118,6 +129,8 @@ export const germanVerbConjugation: ExerciseModule = {
   description: 'Chia động từ theo ngôi và thì (Präsens, Präteritum).',
   languages: ['de'],
   mode: 'breadth',
+  input: GERMAN_INPUT,
+  unavailableHint: GERMAN_DATA_HINT,
   isEligible: (concept) => tensesAvailable(concept.grammar?.verbForms).length > 0,
   generate(concept, example, context: ExerciseContext): Exercise {
     const forms = concept.grammar!.verbForms!;
@@ -145,6 +158,8 @@ export const germanIrregularForms: ExerciseModule = {
   description: 'Điền Präteritum và Partizip II từ Infinitiv.',
   languages: ['de'],
   mode: 'breadth',
+  input: GERMAN_INPUT,
+  unavailableHint: GERMAN_DATA_HINT,
   isEligible(concept) {
     const forms = concept.grammar?.verbForms;
     return (

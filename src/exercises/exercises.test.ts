@@ -308,3 +308,28 @@ describe('sessions', () => {
     });
   });
 });
+
+describe('module-declared UI needs (M9a)', () => {
+  const noun = concept('apfel', 'Apfel', { grammar: { gender: 'der', plural: 'Äpfel' } });
+  const sentence = example('e1', 'apfel', 'Ich esse einen Apfel.', { highlight: { start: 13, end: 18 } });
+
+  it('every German drill declares its answer box language and special keys', () => {
+    for (const module of modulesForLanguage('de')) {
+      expect(module.input, module.id).toEqual({ lang: 'de', specialKeys: ['ä', 'ö', 'ü', 'ß'] });
+      expect(module.unavailableHint, module.id).toBeTruthy();
+    }
+  });
+
+  it('a drill reads aloud only if it declares the voice it needs, and the tags agree', () => {
+    for (const module of exerciseModules.list()) {
+      if (!module.isEligible(noun, sentence)) continue;
+      const exercise = module.generate(noun, sentence, { rng: () => 0, options: {} });
+      if (exercise.speak) {
+        expect(module.speech?.tag, module.id).toBe(exercise.speak.lang);
+      } else {
+        expect(module.speech, module.id).toBeUndefined();
+      }
+    }
+    expect(exerciseModules.get('de.dictation')?.speech).toEqual({ tag: 'de-DE', label: 'tiếng Đức' });
+  });
+});

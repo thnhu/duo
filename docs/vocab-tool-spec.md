@@ -1,7 +1,7 @@
 # SPEC: Công cụ học từ vựng Anh – Đức (Breadth & Depth)
 
 > Tài liệu này dành cho Claude Code đọc để triển khai. Product Owner (PO): người dùng, dùng một mình.
-> Phiên bản **v5**: (1) thêm **tìm kiếm**; (2) làm rõ cách học **cụm từ trong câu ví dụ** bằng cách **tô sáng** cụm cần học; (3) thêm **AI gợi ý nhãn TMRND** (Tone, Mode, Register, Nuance, Dialect). Tool vẫn **không đọc PDF**: PO dùng công cụ ngoài rồi nhập bằng file CSV hoặc XLSX. AI trong tool **chỉ** dùng để gợi ý nhãn TMRND. Xem mục 12 để biết thay đổi so với v4.
+> Phiên bản **v6** (chi tiết Bản 2, xem mục 12). Trước đó **v5**: (1) thêm **tìm kiếm**; (2) làm rõ cách học **cụm từ trong câu ví dụ** bằng cách **tô sáng** cụm cần học; (3) thêm **AI gợi ý nhãn TMRND** (Tone, Mode, Register, Nuance, Dialect). Tool vẫn **không đọc PDF**: PO dùng công cụ ngoài rồi nhập bằng file CSV hoặc XLSX. AI trong tool **chỉ** dùng để gợi ý nhãn TMRND. Xem mục 12 để biết thay đổi so với v4.
 > Quy ước: **[CHỐT]** = đã thống nhất. **[ĐỀ XUẤT]** = đề xuất, có thể chỉnh. **[MỞ]** = chưa quyết định, cần hỏi PO trước khi làm.
 
 ---
@@ -185,6 +185,14 @@ Bài tập đơn giản, tập trung chính tả và hình thái từ:
 - **Động từ:** học theo **cụm** (collocation/phrasal), sau đó ghép vào ngữ cảnh.
 - Lý do: tránh học rời rạc cả danh từ lẫn động từ theo cùng một kiểu.
 - **Cụm tô sáng là mục tiêu kiểm tra** (C7); phần còn lại của câu chỉ là ngữ cảnh. Bài điền che đúng cụm tô sáng.
+- **Kiểu bài tiếng Anh Rộng [ĐỀ XUẤT, chốt ở M9b]:**
+  - `en.cloze`: che đúng cụm tô sáng trong câu, người học gõ lại cụm đó (cả danh từ và động từ).
+  - `en.meaning-to-word`: cho nghĩa, gõ từ (danh từ đơn).
+  - `en.word-to-meaning`: cho từ/cụm, chọn nghĩa trong 4 lựa chọn; 3 nghĩa nhiễu lấy từ các concept khác đã `verified` (cụm động từ).
+  - `en.dictation` (tùy chọn): nghe và gõ, dùng giọng đọc `en-US`/`en-GB` có sẵn.
+- **Chấm tiếng Anh [ĐỀ XUẤT]:** không phân biệt hoa/thường (tiếng Anh không viết hoa danh từ như tiếng Đức); vẫn chính xác từng ký tự, chỉ bỏ khoảng trắng thừa.
+- **Chỉ concept đã `verified` mới vào bài nghĩa/từ** (nguyên tắc 8): nghĩa tra cứu bằng tiếng Anh chưa được PO sửa sang tiếng Việt khi duyệt thì chưa dùng làm đáp án.
+- Danh từ/động từ phân theo `pos` của concept; từ chưa có `pos` vẫn làm được `en.cloze`.
 
 **Chế độ Sâu [CHỐT hướng, ĐỀ XUẤT chi tiết bài tập]:**
 Học concept qua các **example** có thuộc tính ngữ cảnh và qua **liên kết** giữa các concept, dùng đầy đủ mô hình PVO (mục 1.3).
@@ -465,6 +473,16 @@ Mỗi phiên làm việc với Claude Code chỉ nên giao **một cột mốc**
 ### Bản 2: Tiếng Anh, chế độ Rộng
 - Danh từ đơn → câu; động từ theo cụm → ngữ cảnh. Bài điền che cụm tô sáng.
 - Tái dùng bộ máy ôn tập và lịch theo example từ Bản 1.
+- Bản 2 chia thành các mốc dưới đây (mỗi phiên một mốc, làm theo thứ tự M9a → M9b → M9c → M10a → M10b):
+
+| Mốc | Nội dung | Xong khi |
+|---|---|---|
+| **M9a** Tổng quát hóa | Mỗi `ExerciseModule` tự khai báo giọng đọc (`speechLang`), ngôn ngữ ô nhập (`inputLang`) và phím đặc biệt (`specialKeys`); màn Học và màn làm bài đọc các khai báo này thay vì gắn cứng `de-DE`/ä ö ü ß/`de.dictation` | Bài tiếng Đức chạy y như cũ, mọi test cũ vẫn đạt |
+| **M9b** Bài tiếng Anh Rộng | Các module `en.*` ở mục 5.2, phân loại danh từ/động từ theo `pos`, chỉ dùng concept `verified` cho bài nghĩa/từ | Chơi được từng kiểu bài, chấm đúng, ghi thời gian vào ReviewLog; ôn tập và chớp nhoáng trộn được bài Anh; bài điền chỉ che cụm tô sáng |
+| **M9c** Cài đặt học | Màn Cài đặt chỉnh ngưỡng thụ đắc (`acquisitionCriteria`) và số câu mỗi phiên; chốt giá trị mặc định `minDistinctContexts` (từ chỉ có 1 example tối thiểu hiện không thể `acquired`) | Đổi ngưỡng thì trạng thái thụ đắc tính theo ngưỡng mới |
+| **M10a** Sửa example | Màn sửa example: tô sáng lại cụm, chọn 5 nhãn TMRND bằng tay, ghi chú, nút "Học thêm cụm khác trong câu này" (J10) | Gắn nhãn tay được; nhãn đã duyệt lưu `verified`; nhãn chưa duyệt không dùng làm đáp án |
+| **M10b** AI gợi ý TMRND | Nội dung ở dòng M10 bên dưới | Như M10 bên dưới |
+
 - **M10 AI gợi ý TMRND** (mục 6.6): `AiProvider`, màn hình nhập khóa API, nút Gợi ý TMRND, chạy hàng loạt giãn nhịp, **spike 20–30 example thật** để PO đánh giá chất lượng trước khi bật hàng loạt. Xong khi: PO bấm gợi ý, thấy 5 nhãn kèm lý do, chấp nhận hoặc sửa; nhãn chưa duyệt không xuất hiện làm đáp án bài.
 
 ### Bản 3: Tiếng Anh, chế độ Sâu
@@ -501,7 +519,11 @@ Mỗi phiên làm việc với Claude Code chỉ nên giao **một cột mốc**
 
 ## 12. Lịch sử thay đổi
 
-**v5 (bản này):**
+**v6 (bản này):**
+- Chi tiết Bản 2: chia thành M9a, M9b, M9c, M10a, M10b (mục 10); kiểu bài tiếng Anh Rộng và quy tắc chấm tiếng Anh (mục 5.2).
+- Ghi nhận trạng thái triển khai: M0–M7b đã xong (đồng bộ Firebase đã chạy thật); M8 bỏ qua theo quyết định của PO.
+
+**v5:**
 - Thêm **tìm kiếm** (nhóm chức năng F, mục 6.7, M2b).
 - Làm rõ **học cụm trong câu ví dụ bằng tô sáng** (C7): cụm tô sáng là concept cần học, phần còn lại là ngữ cảnh; câu chưa gắn concept; cột `highlight` và tự tìm cụm khi nhập file; sửa mô hình Example (`targetConceptId`, `highlight`).
 - Thêm **AI gợi ý nhãn TMRND** (A9, mục 6.6, M10): gợi ý không tự thành đáp án; thêm lại `AiProvider`, `LocalSecrets`; AI chỉ dùng cho việc này.

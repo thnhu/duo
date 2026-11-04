@@ -1,0 +1,64 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.banner {
+  display: block;
+  text-decoration: none;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.rowLink {
+  display: block;
+  text-decoration: none;
+  color: var(--color-ink);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.rowText {
+  font-weight: 600;
+}
+
+.rowMeaning {
+  color: var(--color-ink-muted);
+  font-size: 14px;
+}
+
+.badge {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-100);
+  color: var(--color-primary-600);
+}
+
+.badgeAcquired {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.empty {
+  color: var(--color-ink-muted);
+}

@@ -1,0 +1,67 @@
+/* Design tokens — see docs/design/DESIGN.md. Components must only
+   reference these custom properties, never hard-code color/spacing/radius
+   values, so a theme change means editing this one file. */
+
+:root {
+  color-scheme: light;
+
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-tint: #f2f6f9;
+  --color-primary-100: #e7f1fa;
+  --color-primary-200: #cce1f4;
+  --color-primary-300: #b3d2ef;
+  --color-primary-400: #9bc2e9;
+  --color-primary-600: #4d7ca8;
+  --color-ink: #0e1a2b;
+  --color-ink-muted: #55697f;
+  --color-border: #dce6f0;
+  --color-success: #3a8f6b;
+  --color-success-bg: #e3f4ec;
+  --color-danger: #c4584a;
+  --color-danger-bg: #fbeae7;
+  --color-warning: #c98a2e;
+  --color-warning-bg: #fbf0dd;
+
+  --font-heading: 'Lora', 'Noto Serif', Georgia, serif;
+  --font-ui: 'Inter', 'Noto Sans', Roboto, sans-serif;
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --shadow-md: 0 4px 16px rgba(14, 26, 43, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --color-bg: #0b1420;
+    --color-surface: #121d2e;
+    --color-surface-tint: #16273b;
+    --color-primary-100: #1c3a57;
+    --color-primary-200: #23527c;
+    --color-primary-300: #3e76a8;
+    --color-primary-400: #9bc2e9;
+    --color-primary-600: #cbe0f5;
+    --color-ink: #eaf2fa;
+    --color-ink-muted: #90a5bc;
+    --color-border: #24374c;
+    --color-success: #4fae86;
+    --color-success-bg: #113327;
+    --color-danger: #db7b6c;
+    --color-danger-bg: #3a1e1a;
+    --color-warning: #e0a857;
+    --color-warning-bg: #3a2d12;
+  }
+}

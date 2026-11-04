@@ -7,6 +7,10 @@ import { listExamplesForConcept } from '../../db/queries';
 import { conceptRepository } from '../../db/repositories';
 import type { Concept, Example } from '../../db/types';
 import { deleteConceptCascade, deleteExample } from './actions';
+import { isSingleWord, lookupQueue } from '../../lookup';
+import { dismissSuggestion, markVerified } from '../../lookup/apply';
+import { LookupReview } from '../lookup/LookupReview';
+import { useLookupQueue } from '../lookup/useLookupQueue';
 import styles from './ConceptDetailPage.module.css';
 
 export function ConceptDetailPage() {
@@ -33,6 +37,13 @@ export function ConceptDetailPage() {
     if (!conceptId) return;
     void load(conceptId);
   }, [conceptId]);
+
+  // A lookup started from here (or the Library) finishes in the background:
+  // reload when the queue makes progress so the suggestion appears.
+  const queue = useLookupQueue();
+  useEffect(() => {
+    if (conceptId) void load(conceptId);
+  }, [queue.done, queue.status]);
 
   async function handleSave() {
     if (!concept) return;
@@ -125,6 +136,51 @@ export function ConceptDetailPage() {
         </div>
       </div>
 
+      <GrammarSummary concept={concept} />
+
+      {concept.lookup?.status === 'found' && (
+        <LookupReview concept={concept} onChanged={() => void load(concept.id)} />
+      )}
+
+      {concept.lookup?.status === 'not-found' && (
+        <Card tinted className={styles.lookupCard}>
+          <p>Từ điển không có mục từ này — hãy tự nhập nghĩa.</p>
+          <div className={styles.actions}>
+            <Button variant="secondary" onClick={() => lookupQueue.enqueue([concept.id])}>
+              Tra lại
+            </Button>
+            <Button variant="ghost" onClick={() => void dismissSuggestion(concept.id).then(() => load(concept.id))}>
+              Ẩn
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {!concept.lookup && (
+        <Card tinted className={styles.lookupCard}>
+          <div className={styles.actions}>
+            <Button
+              variant="secondary"
+              disabled={!isSingleWord(concept.text) || queue.status === 'running'}
+              onClick={() => lookupQueue.enqueue([concept.id])}
+            >
+              {queue.status === 'running' ? 'Đang tra cứu…' : 'Tra cứu từ này'}
+            </Button>
+            {concept.verification === 'unverified' && (
+              <Button variant="ghost" onClick={() => void markVerified(concept.id).then(() => load(concept.id))}>
+                Đánh dấu đã duyệt
+              </Button>
+            )}
+          </div>
+          {!isSingleWord(concept.text) && (
+            <p className={styles.note}>Chỉ tra cứu được từ đơn (không gửi cụm nhiều từ ra ngoài).</p>
+          )}
+          {queue.status === 'paused' && queue.error && (
+            <p className={styles.note}>{queue.error.message}</p>
+          )}
+        </Card>
+      )}
+
       <div>
         <h2>Ví dụ ({examples.length})</h2>
         <div className={styles.examples}>
@@ -154,5 +210,24 @@ export function ConceptDetailPage() {
         </div>
       </div>
     </section>
+  );
+}
+
+function GrammarSummary({ concept }: { concept: Concept }) {
+  const g = concept.grammar;
+  const parts: string[] = [];
+  if (g?.gender) parts.push(g.gender);
+  if (g?.plural) parts.push(`Pl. ${g.plural}`);
+  if (g?.verbForms) {
+    const { infinitiv, praeteritum, partizip2 } = g.verbForms;
+    parts.push([infinitiv, praeteritum, partizip2].filter(Boolean).join(' · '));
+  }
+  return (
+    <div className={styles.summary}>
+      <span className={concept.verification === 'verified' ? styles.verified : styles.unverified}>
+        {concept.verification === 'verified' ? 'Đã duyệt' : 'Chưa duyệt'}
+      </span>
+      {parts.length > 0 && <span className={styles.grammar}>{parts.join(' — ')}</span>}
+    </div>
   );
 }

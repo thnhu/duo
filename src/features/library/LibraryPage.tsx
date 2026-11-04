@@ -5,6 +5,8 @@ import { LangToggle } from '../../ui/LangToggle';
 import { SearchLink } from '../../ui/SearchLink';
 import { dictionaryIdForLang, listConceptsByDictionary, listInboxExamples } from '../../db/queries';
 import type { Concept } from '../../db/types';
+import { LookupBar } from '../lookup/LookupBar';
+import { useLookupQueue } from '../lookup/useLookupQueue';
 import { useLastLanguage } from '../quick-add/useLastLanguage';
 import styles from './LibraryPage.module.css';
 
@@ -32,6 +34,12 @@ export function LibraryPage() {
     void loadInboxCount();
   }, [lang]);
 
+  // Lookup results arrive in the background: refresh the list as they do.
+  const queue = useLookupQueue();
+  useEffect(() => {
+    void loadConcepts(lang);
+  }, [queue.done, queue.status]);
+
   return (
     <section className={styles.page}>
       <div className={styles.header}>
@@ -54,6 +62,8 @@ export function LibraryPage() {
         </Link>
       )}
 
+      {concepts && <LookupBar concepts={concepts} />}
+
       {concepts && concepts.length === 0 && (
         <p className={styles.empty}>Chưa có từ nào. Dùng nút "+" để ghi nhanh một từ.</p>
       )}
@@ -75,6 +85,9 @@ export function LibraryPage() {
               >
                 {concept.status === 'acquired' ? 'Đã thụ đắc' : 'Đang học'}
               </span>
+              {concept.lookup?.status === 'found' && concept.verification === 'unverified' && (
+                <span className={styles.badge}>Có gợi ý</span>
+              )}
             </Card>
           </Link>
         ))}

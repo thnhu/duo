@@ -65,3 +65,44 @@
   font-size: 12px;
   color: var(--color-ink-muted);
 }
+
+.lookupCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.note {
+  font-size: 12px;
+  color: var(--color-ink-muted);
+}
+
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.verified,
+.unverified {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+}
+
+.verified {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.unverified {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.grammar {
+  font-size: 14px;
+  color: var(--color-ink-muted);
+}

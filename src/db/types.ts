@@ -31,6 +31,38 @@ export interface ConceptSource {
   row?: number;
 }
 
+// Result of an automatic dictionary lookup (spec 6.5, M3b). It is only a
+// suggestion: nothing in it is copied into the concept's own fields until PO
+// reviews it and the concept becomes `verified`.
+export interface LookupExample {
+  text: string;
+  translation?: string;
+}
+
+export interface LookupDefinition {
+  text: string;
+  // Labels the source attaches to this sense (informal, slang, dated...):
+  // shown as evidence for PO, never applied automatically.
+  labels?: string[];
+  examples?: LookupExample[];
+}
+
+export interface LookupEntry {
+  pos?: string;
+  definitions: LookupDefinition[];
+  grammar?: ConceptGrammar;
+}
+
+export interface LookupSuggestion {
+  status: 'found' | 'not-found';
+  provider: string;
+  fetchedAt: number;
+  entries: LookupEntry[];
+  sourceName?: string;
+  sourceUrl?: string;
+  license?: { name: string; url?: string };
+}
+
 export interface Concept {
   id: string;
   dictionaryId: string;
@@ -41,6 +73,8 @@ export interface Concept {
   grammar?: ConceptGrammar;
   // Undefined = breadth (concepts created before M3 have no mode).
   mode?: StudyMode;
+  // Pending lookup suggestion awaiting PO review (M3b).
+  lookup?: LookupSuggestion;
   verification: Verification;
   source: ConceptSource;
   status: AcquisitionStatus;

@@ -1,0 +1,95 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.source {
+  font-size: 12px;
+  color: var(--color-ink-muted);
+}
+
+.entryTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.tab {
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.tabActive {
+  border-color: var(--color-primary-600);
+  background: var(--color-primary-200);
+}
+
+.grammar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--space-3);
+}
+
+.defs {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.def {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.defRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  min-height: 32px;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.defRow input {
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.example {
+  margin-left: var(--space-5);
+  color: var(--color-ink-muted);
+  font-size: 14px;
+}
+
+.translation {
+  font-style: normal;
+}
+
+.label {
+  display: inline-block;
+  margin-right: var(--space-2);
+  padding: 0 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-100);
+  color: var(--color-primary-600);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}

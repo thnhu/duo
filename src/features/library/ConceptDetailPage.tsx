@@ -205,6 +205,10 @@ export function ConceptDetailPage() {
               </p>
               <div className={styles.exampleMeta}>
                 {example.isMinimal && <span className={styles.minimalTag}>Example tối thiểu</span>}
+                {example.attributesStatus === 'verified' && <span className={styles.minimalTag}>Đã gắn nhãn</span>}
+                <Link to={`/example/${example.id}`} className={styles.editLink}>
+                  Sửa / gắn nhãn
+                </Link>
                 <Button variant="ghost" onClick={() => void handleDeleteExample(example.id)}>
                   Xóa
                 </Button>

@@ -26,6 +26,13 @@ Nguồn sự thật đầy đủ: [`docs/vocab-tool-spec.md`](docs/vocab-tool-sp
 
 - **Commit message viết bằng tiếng Anh.** Nội dung trao đổi với PO có thể bằng tiếng Việt, nhưng mọi commit message phải viết tiếng Anh (code, docs, spec vẫn giữ tiếng Việt như hiện tại).
 
+## Tiến độ
+
+- Repo: https://github.com/thnhu/duo (nhánh `main`). Live: https://thnhu.github.io/duo/ (GitHub Pages, deploy qua `.github/workflows/deploy.yml`).
+- **Đã xong:** M0 (khởi tạo, PWA, hosting), M1 (lõi dữ liệu Dexie), M2 (Ghi nhanh, Hộp chờ duyệt, Thư viện — xem mục 10 spec để biết "Xong khi" từng mốc).
+- **Mốc tiếp theo:** chưa bắt đầu — hỏi PO muốn làm M2b (Tìm kiếm) hay nhảy sang M3 (Nhập CSV/XLSX) trước khi code, đừng tự chọn.
+- **Lưu ý CI đã gặp:** sau run của M1, các lần push tiếp theo (commit `7f27ac3`, `4e85e8e`) không tự kích hoạt workflow dù đã lên `origin/main` (xác nhận bằng `git ls-remote`), dù "Actions permissions" vẫn là "Allow all actions". Trigger thủ công qua nút **Run workflow** (`workflow_dispatch`) ở https://github.com/thnhu/duo/actions/workflows/deploy.yml thì chạy thành công. Nguyên nhân chưa rõ (nghi GitHub tự giới hạn push-trigger vì nhịp push nhanh, kiểu tự động). Nếu push mà sau ~1-2 phút không thấy run mới trong tab Actions, đừng mất thời gian debug sâu — bấm Run workflow thủ công rồi tiếp tục.
+
 ## Stack hiện tại
 
 - **M0:** TypeScript, React, Vite, PWA (`vite-plugin-pwa`). Hosting: GitHub Pages, repo `duo`, base path `/duo/`.

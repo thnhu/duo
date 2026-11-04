@@ -22,6 +22,10 @@ Nguồn sự thật đầy đủ: [`docs/vocab-tool-spec.md`](docs/vocab-tool-sp
 - Mỗi phiên làm việc chỉ nên nhận **một mốc**. Không tự ý làm trước mốc sau.
 - Nếu một mục trong spec còn đánh dấu **[MỞ]**, hỏi PO trước khi quyết, đừng tự chọn.
 
+## Quy ước làm việc
+
+- **Commit message viết bằng tiếng Anh.** Nội dung trao đổi với PO có thể bằng tiếng Việt, nhưng mọi commit message phải viết tiếng Anh (code, docs, spec vẫn giữ tiếng Việt như hiện tại).
+
 ## Stack hiện tại (M0)
 
 TypeScript, React, Vite, PWA (`vite-plugin-pwa`). Hosting: GitHub Pages, repo `duo`, base path `/duo/`.

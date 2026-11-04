@@ -294,6 +294,19 @@ function Summary({
         )}
       </Card>
 
+      {summary.newlyAcquired.length > 0 && (
+        <Card tinted className={styles.summary}>
+          <h2>{summary.newlyAcquired.length} từ mới thụ đắc 🎉</h2>
+          <ul className={styles.weak}>
+            {summary.newlyAcquired.map((w, i) => (
+              <li key={i}>
+                <Link to={`/library/${w.conceptId}`}>{w.prompt}</Link>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
       {summary.weak.length > 0 && (
         <Card className={styles.summary}>
           <h2>Từ cần ôn thêm</h2>

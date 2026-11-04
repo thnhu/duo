@@ -81,6 +81,9 @@ export interface Concept {
   verification: Verification;
   source: ConceptSource;
   status: AcquisitionStatus;
+  // Set when an acquired word slipped back to `loaded` (M5): only answers
+  // after this time count towards acquiring it again.
+  progressResetAt?: number;
   createdAt: number;
   updatedAt: number;
   deletedAt?: number;

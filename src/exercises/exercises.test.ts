@@ -303,6 +303,7 @@ describe('sessions', () => {
       answered: 2,
       correct: 1,
       averageMs: 3025,
+      newlyAcquired: [],
       weak: [{ conceptId: 'haus', prompt: 'Haus' }],
     });
   });

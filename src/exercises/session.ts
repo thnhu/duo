@@ -1,3 +1,4 @@
+import { refreshAcquisition, type StatusChange } from '../acquisition/update';
 import { createId } from '../core/id';
 import { conceptRepository, exampleRepository, reviewLogRepository } from '../db/repositories';
 import type { Concept, Example, Lang, ReviewLog } from '../db/types';
@@ -73,11 +74,13 @@ export interface AnswerRecord {
   answer: Answer;
   result: GradeResult;
   responseTimeMs: number;
+  // Set when this answer moved the word between `loaded` and `acquired`.
+  statusChange?: StatusChange;
 }
 
 // Grades an answer and stores it (spec D1): correct/incorrect, reaction
-// time, drill type and the example used. Deciding what this means for
-// `acquired` is the next milestone's job, not done here.
+// time, drill type and the example used. Then re-evaluates the word's
+// `acquired` status from its logs (spec section 2, M5).
 export async function recordAnswer(
   module: ExerciseModule,
   exercise: Exercise,
@@ -96,13 +99,17 @@ export async function recordAnswer(
     timestamp: now(),
   };
   await reviewLogRepository.add(log);
-  return { exercise, answer, result, responseTimeMs };
+  const statusChange = (await refreshAcquisition(exercise.conceptId)) ?? undefined;
+  return { exercise, answer, result, responseTimeMs, statusChange };
 }
 
 export interface SessionSummary {
   answered: number;
   correct: number;
   averageMs: number;
+  // Words that became `acquired` in this session; shown only at the end so
+  // the drill is never interrupted (journey G5).
+  newlyAcquired: Array<{ conceptId: string; prompt: string }>;
   // Words answered wrong, for the "từ yếu" list.
   weak: Array<{ conceptId: string; prompt: string }>;
 }
@@ -114,6 +121,9 @@ export function summarize(records: AnswerRecord[]): SessionSummary {
     answered: records.length,
     correct,
     averageMs: records.length ? Math.round(total / records.length) : 0,
+    newlyAcquired: records
+      .filter((r) => r.statusChange?.after === 'acquired')
+      .map((r) => ({ conceptId: r.exercise.conceptId, prompt: r.exercise.prompt })),
     weak: records
       .filter((r) => !r.result.correct)
       .map((r) => ({ conceptId: r.exercise.conceptId, prompt: r.exercise.prompt })),

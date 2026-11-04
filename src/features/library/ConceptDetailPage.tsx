@@ -4,8 +4,10 @@ import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
 import fieldStyles from '../../ui/field.module.css';
 import { listExamplesForConcept } from '../../db/queries';
-import { conceptRepository } from '../../db/repositories';
-import type { Concept, Example } from '../../db/types';
+import { computeProgress, type AcquisitionProgress } from '../../acquisition';
+import { loadCriteria } from '../../acquisition/update';
+import { conceptRepository, reviewLogRepository } from '../../db/repositories';
+import type { AcquisitionCriteria, Concept, Example } from '../../db/types';
 import { deleteConceptCascade, deleteExample } from './actions';
 import { isSingleWord, lookupQueue } from '../../lookup';
 import { dismissSuggestion, markVerified } from '../../lookup/apply';
@@ -138,6 +140,8 @@ export function ConceptDetailPage() {
 
       <GrammarSummary concept={concept} />
 
+      <AcquisitionCard concept={concept} />
+
       {concept.lookup?.status === 'found' && (
         <LookupReview concept={concept} onChanged={() => void load(concept.id)} />
       )}
@@ -210,6 +214,56 @@ export function ConceptDetailPage() {
         </div>
       </div>
     </section>
+  );
+}
+
+// Progress against the acquisition criteria (journey J8).
+function AcquisitionCard({ concept }: { concept: Concept }) {
+  const [view, setView] = useState<{
+    progress: AcquisitionProgress;
+    criteria: AcquisitionCriteria;
+    answers: number;
+  } | null>(null);
+
+  useEffect(() => {
+    let current = true;
+    void Promise.all([reviewLogRepository.listByConceptId(concept.id), loadCriteria()]).then(
+      ([logs, criteria]) => {
+        if (!current) return;
+        setView({
+          progress: computeProgress(logs, criteria, concept.progressResetAt),
+          criteria,
+          answers: logs.length,
+        });
+      },
+    );
+    return () => {
+      current = false;
+    };
+  }, [concept.id, concept.progressResetAt, concept.status]);
+
+  if (!view) return null;
+  const { progress, criteria } = view;
+  return (
+    <Card tinted className={styles.lookupCard}>
+      <p>
+        <strong>{concept.status === 'acquired' ? 'Đã thụ đắc' : 'Tiến độ thụ đắc'}</strong>
+        {view.answers === 0 && ' — chưa làm bài nào với từ này.'}
+      </p>
+      {view.answers > 0 && (
+        <ul className={styles.note}>
+          <li>
+            Đúng và nhanh: {progress.correct}/{criteria.minCorrect} lần
+          </li>
+          <li>
+            Số ví dụ khác nhau: {progress.contexts}/{criteria.minDistinctContexts}
+          </li>
+          <li>
+            Số ngày khác nhau: {progress.days}/{criteria.minDistinctDays}
+          </li>
+        </ul>
+      )}
+    </Card>
   );
 }
 

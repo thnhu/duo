@@ -15,6 +15,7 @@ import '@fontsource/inter/vietnamese-600.css'
 import './styles/tokens.css'
 import './index.css'
 import { initDb } from './db/init'
+import { syncManager } from './sync/manager'
 import { Layout } from './app/Layout'
 import { TodayPage } from './features/today/TodayPage'
 import { QuickAddPage } from './features/quick-add/QuickAddPage'
@@ -29,6 +30,8 @@ import { SearchPage } from './features/search/SearchPage'
 
 async function bootstrap() {
   await initDb()
+  // Background sync; does nothing until PO sets it up in Settings.
+  void syncManager.start()
 
   createRoot(document.getElementById('root')!).render(
     <StrictMode>

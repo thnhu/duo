@@ -6,6 +6,7 @@ import { BackupError, exportBackup, restoreBackup } from '../../backup/json';
 import { dateStamp, downloadBlob, getLastBackupAt, setLastBackupAt } from '../../backup/download';
 import { exportXlsx } from '../../backup/table';
 import { conceptRepository, exampleRepository } from '../../db/repositories';
+import { SyncCard } from './SyncCard';
 import styles from './SettingsPage.module.css';
 
 type Notice = { kind: 'ok' | 'error'; text: string } | null;
@@ -69,6 +70,8 @@ export function SettingsPage() {
   return (
     <section className={styles.page}>
       <h1>Cài đặt</h1>
+
+      <SyncCard />
 
       <Card className={styles.card}>
         <h2>Sao lưu</h2>

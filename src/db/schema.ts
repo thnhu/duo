@@ -8,6 +8,7 @@ import type {
   ReviewLog,
   ScheduleState,
   Settings,
+  SyncMetaRow,
 } from './types';
 
 export class DuoDB extends Dexie {
@@ -19,6 +20,7 @@ export class DuoDB extends Dexie {
   importMappings!: EntityTable<ImportMapping, 'id'>;
   importBatches!: EntityTable<ImportBatch, 'id'>;
   settings!: EntityTable<Settings, 'id'>;
+  syncMeta!: EntityTable<SyncMetaRow, 'key'>;
 
   constructor(name = 'duo') {
     super(name);
@@ -41,6 +43,18 @@ export class DuoDB extends Dexie {
           .toCollection()
           .modify((row: { schemaVersion?: number }) => {
             row.schemaVersion = 2;
+          });
+      });
+    // v3 (M7b): adds syncMeta, the sync engine's own bookkeeping (what was
+    // already synced, pull cursor). Existing rows are untouched.
+    this.version(3)
+      .stores({ syncMeta: 'key' })
+      .upgrade(async (tx) => {
+        await tx
+          .table('settings')
+          .toCollection()
+          .modify((row: { schemaVersion?: number }) => {
+            row.schemaVersion = 3;
           });
       });
   }

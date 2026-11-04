@@ -173,6 +173,14 @@ export interface ReviewLog {
   timestamp: number;
 }
 
+// Sync bookkeeping, local to each device and never synced itself (M7b).
+// `r:<table>:<id>` = the version (updatedAt) of that record already in sync;
+// `cursor:<uid>` = how far this device has pulled.
+export interface SyncMetaRow {
+  key: string;
+  value: number;
+}
+
 export interface ImportMapping {
   id: string;
   name: string;

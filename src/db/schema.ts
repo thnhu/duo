@@ -3,6 +3,7 @@ import type {
   Concept,
   Dictionary,
   Example,
+  ImportBatch,
   ImportMapping,
   ReviewLog,
   ScheduleState,
@@ -16,6 +17,7 @@ export class DuoDB extends Dexie {
   scheduleStates!: EntityTable<ScheduleState, 'exampleId'>;
   reviewLogs!: EntityTable<ReviewLog, 'id'>;
   importMappings!: EntityTable<ImportMapping, 'id'>;
+  importBatches!: EntityTable<ImportBatch, 'id'>;
   settings!: EntityTable<Settings, 'id'>;
 
   constructor(name = 'duo') {
@@ -29,6 +31,18 @@ export class DuoDB extends Dexie {
       importMappings: 'id, name',
       settings: 'id',
     });
+    // v2 (M3): adds the importBatches table. Existing rows are untouched;
+    // only the stored schemaVersion in Settings is bumped.
+    this.version(2)
+      .stores({ importBatches: 'id, createdAt' })
+      .upgrade(async (tx) => {
+        await tx
+          .table('settings')
+          .toCollection()
+          .modify((row: { schemaVersion?: number }) => {
+            row.schemaVersion = 2;
+          });
+      });
   }
 }
 

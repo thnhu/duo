@@ -3,6 +3,8 @@
 export type Lang = 'en' | 'de';
 export type Verification = 'unverified' | 'verified';
 export type AcquisitionStatus = 'unknown' | 'loaded' | 'acquired';
+// Spec A4: where a word is loaded to — Rộng (breadth) or Sâu (depth).
+export type StudyMode = 'breadth' | 'depth';
 
 export interface Dictionary {
   id: string;
@@ -37,6 +39,8 @@ export interface Concept {
   pos?: string;
   meanings: string[];
   grammar?: ConceptGrammar;
+  // Undefined = breadth (concepts created before M3 have no mode).
+  mode?: StudyMode;
   verification: Verification;
   source: ConceptSource;
   status: AcquisitionStatus;
@@ -135,6 +139,21 @@ export interface ImportMapping {
   columns: Record<string, string>;
   delimiter?: string;
   sheet?: string;
+  updatedAt: number;
+  deletedAt?: number;
+}
+
+// One file import (M3). Keeps what it created/changed so the latest import
+// can be undone (journey J1 step 9).
+export interface ImportBatch {
+  id: string;
+  fileName: string;
+  createdConceptIds: string[];
+  createdExampleIds: string[];
+  // Previous values of concepts changed by a merge/update.
+  updatedConcepts: Array<{ id: string; before: Partial<Concept> }>;
+  createdAt: number;
+  undoneAt?: number;
   updatedAt: number;
   deletedAt?: number;
 }

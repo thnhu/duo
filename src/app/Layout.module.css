@@ -10,7 +10,8 @@
   width: 100%;
   max-width: 640px;
   margin: 0 auto;
-  padding: var(--space-4) var(--space-4) calc(72px + var(--space-5));
+  /* Clears the bottom nav and the floating "+" button (top edge ~112px). */
+  padding: var(--space-4) var(--space-4) calc(112px + var(--space-5));
 }
 
 .nav {

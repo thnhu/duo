@@ -1,7 +1,7 @@
 import type { DuoDB } from '../db/schema';
 import { db as defaultDb } from '../db/schema';
 import type { AcquisitionStatus, Concept, ConceptSource, Example, Lang, Verification } from '../db/types';
-import { normalizeWithMap, tokenize, type NormalizedText } from './normalize';
+import { normalizeWithMap, tokenize, type NormalizedText } from '../core/normalize';
 import type {
   SearchField,
   SearchFacets,

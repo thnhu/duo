@@ -5,6 +5,7 @@ import type {
   Concept,
   Dictionary,
   Example,
+  ImportBatch,
   ImportMapping,
   ReviewLog,
   ScheduleState,
@@ -25,6 +26,9 @@ export const scheduleStateRepository = new Repository<ScheduleState, string>(
 );
 export const importMappingRepository = new Repository<ImportMapping, string>(
   db.importMappings as unknown as Table<ImportMapping, string>,
+);
+export const importBatchRepository = new Repository<ImportBatch, string>(
+  db.importBatches as unknown as Table<ImportBatch, string>,
 );
 export const settingsRepository = new Repository<Settings, string>(
   db.settings as unknown as Table<Settings, string>,

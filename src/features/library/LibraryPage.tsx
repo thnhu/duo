@@ -42,6 +42,10 @@ export function LibraryPage() {
         </div>
       </div>
 
+      <Link to="/import" className={styles.banner}>
+        <Card tinted>Nhập từ file CSV/XLSX →</Card>
+      </Link>
+
       {inboxCount > 0 && (
         <Link to="/inbox" className={styles.banner}>
           <Card tinted>

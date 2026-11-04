@@ -16,7 +16,9 @@
     "dexie": "^4.4.7",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "react-router-dom": "^7.18.5"
+    "react-router-dom": "^7.18.5",
+    "read-excel-file": "^9.3.14",
+    "write-excel-file": "^4.1.1"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",

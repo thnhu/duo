@@ -19,13 +19,28 @@ const PAGE = 500;
 const BATCH = 400; // Firestore allows 500 writes per batch
 const WRITE_TIMEOUT_MS = 30_000;
 
-export function loadFirebaseConfig(): FirebaseOptions | null {
+// Optional build-time default (VITE_FIREBASE_CONFIG, JSON or the console
+// snippet), so a fresh device or cleared site data needs no re-pasting. The
+// value comes from a GitHub Actions variable / local .env.local, never from
+// the repo. A config pasted in Settings still wins on that device.
+function buildTimeConfig(): FirebaseOptions | null {
+  const raw = import.meta.env.VITE_FIREBASE_CONFIG as string | undefined;
+  if (!raw) return null;
   try {
-    const raw = localStorage.getItem(CONFIG_KEY);
-    return raw ? (JSON.parse(raw) as FirebaseOptions) : null;
+    return parseFirebaseConfig(raw);
   } catch {
     return null;
   }
+}
+
+export function loadFirebaseConfig(): FirebaseOptions | null {
+  try {
+    const raw = localStorage.getItem(CONFIG_KEY);
+    if (raw) return JSON.parse(raw) as FirebaseOptions;
+  } catch {
+    // fall through to the build-time default
+  }
+  return buildTimeConfig();
 }
 
 export function saveFirebaseConfig(config: FirebaseOptions | null): void {

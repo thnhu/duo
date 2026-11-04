@@ -26,6 +26,7 @@ Nguồn sự thật đầy đủ: [`docs/vocab-tool-spec.md`](docs/vocab-tool-sp
 
 - **Commit message viết bằng tiếng Anh.** Nội dung trao đổi với PO có thể bằng tiếng Việt, nhưng mọi commit message phải viết tiếng Anh (code, docs, spec vẫn giữ tiếng Việt như hiện tại).
 
-## Stack hiện tại (M0)
+## Stack hiện tại
 
-TypeScript, React, Vite, PWA (`vite-plugin-pwa`). Hosting: GitHub Pages, repo `duo`, base path `/duo/`.
+- **M0:** TypeScript, React, Vite, PWA (`vite-plugin-pwa`). Hosting: GitHub Pages, repo `duo`, base path `/duo/`.
+- **M1:** Dexie (IndexedDB) ở `src/db` — schema (`schema.ts`), model types (`types.ts`), lớp repository chung có xóa mềm (`repository.ts`), seed Settings/Dictionary mặc định (`seed.ts`, `defaults.ts`). Module registry chung ở `src/core/registry.ts`. Test bằng Vitest + `fake-indexeddb` (`npm run test`).

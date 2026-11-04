@@ -22,6 +22,7 @@ import { InboxPage } from './features/inbox/InboxPage'
 import { LibraryPage } from './features/library/LibraryPage'
 import { ConceptDetailPage } from './features/library/ConceptDetailPage'
 import { ImportPage } from './features/import/ImportPage'
+import { SettingsPage } from './features/settings/SettingsPage'
 import { LearnPage } from './features/learn/LearnPage'
 import { SessionPage } from './features/learn/SessionPage'
 import { SearchPage } from './features/search/SearchPage'
@@ -39,6 +40,7 @@ async function bootstrap() {
             <Route path="inbox" element={<InboxPage />} />
             <Route path="learn" element={<LearnPage />} />
             <Route path="learn/session" element={<SessionPage />} />
+            <Route path="settings" element={<SettingsPage />} />
             <Route path="import" element={<ImportPage />} />
             <Route path="search" element={<SearchPage />} />
             <Route path="library" element={<LibraryPage />} />

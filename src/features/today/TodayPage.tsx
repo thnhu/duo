@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
 import { SearchLink } from '../../ui/SearchLink';
@@ -32,7 +32,12 @@ export function TodayPage() {
     <section className={styles.page}>
       <div className={styles.header}>
         <h1>Hôm nay</h1>
-        <SearchLink />
+        <div className={styles.tools}>
+          <SearchLink />
+          <Link to="/settings" className={styles.settings} aria-label="Cài đặt">
+            ⚙️
+          </Link>
+        </div>
       </div>
 
       <Card className={styles.card}>

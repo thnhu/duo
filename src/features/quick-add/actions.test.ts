@@ -63,6 +63,24 @@ describe('saveSentenceWithHighlight', () => {
     expect(allConcepts).toHaveLength(1);
   });
 
+  it('links to the concept PO picked from suggestions instead of creating "swallowed"', async () => {
+    const { concept } = await saveQuickWord(DICT_EN, 'en', 'swallow');
+
+    const sentence = 'She swallowed the pill.';
+    const start = sentence.indexOf('swallowed');
+    const result = await saveSentenceWithHighlight(
+      DICT_EN,
+      'en',
+      sentence,
+      { start, end: start + 'swallowed'.length },
+      concept.id,
+    );
+
+    expect(result?.conceptOutcome).toBe('linked');
+    expect(result?.concept.id).toBe(concept.id);
+    expect(await db.concepts.toArray()).toHaveLength(1);
+  });
+
   it('returns null for an empty/whitespace-only selection', async () => {
     const result = await saveSentenceWithHighlight(DICT_EN, 'en', 'Hello there', {
       start: 5,

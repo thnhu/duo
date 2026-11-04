@@ -74,7 +74,13 @@ async function resolveConceptForPhrase(
   dictionaryId: string,
   lang: Lang,
   phrase: string,
+  linkToConceptId?: string,
 ): Promise<{ outcome: ConceptOutcome; concept: Concept }> {
+  // PO explicitly picked a concept from the search suggestions (F3).
+  if (linkToConceptId) {
+    const picked = await conceptRepository.getById(linkToConceptId);
+    if (picked && picked.deletedAt === undefined) return { outcome: 'linked', concept: picked };
+  }
   const existing = await findConceptByExactText(dictionaryId, phrase);
   if (existing) return { outcome: 'linked', concept: existing };
 
@@ -91,6 +97,7 @@ export async function saveSentenceWithHighlight(
   lang: Lang,
   sentenceText: string,
   rawSelection: Selection,
+  linkToConceptId?: string,
 ): Promise<{ conceptOutcome: ConceptOutcome; concept: Concept; example: Example } | null> {
   const selection = normalizeSelection(sentenceText, rawSelection);
   if (!selection) return null;
@@ -100,6 +107,7 @@ export async function saveSentenceWithHighlight(
     dictionaryId,
     lang,
     phrase,
+    linkToConceptId,
   );
 
   const example = newExample(dictionaryId, sentenceText, {
@@ -128,6 +136,7 @@ export async function resolveInboxExample(
   example: Example,
   lang: Lang,
   rawSelection: Selection,
+  linkToConceptId?: string,
 ): Promise<{ conceptOutcome: ConceptOutcome; concept: Concept } | null> {
   const selection = normalizeSelection(example.text, rawSelection);
   if (!selection) return null;
@@ -137,6 +146,7 @@ export async function resolveInboxExample(
     example.dictionaryId,
     lang,
     phrase,
+    linkToConceptId,
   );
 
   await exampleRepository.update(example.id, {

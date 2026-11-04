@@ -6,6 +6,7 @@ import fieldStyles from '../../ui/field.module.css';
 import { dictionaryIdForLang, findConceptByExactText } from '../../db/queries';
 import type { Concept } from '../../db/types';
 import { useLastLanguage } from './useLastLanguage';
+import { ConceptSuggestions } from '../search/ConceptSuggestions';
 import { normalizeSelection, textForSelection, type Selection } from './highlight';
 import { saveQuickWord, saveSentenceToInbox, saveSentenceWithHighlight } from './actions';
 import styles from './QuickAddPage.module.css';
@@ -23,6 +24,7 @@ export function QuickAddPage() {
   const [sentenceText, setSentenceText] = useState('');
   const [selection, setSelection] = useState<Selection | null>(null);
   const [matchedConcept, setMatchedConcept] = useState<Concept | undefined>(undefined);
+  const [pickedConceptId, setPickedConceptId] = useState<string | undefined>(undefined);
   const [sentenceMessage, setSentenceMessage] = useState<Message>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -60,6 +62,7 @@ export function QuickAddPage() {
 
     setSentenceMessage(null);
     setSelection(normalized);
+    setPickedConceptId(undefined);
 
     const dictionaryId = await dictionaryIdForLang(lang);
     const phrase = textForSelection(sentenceText, normalized);
@@ -70,12 +73,19 @@ export function QuickAddPage() {
     setSentenceText('');
     setSelection(null);
     setMatchedConcept(undefined);
+    setPickedConceptId(undefined);
   }
 
   async function handleSaveHighlighted() {
     if (!selection) return;
     const dictionaryId = await dictionaryIdForLang(lang);
-    const result = await saveSentenceWithHighlight(dictionaryId, lang, sentenceText, selection);
+    const result = await saveSentenceWithHighlight(
+      dictionaryId,
+      lang,
+      sentenceText,
+      selection,
+      pickedConceptId,
+    );
     if (!result) return;
 
     setSentenceMessage({
@@ -187,6 +197,7 @@ export function QuickAddPage() {
                 setSentenceText(e.target.value);
                 setSelection(null);
                 setMatchedConcept(undefined);
+                setPickedConceptId(undefined);
                 setSentenceMessage(null);
               }}
               placeholder="vd: She swallowed the pill."
@@ -208,10 +219,21 @@ export function QuickAddPage() {
 
           {selection && (
             <p className={fieldStyles.hint}>
-              {matchedConcept
-                ? `Sẽ gắn vào concept đã có: "${matchedConcept.text}"`
-                : `Sẽ tạo concept mới: "${textForSelection(sentenceText, selection)}"`}
+              {pickedConceptId
+                ? 'Sẽ gắn vào concept bạn đã chọn bên dưới.'
+                : matchedConcept
+                  ? `Sẽ gắn vào concept đã có: "${matchedConcept.text}"`
+                  : `Sẽ tạo concept mới: "${textForSelection(sentenceText, selection)}"`}
             </p>
+          )}
+
+          {selection && (
+            <ConceptSuggestions
+              phrase={textForSelection(sentenceText, selection)}
+              lang={lang}
+              pickedId={pickedConceptId}
+              onPick={setPickedConceptId}
+            />
           )}
 
           <div className={styles.actions}>

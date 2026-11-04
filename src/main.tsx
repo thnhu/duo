@@ -21,6 +21,7 @@ import { QuickAddPage } from './features/quick-add/QuickAddPage'
 import { InboxPage } from './features/inbox/InboxPage'
 import { LibraryPage } from './features/library/LibraryPage'
 import { ConceptDetailPage } from './features/library/ConceptDetailPage'
+import { SearchPage } from './features/search/SearchPage'
 
 async function bootstrap() {
   await initDb()
@@ -33,7 +34,8 @@ async function bootstrap() {
             <Route index element={<TodayPage />} />
             <Route path="quick-add" element={<QuickAddPage />} />
             <Route path="inbox" element={<InboxPage />} />
-            <Route path="library" element={<LibraryPage />} />
+            <Route path="search" element={<SearchPage />} />
+            <Route path="library"element={<LibraryPage />} />
             <Route path="library/:conceptId" element={<ConceptDetailPage />} />
           </Route>
         </Routes>

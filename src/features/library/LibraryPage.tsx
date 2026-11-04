@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../../ui/Card';
 import { LangToggle } from '../../ui/LangToggle';
+import { SearchLink } from '../../ui/SearchLink';
 import { dictionaryIdForLang, listConceptsByDictionary, listInboxExamples } from '../../db/queries';
 import type { Concept } from '../../db/types';
 import { useLastLanguage } from '../quick-add/useLastLanguage';
@@ -35,7 +36,10 @@ export function LibraryPage() {
     <section className={styles.page}>
       <div className={styles.header}>
         <h1>Thư viện</h1>
-        <LangToggle value={lang} onChange={setLang} />
+        <div className={styles.headerActions}>
+          <LangToggle value={lang} onChange={setLang} />
+          <SearchLink />
+        </div>
       </div>
 
       {inboxCount > 0 && (

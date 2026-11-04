@@ -1,0 +1,12 @@
+.link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-100);
+  color: var(--color-primary-600);
+  font-size: 20px;
+  text-decoration: none;
+}

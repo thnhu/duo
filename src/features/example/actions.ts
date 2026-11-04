@@ -20,6 +20,8 @@ export async function saveExampleEdits(
   const patch: Partial<Example> = {
     attributes: edits.attributes,
     attributesStatus: 'verified',
+    // The PO has now decided; a pending AI suggestion is obsolete.
+    suggestedAttributes: undefined,
     note: edits.note.trim() || undefined,
   };
   if (edits.highlight) {

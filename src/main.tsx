@@ -23,6 +23,7 @@ import { InboxPage } from './features/inbox/InboxPage'
 import { LibraryPage } from './features/library/LibraryPage'
 import { ConceptDetailPage } from './features/library/ConceptDetailPage'
 import { ExampleEditPage } from './features/example/ExampleEditPage'
+import { LabelsPage } from './features/labels/LabelsPage'
 import { ImportPage } from './features/import/ImportPage'
 import { SettingsPage } from './features/settings/SettingsPage'
 import { LearnPage } from './features/learn/LearnPage'
@@ -50,6 +51,7 @@ async function bootstrap() {
             <Route path="library" element={<LibraryPage />} />
             <Route path="library/:conceptId" element={<ConceptDetailPage />} />
             <Route path="example/:exampleId" element={<ExampleEditPage />} />
+            <Route path="labels" element={<LabelsPage />} />
           </Route>
         </Routes>
       </HashRouter>

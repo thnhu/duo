@@ -35,3 +35,11 @@
   background: var(--color-danger-bg);
   color: var(--color-danger);
 }
+
+.checkRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  font-size: 16px;
+}

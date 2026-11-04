@@ -1,0 +1,82 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.back {
+  color: var(--color-ink-muted);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.sentence {
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.highlight {
+  background: var(--color-primary-200);
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 0 2px;
+}
+
+.context {
+  color: var(--color-ink-muted);
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--color-primary-600);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.suggestionRow {
+  display: flex;
+  gap: var(--space-3);
+  font-size: 14px;
+}
+
+.suggestionRow dt {
+  flex: 0 0 72px;
+  color: var(--color-ink-muted);
+}
+
+.suggestionRow dd {
+  margin: 0;
+}
+
+.reason {
+  color: var(--color-ink-muted);
+}

@@ -13,8 +13,11 @@ import styles from './LearnPage.module.css';
 
 // What the session screen needs to start; passed through router state.
 export interface SessionConfig {
-  moduleId: string;
-  lang: Lang;
+  // 'drill' = one chosen drill; 'review' = words due today; 'flash' = timed
+  // quick-fire round. Review/flash pick the drill per question.
+  kind?: 'drill' | 'review' | 'flash';
+  moduleId?: string;
+  lang?: Lang;
   lesson?: string;
   count: number;
   options: Record<string, string>;

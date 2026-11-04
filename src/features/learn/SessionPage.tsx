@@ -3,15 +3,20 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
 import fieldStyles from '../../ui/field.module.css';
+import { maxResponseTimeFor } from '../../acquisition';
+import { loadCriteria } from '../../acquisition/update';
+import type { AcquisitionCriteria } from '../../db/types';
 import { exerciseModules, type Answer } from '../../exercises';
+import { loadReviewItems } from '../../exercises/review';
 import { speak, stopSpeaking } from '../../exercises/speech';
 import {
   buildSession,
+  defaultOptions,
   loadPairs,
   recordAnswer,
   summarize,
   type AnswerRecord,
-  type Pair,
+  type SessionItem,
 } from '../../exercises/session';
 import { ReflexTimer } from '../../exercises/timer';
 import type { SessionConfig } from './LearnPage';
@@ -25,16 +30,22 @@ function seconds(ms: number): string {
 
 export function SessionPage() {
   const config = useLocation().state as SessionConfig | null;
-  if (!config || !exerciseModules.has(config.moduleId)) return <Navigate to="/learn" replace />;
+  const kind = config?.kind ?? 'drill';
+  if (!config || (kind === 'drill' && !(config.moduleId && exerciseModules.has(config.moduleId)))) {
+    return <Navigate to="/learn" replace />;
+  }
   return <Session config={config} />;
 }
 
 function Session({ config }: { config: SessionConfig }) {
   const navigate = useNavigate();
-  const module = exerciseModules.get(config.moduleId)!;
+  const kind = config.kind ?? 'drill';
+  const fixedModule = config.moduleId ? exerciseModules.get(config.moduleId) : undefined;
 
   const [round, setRound] = useState(0);
-  const [pairs, setPairs] = useState<Pair[] | null>(null);
+  const [pairs, setPairs] = useState<SessionItem[] | null>(null);
+  const [criteria, setCriteria] = useState<AcquisitionCriteria | null>(null);
+  const [timedOut, setTimedOut] = useState(false);
   const [index, setIndex] = useState(0);
   const [answer, setAnswer] = useState<Answer>({});
   const [record, setRecord] = useState<AnswerRecord | null>(null);
@@ -44,15 +55,23 @@ function Session({ config }: { config: SessionConfig }) {
 
   const timer = useRef(new ReflexTimer());
   const submitting = useRef(false);
+  const answerRef = useRef<Answer>({});
   const inputs = useRef<Record<string, HTMLInputElement | null>>({});
 
   // (Re)load the words for this session. Every answer is saved the moment
   // it is given, so stopping half way loses nothing (journey G2).
   useEffect(() => {
     let current = true;
-    void loadPairs(module, { lang: config.lang, lesson: config.lesson }).then((all) => {
+    const loading: Promise<SessionItem[]> =
+      kind === 'drill' && fixedModule && config.lang
+        ? loadPairs(fixedModule, { lang: config.lang, lesson: config.lesson }).then((all) =>
+            buildSession(all, config.count, Math.random).map((p) => ({ ...p, module: fixedModule })),
+          )
+        : loadReviewItems({ kind: kind === 'flash' ? 'flash' : 'review', count: config.count, lang: config.lang });
+    void Promise.all([loading, loadCriteria()]).then(([items, loadedCriteria]) => {
       if (!current) return;
-      setPairs(buildSession(all, config.count, Math.random));
+      setCriteria(loadedCriteria);
+      setPairs(items);
       setIndex(0);
       setRecords([]);
       setRecord(null);
@@ -61,19 +80,25 @@ function Session({ config }: { config: SessionConfig }) {
     return () => {
       current = false;
     };
-  }, [module, config, round]);
+  }, [kind, fixedModule, config, round]);
 
   const pair = pairs?.[index];
   const exercise = useMemo(
     () =>
       pair
-        ? module.generate(pair.concept, pair.example, {
+        ? pair.module.generate(pair.concept, pair.example, {
             rng: Math.random,
-            options: config.options,
+            options: kind === 'drill' ? config.options : defaultOptions(pair.module),
           })
         : null,
-    [module, pair, config.options],
+    [pair, kind, config.options],
   );
+
+  // Flash round: each question has a time limit (the same limit the
+  // acquisition criteria use for that drill). When it runs out the answer
+  // as it stands is submitted.
+  const timeLimit =
+    kind === 'flash' && criteria && pair ? maxResponseTimeFor(criteria, pair.module.id) : null;
 
   // A new question appears: clear the answer, start the clock (and read it
   // out for dictation).
@@ -81,25 +106,43 @@ function Session({ config }: { config: SessionConfig }) {
     if (!exercise) return;
     setAnswer({});
     setRecord(null);
+    setTimedOut(false);
     submitting.current = false;
     timer.current.start();
     if (exercise.speak) void speak(exercise.speak.text, exercise.speak.lang);
     return () => stopSpeaking();
   }, [exercise]);
 
+  useEffect(() => {
+    answerRef.current = answer;
+  }, [answer]);
+
+  useEffect(() => {
+    if (!exercise || timeLimit === null || record) return;
+    const id = setTimeout(() => void handleSubmit(true), timeLimit);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exercise, timeLimit, record]);
+
   const allFilled = exercise?.fields.every((f) => (answer[f.key] ?? '').trim() !== '') ?? false;
 
-  async function handleSubmit() {
-    if (!exercise) return;
+  async function handleSubmit(force = false) {
+    if (!exercise || !pair) return;
     if (record) {
       next();
       return;
     }
-    if (!allFilled || submitting.current) return;
+    if ((!force && !allFilled) || submitting.current) return;
     submitting.current = true;
+    if (force) setTimedOut(true);
     // The core measures reaction time, from the question appearing to now.
     const elapsed = timer.current.stop();
-    const result = await recordAnswer(module, exercise, answer, elapsed);
+    const result = await recordAnswer(
+      pair.module,
+      exercise,
+      force ? answerRef.current : answer,
+      elapsed,
+    );
     setRecord(result);
     setRecords((all) => [...all, result]);
   }
@@ -125,8 +168,14 @@ function Session({ config }: { config: SessionConfig }) {
   if (pairs.length === 0) {
     return (
       <section className={styles.page}>
-        <p>Chưa có từ nào dùng được cho bài này.</p>
-        <Button onClick={() => navigate('/learn')}>Quay lại</Button>
+        <p>
+          {kind === 'drill'
+            ? 'Chưa có từ nào dùng được cho bài này.'
+            : kind === 'flash'
+              ? 'Chưa có từ nào để luyện phản xạ.'
+              : 'Hôm nay không có gì cần ôn.'}
+        </p>
+        <Button onClick={() => navigate(kind === 'drill' ? '/learn' : '/')}>Quay lại</Button>
       </section>
     );
   }
@@ -151,12 +200,18 @@ function Session({ config }: { config: SessionConfig }) {
     <section className={styles.page}>
       <div className={styles.top}>
         <span className={styles.progress}>
-          Câu {index + 1}/{pairs.length} · {exercise.title}
+          {kind === 'flash' ? '⚡ ' : ''}Câu {index + 1}/{pairs.length} · {exercise.title}
         </span>
         <Button variant="ghost" onClick={() => setFinished(true)}>
           Dừng
         </Button>
       </div>
+
+      {timeLimit !== null && !record && (
+        <div className={styles.countdown} aria-hidden="true">
+          <div className={styles.countdownBar} style={{ animationDuration: `${timeLimit}ms` }} />
+        </div>
+      )}
 
       <form
         className={styles.form}
@@ -255,6 +310,7 @@ function Session({ config }: { config: SessionConfig }) {
 
         {record && result && (
           <p className={result.correct ? styles.right : styles.wrong} role="status">
+            {timedOut ? 'Hết giờ. ' : ''}
             {result.correct ? 'Đúng!' : 'Chưa đúng.'} · {seconds(record.responseTimeMs)}
           </p>
         )}

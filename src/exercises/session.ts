@@ -2,6 +2,7 @@ import { refreshAcquisition, type StatusChange } from '../acquisition/update';
 import { createId } from '../core/id';
 import { conceptRepository, exampleRepository, reviewLogRepository } from '../db/repositories';
 import type { Concept, Example, Lang, ReviewLog } from '../db/types';
+import { recordSchedule } from '../scheduling/store';
 import type { Answer, Exercise, ExerciseModule, GradeResult } from './types';
 
 // Runner side of an exercise session: choosing what to ask, and recording
@@ -10,6 +11,16 @@ import type { Answer, Exercise, ExerciseModule, GradeResult } from './types';
 export interface Pair {
   concept: Concept;
   example: Example;
+}
+
+// A question to ask: a word, one of its examples and the drill to use.
+// Review and flash rounds mix drills, so the module travels with the item.
+export interface SessionItem extends Pair {
+  module: ExerciseModule;
+}
+
+export function defaultOptions(module: ExerciseModule): Record<string, string> {
+  return Object.fromEntries((module.options ?? []).map((o) => [o.id, o.default]));
 }
 
 export interface PairFilter {
@@ -99,6 +110,8 @@ export async function recordAnswer(
     timestamp: now(),
   };
   await reviewLogRepository.add(log);
+  // The example's own schedule moves with every answer (spec D4).
+  await recordSchedule(exercise.exampleId, result.correct, log.timestamp);
   const statusChange = (await refreshAcquisition(exercise.conceptId)) ?? undefined;
   return { exercise, answer, result, responseTimeMs, statusChange };
 }

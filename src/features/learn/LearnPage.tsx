@@ -9,6 +9,7 @@ import type { Lang } from '../../db/types';
 import { exerciseModules, modulesForLanguage, type ExerciseModule } from '../../exercises';
 import { hasVoiceFor, isSpeechSupported } from '../../exercises/speech';
 import { loadPairs } from '../../exercises/session';
+import { loadStudy } from '../../settings/study';
 import styles from './LearnPage.module.css';
 
 // What the session screen needs to start; passed through router state.
@@ -25,11 +26,17 @@ export interface SessionConfig {
 
 const COUNTS = [5, 10, 20];
 
+// The usual choices plus PO's own session size from Settings.
+function countChoices(preferred: number): number[] {
+  return [...new Set([...COUNTS, preferred])].sort((a, b) => a - b);
+}
+
 export function LearnPage() {
   const navigate = useNavigate();
   const [lang, setLang] = useState<Lang>('de');
   const [lesson, setLesson] = useState('');
   const [count, setCount] = useState(10);
+  const [preferredCount, setPreferredCount] = useState(10);
   const [lessons, setLessons] = useState<string[]>([]);
   const [available, setAvailable] = useState<Record<string, number>>({});
   const [optionValues, setOptionValues] = useState<Record<string, string>>({});
@@ -67,6 +74,13 @@ export function LearnPage() {
       current = false;
     };
   }, [lang, lesson]);
+
+  useEffect(() => {
+    void loadStudy().then((study) => {
+      setPreferredCount(study.sessionCount);
+      setCount(study.sessionCount);
+    });
+  }, []);
 
   // Check every voice the registered drills need (not just German).
   useEffect(() => {
@@ -106,7 +120,7 @@ export function LearnPage() {
         <div>
           <label className={fieldStyles.label}>Số câu mỗi phiên</label>
           <div className={styles.counts} role="group" aria-label="Số câu">
-            {COUNTS.map((c) => (
+            {countChoices(preferredCount).map((c) => (
               <button
                 key={c}
                 type="button"

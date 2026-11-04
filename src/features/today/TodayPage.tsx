@@ -4,19 +4,22 @@ import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
 import { SearchLink } from '../../ui/SearchLink';
 import { countDueWords } from '../../exercises/review';
+import { defaultStudySettings, loadStudy } from '../../settings/study';
 import type { SessionConfig } from '../learn/LearnPage';
 import styles from './TodayPage.module.css';
-
-const REVIEW_COUNT = 10;
 
 export function TodayPage() {
   const navigate = useNavigate();
   const [due, setDue] = useState<number | null>(null);
+  const [count, setCount] = useState(defaultStudySettings.sessionCount);
 
   useEffect(() => {
     let current = true;
     void countDueWords().then((n) => {
       if (current) setDue(n);
+    });
+    void loadStudy().then((study) => {
+      if (current) setCount(study.sessionCount);
     });
     return () => {
       current = false;
@@ -24,7 +27,7 @@ export function TodayPage() {
   }, []);
 
   function start(kind: 'review' | 'flash') {
-    const config: SessionConfig = { kind, count: REVIEW_COUNT, options: {} };
+    const config: SessionConfig = { kind, count, options: {} };
     navigate('/learn/session', { state: config });
   }
 

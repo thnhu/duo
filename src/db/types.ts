@@ -242,9 +242,17 @@ export interface AiProviderConfig {
   model?: string;
 }
 
+// How PO likes to study (M9c). Optional: settings stored before M9c have
+// none, and the defaults in `src/settings/study.ts` apply.
+export interface StudySettings {
+  // Questions per session (drills, review and flash round).
+  sessionCount: number;
+}
+
 export interface Settings {
   id: string;
   acquisitionCriteria: AcquisitionCriteria;
+  study?: StudySettings;
   attributeValueSets: AttributeValueSets;
   linkTypes: LinkTypeSets;
   enabledModules: string[];

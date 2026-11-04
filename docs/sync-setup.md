@@ -17,7 +17,7 @@
 
 ## 3. Tạo Firestore và Security Rules
 
-1. **Build → Firestore Database → Create database** → chọn vùng gần bạn (vd `asia-southeast1`), chế độ **production**.
+1. **Build → Firestore Database** (đúng mục này, **không phải** "Realtime Database" — hai mục nằm cạnh nhau và rules của Realtime Database là JSON `".read"/".write"`, không dùng được ở đây) → **Create database** → chọn vùng gần bạn (vd `asia-southeast1`), chọn **locked mode** (không chọn test mode: test mode mở cho cả thế giới và tự khóa sau 30 ngày).
 2. Tab **Rules** → dán nội dung file [`firestore.rules`](../firestore.rules) ở thư mục gốc repo → **Publish**. Rules này chỉ cho mỗi người đọc/ghi dữ liệu của chính mình (`users/{uid}/…`).
 
 ## 4. Lấy cấu hình web
@@ -28,7 +28,7 @@
 
 **Hôm nay → ⚙️ Cài đặt → Đồng bộ giữa các thiết bị** → dán khối `firebaseConfig` → **Lưu cấu hình** → **Tạo tài khoản mới** (lần đầu) hoặc **Đăng nhập** (các thiết bị sau, cùng email).
 
-Cấu hình chỉ lưu trên thiết bị đó (không commit, không đồng bộ). Khóa `apiKey` của web app không phải bí mật; bảo mật nằm ở Security Rules.
+Cấu hình chỉ lưu trên thiết bị đó, nên phải dán lại trên từng máy (điện thoại cũng vậy) rồi đăng nhập **cùng một tài khoản** (Google và email là hai tài khoản khác nhau). Nếu đăng nhập Google bằng popup không chạy trong app đã cài ra màn hình chính, mở bằng trình duyệt hoặc dùng email. Thấy bản cũ sau khi cập nhật thì mở lại app hai lần (service worker). Cấu hình chỉ lưu trên thiết bị đó (không commit, không đồng bộ). Khóa `apiKey` của web app không phải bí mật; bảo mật nằm ở Security Rules.
 
 ## Cách hoạt động (tóm tắt)
 

@@ -3,7 +3,7 @@ import type { Concept, Example, Lang, ReviewLog } from '../db/types';
 import { listDue } from '../scheduling/store';
 import { exerciseModules } from './index';
 import { shuffle, type SessionItem } from './session';
-import type { ExerciseModule } from './types';
+import type { ExerciseLibrary, ExerciseModule } from './types';
 
 // Building review and flash sessions (spec D3/D4). Unlike a plain drill,
 // the drill type is not chosen by PO: it is picked per question so the same
@@ -27,6 +27,7 @@ export function pickItem(
   last: ReviewLog | undefined,
   modules: ExerciseModule[],
   rng: () => number,
+  library?: ExerciseLibrary,
 ): SessionItem | null {
   const fresh = candidates.filter((e) => e.id !== last?.exampleId);
   const ordered = [...shuffle(fresh, rng), ...shuffle(candidates.filter((e) => !fresh.includes(e)), rng)];
@@ -35,7 +36,7 @@ export function pickItem(
       (m) =>
         m.languages.includes(concept.lang) &&
         (concept.mode ?? 'breadth') === m.mode &&
-        m.isEligible(concept, example),
+        m.isEligible(concept, example, library),
     );
     if (usable.length === 0) continue;
     const other = usable.filter((m) => m.id !== last?.exerciseType);
@@ -80,7 +81,7 @@ export async function loadReviewItems(request: ReviewRequest): Promise<SessionIt
     const all = byConcept.get(concept.id) ?? [];
     const dueExamples = all.filter((e) => dueAt.has(e.id));
     if (kind === 'review' && dueExamples.length === 0) continue;
-    const item = pickItem(concept, kind === 'review' ? dueExamples : all, logs.get(concept.id), modules, rng);
+    const item = pickItem(concept, kind === 'review' ? dueExamples : all, logs.get(concept.id), modules, rng, { concepts });
     if (!item) continue;
     const overdue = Math.min(...dueExamples.map((e) => dueAt.get(e.id)!), Infinity);
     entries.push({ item, overdue });

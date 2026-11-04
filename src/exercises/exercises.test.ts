@@ -140,14 +140,15 @@ describe('grading', () => {
 
 describe('exercise modules', () => {
   it('registers the four German drills in the registry', () => {
-    expect(exerciseModules.list().map((m) => m.id).sort()).toEqual([
+    expect(modulesForLanguage('de').map((m) => m.id).sort()).toEqual([
       'de.dictation',
       'de.irregular-verb-forms',
       'de.noun-gender-plural',
       'de.verb-conjugation',
     ]);
     expect(modulesForLanguage('de')).toHaveLength(4);
-    expect(modulesForLanguage('en')).toHaveLength(0);
+    // English drills (M9b) are registered too, in their own language only.
+    expect(modulesForLanguage('en').length).toBeGreaterThan(0);
   });
 
   it('dictation: phrase by default, whole sentence on request, spoken in de-DE', () => {

@@ -70,9 +70,16 @@ export interface InputConfig {
   specialKeys?: string[];
 }
 
+// Other words a drill may draw on (e.g. wrong choices for a meaning quiz).
+// Supplied by the runner; a module must cope with it being absent.
+export interface ExerciseLibrary {
+  concepts: Concept[];
+}
+
 export interface ExerciseContext {
   rng: () => number;
   options: Record<string, string>;
+  library?: ExerciseLibrary;
 }
 
 export interface ExerciseModule extends RegistrableModule {
@@ -90,7 +97,7 @@ export interface ExerciseModule extends RegistrableModule {
   unavailableHint?: string;
   // Can this concept (with this example) be drilled? A noun without a
   // gender, for example, can't be used for the gender drill.
-  isEligible(concept: Concept, example: Example): boolean;
+  isEligible(concept: Concept, example: Example, library?: ExerciseLibrary): boolean;
   generate(concept: Concept, example: Example, context: ExerciseContext): Exercise;
   // Reaction time is measured by the core, never by the module.
   grade(answer: Answer, exercise: Exercise): GradeResult;

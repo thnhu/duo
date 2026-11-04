@@ -1,5 +1,6 @@
 import type { Concept, Example } from '../../db/types';
-import { gradeFields, normalizeAnswer, splitAlternatives } from '../grade';
+import { gradeFields, splitAlternatives } from '../grade';
+import { dictationTarget, stripEndPunctuation } from '../shared';
 import type { Exercise, ExerciseContext, ExerciseModule } from '../types';
 import {
   hasSingleToken,
@@ -36,16 +37,7 @@ function meaningHint(concept: Concept): string | undefined {
 
 // ---------------------------------------------------------------- dictation
 
-// Spec 5.1 / C7: with a highlighted phrase the default is to write the
-// phrase; there is an option to write the whole sentence.
-export function dictationTarget(example: Example, scope: string): string {
-  if (scope !== 'sentence' && example.highlight) {
-    return example.text.slice(example.highlight.start, example.highlight.end);
-  }
-  return example.text;
-}
-
-const stripEndPunctuation = (s: string) => normalizeAnswer(s).replace(/[\s.,;:!?"„“”]+$/u, '');
+export { dictationTarget };
 
 export const germanDictation: ExerciseModule = {
   id: 'de.dictation',

@@ -55,7 +55,7 @@ export async function loadPairs(
     if ((concept.mode ?? 'breadth') !== module.mode) continue;
     if (concept.status === 'acquired') continue;
     if (filter.lesson && concept.source.lesson !== filter.lesson) continue;
-    const usable = (byConcept.get(concept.id) ?? []).filter((e) => module.isEligible(concept, e));
+    const usable = (byConcept.get(concept.id) ?? []).filter((e) => module.isEligible(concept, e, { concepts }));
     if (usable.length === 0) continue;
     // Real sentences make better drills than the auto-created minimal one.
     const real = usable.filter((e) => !e.isMinimal);

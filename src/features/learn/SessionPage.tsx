@@ -6,7 +6,8 @@ import fieldStyles from '../../ui/field.module.css';
 import { maxResponseTimeFor } from '../../acquisition';
 import { loadCriteria } from '../../acquisition/update';
 import type { AcquisitionCriteria } from '../../db/types';
-import { exerciseModules, type Answer } from '../../exercises';
+import { exerciseModules, type Answer, type ExerciseLibrary } from '../../exercises';
+import { conceptRepository } from '../../db/repositories';
 import { loadReviewItems } from '../../exercises/review';
 import { speak, stopSpeaking } from '../../exercises/speech';
 import {
@@ -42,6 +43,7 @@ function Session({ config }: { config: SessionConfig }) {
 
   const [round, setRound] = useState(0);
   const [pairs, setPairs] = useState<SessionItem[] | null>(null);
+  const [library, setLibrary] = useState<ExerciseLibrary>({ concepts: [] });
   const [criteria, setCriteria] = useState<AcquisitionCriteria | null>(null);
   const [timedOut, setTimedOut] = useState(false);
   const [index, setIndex] = useState(0);
@@ -66,9 +68,10 @@ function Session({ config }: { config: SessionConfig }) {
             buildSession(all, config.count, Math.random).map((p) => ({ ...p, module: fixedModule })),
           )
         : loadReviewItems({ kind: kind === 'flash' ? 'flash' : 'review', count: config.count, lang: config.lang });
-    void Promise.all([loading, loadCriteria()]).then(([items, loadedCriteria]) => {
+    void Promise.all([loading, loadCriteria(), conceptRepository.listActive()]).then(([items, loadedCriteria, concepts]) => {
       if (!current) return;
       setCriteria(loadedCriteria);
+      setLibrary({ concepts });
       setPairs(items);
       setIndex(0);
       setRecords([]);
@@ -86,10 +89,11 @@ function Session({ config }: { config: SessionConfig }) {
       pair
         ? pair.module.generate(pair.concept, pair.example, {
             rng: Math.random,
+            library,
             options: kind === 'drill' ? config.options : defaultOptions(pair.module),
           })
         : null,
-    [pair, kind, config.options],
+    [pair, kind, config.options, library],
   );
 
   // Flash round: each question has a time limit (the same limit the

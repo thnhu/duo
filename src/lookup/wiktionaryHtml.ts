@@ -59,9 +59,11 @@ function parseHeadword(line: Element, pos: string): ConceptGrammar | undefined {
   if (/verb/i.test(pos)) {
     const past = forms['past tense'] ?? forms['preterite'];
     const participle = forms['past participle'];
+    const present3 = forms['third-person singular present'];
     if (headword || past || participle) {
       grammar.verbForms = {
         infinitiv: headword || undefined,
+        praesens3sg: present3,
         praeteritum: past,
         partizip2: participle,
       };

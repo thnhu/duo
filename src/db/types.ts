@@ -19,6 +19,9 @@ export interface ConceptGrammar {
   plural?: string;
   verbForms?: {
     infinitiv?: string;
+    // Third-person singular present (er/sie/es): tells stem-changing verbs
+    // (fahren -> fährt) apart from regular ones for the conjugation drill.
+    praesens3sg?: string;
     praeteritum?: string;
     partizip2?: string;
   };

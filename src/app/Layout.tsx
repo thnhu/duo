@@ -25,6 +25,10 @@ export function Layout() {
           <span className={styles.navIcon}>📚</span>
           Thư viện
         </NavLink>
+        <NavLink to="/learn" className={navLinkClass}>
+          <span className={styles.navIcon}>🎓</span>
+          Học
+        </NavLink>
       </nav>
     </div>
   );

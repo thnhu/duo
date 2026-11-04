@@ -48,6 +48,7 @@ describe('wiktionary German parser (real page fixtures)', () => {
     const verb = entries.find((e) => e.pos === 'verb')!;
     expect(verb.grammar?.verbForms).toEqual({
       infinitiv: 'gehen',
+      praesens3sg: 'geht',
       praeteritum: 'ging',
       partizip2: 'gegangen',
     });

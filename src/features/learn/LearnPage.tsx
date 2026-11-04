@@ -1,0 +1,200 @@
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '../../ui/Button';
+import { Card } from '../../ui/Card';
+import { LangToggle } from '../../ui/LangToggle';
+import fieldStyles from '../../ui/field.module.css';
+import { conceptRepository } from '../../db/repositories';
+import type { Lang } from '../../db/types';
+import { exerciseModules, modulesForLanguage, type ExerciseModule } from '../../exercises';
+import { hasVoiceFor, isSpeechSupported } from '../../exercises/speech';
+import { loadPairs } from '../../exercises/session';
+import styles from './LearnPage.module.css';
+
+// What the session screen needs to start; passed through router state.
+export interface SessionConfig {
+  moduleId: string;
+  lang: Lang;
+  lesson?: string;
+  count: number;
+  options: Record<string, string>;
+}
+
+const COUNTS = [5, 10, 20];
+
+export function LearnPage() {
+  const navigate = useNavigate();
+  const [lang, setLang] = useState<Lang>('de');
+  const [lesson, setLesson] = useState('');
+  const [count, setCount] = useState(10);
+  const [lessons, setLessons] = useState<string[]>([]);
+  const [available, setAvailable] = useState<Record<string, number>>({});
+  const [optionValues, setOptionValues] = useState<Record<string, string>>({});
+  const [voiceOk, setVoiceOk] = useState<boolean | null>(null);
+
+  const modules = modulesForLanguage(lang);
+
+  useEffect(() => {
+    let current = true;
+    void conceptRepository.listActive().then((concepts) => {
+      if (!current) return;
+      const set = new Set(
+        concepts.filter((c) => c.lang === lang && c.source.lesson).map((c) => c.source.lesson!),
+      );
+      setLessons([...set].sort());
+    });
+    return () => {
+      current = false;
+    };
+  }, [lang]);
+
+  // How many words each drill can use right now.
+  useEffect(() => {
+    let current = true;
+    void Promise.all(
+      exerciseModules.list().map(async (m) => {
+        const pairs = await loadPairs(m, { lang, lesson: lesson || undefined });
+        return [m.id, pairs.length] as const;
+      }),
+    ).then((entries) => {
+      if (current) setAvailable(Object.fromEntries(entries));
+    });
+    return () => {
+      current = false;
+    };
+  }, [lang, lesson]);
+
+  useEffect(() => {
+    void hasVoiceFor('de-DE').then(setVoiceOk);
+  }, []);
+
+  function start(module: ExerciseModule) {
+    const options: Record<string, string> = {};
+    for (const option of module.options ?? []) {
+      options[option.id] = optionValues[`${module.id}.${option.id}`] ?? option.default;
+    }
+    const config: SessionConfig = {
+      moduleId: module.id,
+      lang,
+      lesson: lesson || undefined,
+      count,
+      options,
+    };
+    navigate('/learn/session', { state: config });
+  }
+
+  return (
+    <section className={styles.page}>
+      <div className={styles.header}>
+        <h1>Học</h1>
+        <LangToggle value={lang} onChange={setLang} />
+      </div>
+
+      <Card className={styles.settings}>
+        <div>
+          <label className={fieldStyles.label}>Số câu mỗi phiên</label>
+          <div className={styles.counts} role="group" aria-label="Số câu">
+            {COUNTS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                aria-pressed={count === c}
+                className={[styles.count, count === c && styles.countActive]
+                  .filter(Boolean)
+                  .join(' ')}
+                onClick={() => setCount(c)}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
+        {lessons.length > 0 && (
+          <div>
+            <label className={fieldStyles.label} htmlFor="learn-lesson">
+              Phạm vi
+            </label>
+            <select
+              id="learn-lesson"
+              className={fieldStyles.input}
+              value={lesson}
+              onChange={(e) => setLesson(e.target.value)}
+            >
+              <option value="">Tất cả từ đã nạp</option>
+              {lessons.map((l) => (
+                <option key={l} value={l}>
+                  {l}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </Card>
+
+      {modules.length === 0 && (
+        <p className={styles.empty}>
+          Chưa có kiểu bài cho ngôn ngữ này (tiếng Anh sẽ có ở bản sau).
+        </p>
+      )}
+
+      <div className={styles.list}>
+        {modules.map((module) => {
+          const n = available[module.id];
+          const needsVoice = module.id === 'de.dictation';
+          const noVoice = needsVoice && (!isSpeechSupported() || voiceOk === false);
+          const disabled = !n || noVoice;
+          return (
+            <Card key={module.id} className={styles.module}>
+              <div>
+                <h2>{module.label}</h2>
+                <p className={styles.description}>{module.description}</p>
+                <p className={styles.available}>
+                  {n === undefined ? 'Đang kiểm tra…' : `${n} từ dùng được`}
+                </p>
+              </div>
+
+              {module.options?.map((option) => (
+                <div key={option.id}>
+                  <label className={fieldStyles.label}>{option.label}</label>
+                  <select
+                    className={fieldStyles.input}
+                    value={optionValues[`${module.id}.${option.id}`] ?? option.default}
+                    onChange={(e) =>
+                      setOptionValues({
+                        ...optionValues,
+                        [`${module.id}.${option.id}`]: e.target.value,
+                      })
+                    }
+                  >
+                    {option.choices.map((choice) => (
+                      <option key={choice.value} value={choice.value}>
+                        {choice.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+
+              {noVoice && (
+                <p className={styles.warning}>
+                  Máy này không có giọng đọc tiếng Đức (de-DE) nên chưa thể nghe chép. Hãy cài giọng
+                  Đức trong cài đặt hệ thống (Text-to-speech) rồi mở lại app.
+                </p>
+              )}
+              {n === 0 && !noVoice && (
+                <p className={styles.hint}>
+                  Chưa có từ đủ dữ liệu cho bài này. Nhập từ file có các cột giống/số nhiều/dạng
+                  động từ, hoặc dùng Tra cứu tự động ở Thư viện.
+                </p>
+              )}
+
+              <Button disabled={disabled} onClick={() => start(module)}>
+                Bắt đầu
+              </Button>
+            </Card>
+          );
+        })}
+      </div>
+    </section>
+  );
+}

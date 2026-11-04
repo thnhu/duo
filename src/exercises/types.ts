@@ -1,0 +1,73 @@
+import type { RegistrableModule } from '../core/registry';
+import type { Concept, Example, Lang, StudyMode } from '../db/types';
+
+// ExerciseModule (spec section 7): every exercise type is a module behind
+// this one interface, registered in a registry. The runner and the screens
+// know nothing about German dictation, genders or verbs.
+
+export interface FieldSpec {
+  key: string;
+  label: string;
+  // 'choice' renders buttons from `options`; 'text' renders a text box.
+  type: 'text' | 'choice';
+  options?: string[];
+}
+
+export interface Exercise {
+  moduleId: string;
+  conceptId: string;
+  exampleId: string;
+  // Short name of the drill, e.g. "Nghe và chép".
+  title: string;
+  // The main thing shown (a word, a sentence, an instruction).
+  prompt: string;
+  // Secondary line (meaning hint, tense and person...).
+  detail?: string;
+  // Text to read aloud with the device voice, if any.
+  speak?: { text: string; lang: string };
+  fields: FieldSpec[];
+  // Accepted answers per field key; the first is shown when PO is wrong.
+  expected: Record<string, string[]>;
+}
+
+export type Answer = Record<string, string>;
+
+export interface GradeResult {
+  correct: boolean;
+  perField: Record<string, boolean>;
+  // What to show as the right answer, per field.
+  expected: Record<string, string>;
+}
+
+export interface ModuleOptionChoice {
+  value: string;
+  label: string;
+}
+
+// Per-module setting PO can change before a session (e.g. dictation:
+// phrase only or whole sentence).
+export interface ModuleOption {
+  id: string;
+  label: string;
+  choices: ModuleOptionChoice[];
+  default: string;
+}
+
+export interface ExerciseContext {
+  rng: () => number;
+  options: Record<string, string>;
+}
+
+export interface ExerciseModule extends RegistrableModule {
+  label: string;
+  description: string;
+  languages: Lang[];
+  mode: StudyMode;
+  options?: ModuleOption[];
+  // Can this concept (with this example) be drilled? A noun without a
+  // gender, for example, can't be used for the gender drill.
+  isEligible(concept: Concept, example: Example): boolean;
+  generate(concept: Concept, example: Example, context: ExerciseContext): Exercise;
+  // Reaction time is measured by the core, never by the module.
+  grade(answer: Answer, exercise: Exercise): GradeResult;
+}

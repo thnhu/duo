@@ -119,6 +119,7 @@ function EntryReview({
     if (isGerman && isVerb) {
       grammar.verbForms = {
         infinitiv: infinitiv.trim() || undefined,
+        praesens3sg: suggested?.verbForms?.praesens3sg ?? existing?.verbForms?.praesens3sg,
         praeteritum: praeteritum.trim() || undefined,
         partizip2: partizip2.trim() || undefined,
       };

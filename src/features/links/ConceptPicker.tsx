@@ -12,7 +12,7 @@ interface ConceptPickerProps {
   selected: Concept | null;
   onSelect: (concept: Concept | null) => void;
   // "No match concept. Add?" (R3): creates the typed text as a new concept.
-  onAdd: (text: string) => Promise<void>;
+  onAdd?: (text: string) => Promise<void>;
 }
 
 // Search box + results that show each concept's description, so two concepts
@@ -43,7 +43,7 @@ export function ConceptPicker({ id, label, concepts, selected, onSelect, onAdd }
     if (busy) return;
     setBusy(true);
     try {
-      await onAdd(query.trim());
+      await onAdd?.(query.trim());
       setQuery('');
     } finally {
       setBusy(false);
@@ -82,7 +82,8 @@ export function ConceptPicker({ id, label, concepts, selected, onSelect, onAdd }
           ))}
         </ul>
       )}
-      {query.trim() && hits.length === 0 && (
+      {query.trim() && hits.length === 0 && !onAdd && <p className={styles.noMatch}>Không có concept nào khớp.</p>}
+      {query.trim() && hits.length === 0 && onAdd && (
         <div className={styles.noMatch}>
           <span>Không có concept nào khớp.</span>
           <Button variant="secondary" disabled={busy} onClick={() => void handleAdd()}>

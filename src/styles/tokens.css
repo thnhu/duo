@@ -40,6 +40,11 @@
   --space-7: 48px;
 
   --shadow-md: 0 4px 16px rgba(14, 26, 43, 0.12);
+  --shadow-lift: 0 2px 8px rgba(14, 26, 43, 0.14);
+
+  /* Interaction: one speed, one focus ring, so every control feels alike. */
+  --transition: 0.15s ease;
+  --focus-ring: 0 0 0 3px var(--color-primary-300);
 }
 
 @media (prefers-color-scheme: dark) {

@@ -9,3 +9,27 @@
   background: var(--color-primary-100);
   border: none;
 }
+
+/* Cards inside a link or button: hover/focus feedback from the wrapper. */
+.card {
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition),
+    background-color var(--transition);
+}
+
+@media (hover: hover) {
+  a:hover > .card:not(.tinted),
+  button:hover > .card:not(.tinted) {
+    border-color: var(--color-primary-400);
+    box-shadow: var(--shadow-lift);
+  }
+
+  a:hover > .tinted {
+    background: var(--color-primary-200);
+  }
+}
+
+a:focus-visible > .card {
+  box-shadow: var(--focus-ring);
+}

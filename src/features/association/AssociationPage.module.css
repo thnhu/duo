@@ -27,6 +27,13 @@
   font: inherit;
   color: var(--color-ink);
   cursor: pointer;
+  transition: background-color var(--transition);
+}
+
+@media (hover: hover) {
+  .chip:hover {
+    background: var(--color-primary-200);
+  }
 }
 
 .graphCard {
@@ -124,4 +131,17 @@
 .hint {
   color: var(--color-ink-muted);
   font-size: 0.9rem;
+}
+
+@media (hover: hover) {
+  .node:hover circle:nth-child(2) {
+    opacity: 1;
+    stroke: var(--color-ink);
+    stroke-width: 2px;
+  }
+}
+
+.node:focus-visible circle:nth-child(2) {
+  stroke: var(--color-ink);
+  stroke-width: 2px;
 }

@@ -47,3 +47,60 @@ textarea {
 a {
   color: inherit;
 }
+
+/* ---- Interaction (hover / focus / placeholder) ---------------------------- */
+
+/* Keyboard focus ring on everything that can be focused. Mouse and touch
+   clicks do not show it (:focus-visible), so it never looks like a glitch. */
+a:focus-visible,
+button:focus-visible,
+select:focus-visible,
+summary:focus-visible,
+[role='button']:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-primary-600);
+  outline-offset: 2px;
+}
+
+/* Text fields draw their own ring (border + glow) on focus. */
+input:focus-visible,
+textarea:focus-visible {
+  outline: none;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-ink-muted);
+  opacity: 0.65;
+  transition: opacity var(--transition);
+}
+
+input:focus::placeholder,
+textarea:focus::placeholder {
+  opacity: 0.35;
+}
+
+input[type='checkbox'] {
+  accent-color: var(--color-primary-600);
+  cursor: pointer;
+}
+
+label {
+  cursor: default;
+}
+
+@media (hover: hover) {
+  a:not([class]):hover {
+    color: var(--color-primary-600);
+    text-decoration: underline;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

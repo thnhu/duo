@@ -43,6 +43,16 @@
   color: var(--color-ink-muted);
   font-size: 12px;
   font-weight: 500;
+  transition:
+    background-color var(--transition),
+    color var(--transition);
+}
+
+@media (hover: hover) {
+  .navItem:hover:not(.navItemActive) {
+    background: var(--color-surface-tint);
+    color: var(--color-ink);
+  }
 }
 
 .navItemActive {
@@ -71,4 +81,18 @@
   font-size: 28px;
   text-decoration: none;
   box-shadow: var(--shadow-md);
+  transition:
+    transform var(--transition),
+    box-shadow var(--transition);
+}
+
+@media (hover: hover) {
+  .fab:hover {
+    transform: translateX(-50%) translateY(-2px) scale(1.06);
+    box-shadow: 0 6px 20px rgba(14, 26, 43, 0.22);
+  }
+}
+
+.fab:active {
+  transform: translateX(-50%) scale(0.96);
 }

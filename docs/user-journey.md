@@ -1,6 +1,6 @@
 # USER JOURNEY: Công cụ học từ vựng Anh – Đức
 
-> Đi kèm `vocab-tool-spec.md` (v9). Viết tắt **TMRND** = Tone, Mode, Register, Nuance, Dialect. Mục đích: để Product Owner (PO) và người xây dựng cùng hiểu **PO sẽ dùng tool như thế nào, từng bước**, trước khi viết code.
+> Đi kèm `vocab-tool-spec.md` (v11). Viết tắt **TMRND** = Tone, Mode, Register, Nuance, Dialect. Mục đích: để Product Owner (PO) và người xây dựng cùng hiểu **PO sẽ dùng tool như thế nào, từng bước**, trước khi viết code.
 > Quy ước: **[ĐÃ CHỐT]** = lấy từ spec đã thống nhất. **[ĐỀ XUẤT UI]** = gợi ý giao diện/hành vi, spec chưa quy định. **[GIẢ ĐỊNH]** = hệ thống giả định, cần PO xác nhận (mục 7).
 > Mọi sơ đồ dùng Mermaid; nếu trình xem không hiển thị sơ đồ, đọc phần bảng đi kèm.
 
@@ -34,7 +34,7 @@ flowchart TD
         B --> C["Nhập file, ánh xạ cột, xem trước"]
         C --> D["Duyệt danh sách: thêm hoặc bỏ từ, ẩn từ đã thụ đắc"]
         D --> E["Chọn ngôn ngữ và chế độ Rộng hoặc Sâu"]
-        Q["Ghi nhanh từ hoặc câu, tô sáng cụm cần học"] --> E
+        Q["Nút (+): thêm từ, example hoặc concept"] --> E
         E --> F["Concept ở trạng thái loaded"]
         F --> G["Tra cứu tự động, PO duyệt thành verified"]
         F --> AI["PO gắn nhãn TMRND bằng tay"]
@@ -97,7 +97,7 @@ flowchart LR
     HOME["Hôm nay"] --> LEARN["Chọn bài học"]
     HOME --> REVIEW["Ôn tập"]
     HOME --> IMPORT["Nhập từ file"]
-    HOME --> QUICK["Ghi nhanh"]
+    HOME --> QUICK["Nút (+): Thêm gì?"]
     HOME --> LIB["Thư viện từ"]
     HOME --> SET["Cài đặt"]
     HOME --> SEARCH["Tìm kiếm"]
@@ -105,11 +105,19 @@ flowchart LR
 
     IMPORT --> LIST["Duyệt danh sách"]
     LIST --> LIB
-    QUICK --> INBOX["Hộp chờ duyệt"]
+    QUICK --> WORD["Thêm từ"]
+    QUICK --> EXAM["Thêm example"]
+    QUICK --> CONC["Thêm concept"]
+    EXAM --> INBOX["Hộp chờ duyệt"]
     INBOX --> LIB
-    LIB --> DETAIL["Chi tiết từ"]
+    LIB --> DECKS["Card deck: General và các deck"]
+    DECKS --> SUB["Card con: Concept và Word"]
+    SUB --> DETAIL["Chi tiết concept: example của nó"]
     DETAIL --> HL["Tô sáng cụm và gắn nhãn TMRND"]
-    LIB --> TREE["Cây hoặc bảng concept"]
+    LIB --> TREE["Cây concept"]
+    LIB --> DECK["Quản lý deck"]
+    LIB --> LINKS["Liên kết concept"]
+    LIB --> ASSOC["Tìm theo liên kết (đồ thị)"]
     LEARN --> EX["Làm bài"]
     REVIEW --> EX
     EX --> RESULT["Kết quả phiên"]
@@ -183,17 +191,17 @@ flowchart TD
 
 ---
 
-### J2. Ghi nhanh từ khi xem phim hoặc đọc sách
+### J2. Thêm nhanh từ, example hoặc concept (nút +)
 
 - **Mục tiêu:** lưu một từ, cụm hoặc câu mới gặp **mà không làm đứt mạch** tiếp nhận ngôn ngữ.
 - **Bắt đầu:** PO đang xem phim/đọc sách, cầm điện thoại.
 
 | # | PO làm | Hệ thống phản hồi |
 |---|---|---|
-| 1 | Mở **Ghi nhanh** (một chạm từ màn hình chính) | Ô nhập tự focus, ngôn ngữ lấy theo lần dùng gần nhất |
-| 2a | **Cách 1:** gõ một **từ hoặc cụm**; tùy chọn chọn một tone gợi ý | Lưu ngay thành concept (kèm example tối thiểu), ô nhập sẵn sàng cho mục kế tiếp |
-| 2b | **Cách 2:** gõ hoặc dán **cả câu**, rồi **tô sáng đúng cụm muốn học** | Tạo concept từ cụm tô sáng (hoặc gợi ý concept đã có nếu cụm đã tồn tại); lưu câu làm example; **phần còn lại của câu chỉ là ngữ cảnh** |
-| 2c | **Cách 3:** lưu câu mà chưa tô sáng | Câu vào **Hộp chờ duyệt** ở dạng "câu chưa gắn concept", tô sáng sau (J10) |
+| 1 | Bấm nút **(+)** (một chạm từ màn hình chính) | Màn **"Bạn muốn thêm gì?"** với ba thẻ lớn, mỗi thẻ có định nghĩa và ví dụ: **Thêm từ** (từ/cụm đứng riêng kèm nghĩa, hợp danh từ như "máy bay", "cửa sổ"), **Thêm example** (câu/cách diễn đạt, hợp động từ), **Thêm concept** (một ý, chưa có cách nói). Bấm một thẻ: ô nhập tự focus, ngôn ngữ và deck lấy theo lần dùng gần nhất |
+| 2a | **Thêm từ:** gõ từ/cụm, nghĩa, loại từ (nghĩa và loại từ không bắt buộc), chọn deck | Lưu concept `word` kèm example tối thiểu (chính nó); mặc định vào deck General; ô "Ở lại trang này" giữ form để nhập tiếp |
+| 2b | **Thêm example:** gõ hoặc dán **cả câu**, rồi **tô sáng đúng cụm muốn học** | Tạo concept từ cụm tô sáng (hoặc gợi ý concept đã có nếu cụm đã tồn tại); lưu câu làm example; **phần còn lại của câu chỉ là ngữ cảnh** |
+| 2c | **Thêm example, chưa tô sáng:** lưu câu mà chưa tô sáng | Câu vào **Hộp chờ duyệt** ở dạng "câu chưa gắn concept", tô sáng sau (J10) |
 | 3 | Quay lại xem phim | Mục vừa lưu nằm trong Hộp chờ duyệt với trạng thái `unverified` |
 
 - **Sau đó (khi rảnh):** PO mở Hộp chờ duyệt; tool tra cứu tự động bổ sung nghĩa (J3); PO có thể gắn nhãn TMRND tay (J10); rồi duyệt.
@@ -386,7 +394,7 @@ flowchart TD
 
 | # | PO làm | Hệ thống phản hồi |
 |---|---|---|
-| 1 | Gõ vài ký tự vào ô tìm kiếm | Kết quả hiện **tức thì**, kể cả khi mất mạng; phần khớp được đánh dấu; tìm trong từ, nghĩa, câu ví dụ, ghi chú |
+| 1 | Gõ từ khóa vào ô tìm kiếm rồi bấm **Enter** (hoặc nút "Tìm") | Kết quả hiện nhanh, kể cả khi mất mạng; không tìm theo từng ký tự gõ (v11); phần khớp được đánh dấu; tìm trong từ, nghĩa, câu ví dụ, ghi chú |
 | 2 | Thu hẹp bằng bộ lọc | Lọc theo ngôn ngữ, trạng thái, độ kiểm chứng, từng thuộc tính TMRND, bài, nguồn, "câu chưa gắn concept"; có sắp xếp |
 | 3 | Mở một kết quả | Sang **Chi tiết từ** |
 | 4 | (Trong lúc tô sáng, tạo liên kết, hoặc xử lý trùng khi nhập file) dùng chính ô tìm | Gợi ý concept đã có; nếu không có kết quả thì có nút **Thêm nhanh từ này** |
@@ -398,13 +406,49 @@ flowchart TD
 
 ---
 
+### J12. Gom từ theo deck (IT, từ phim…)
+
+- **Mục tiêu:** chọn ra đúng nhóm từ cần học hoặc ôn khi kho đã lớn.
+- **Bắt đầu:** PO ở Thư viện, Ghi nhanh hoặc Nhập từ file.
+
+| # | PO làm | Hệ thống phản hồi |
+|---|---|---|
+| 1 | Tạo deck ở **Quản lý deck** (hoặc ngay ở màn concept) | Tên deck không trùng trong một ngôn ngữ (không phân biệt hoa/thường) |
+| 2 | Thêm từ (hoặc concept), chọn deck ở ô "Deck của concept" (mặc định General) | Từ vào deck; ô nhớ lựa chọn lần trước. Nếu từ đã có thì **chỉ thêm vào deck**, không tạo bản sao |
+| 3 | Nhập file: chọn deck đích **từ danh sách deck có sẵn** (hoặc tạo mới); file có thể có cột `deck` | Từ mới và từ đã có đều vào deck; báo "N từ đã có được thêm vào deck"; hoàn tác khôi phục deck cũ |
+| 4 | Ở Thư viện bấm một **card deck** (General hoặc deck của bạn) | Hiện hai **card con**: **Concept <deck>** và **Word <deck>**, kèm số mục (chỉ đếm). Bấm một card con mới tải danh sách; bấm một concept để xem example của nó |
+| 5 | Ở Học hoặc Hôm nay chọn một hay nhiều deck | Số từ dùng được, số từ đến hạn và phiên ôn chỉ tính từ trong các deck đã chọn |
+| 6 | Xóa deck | Ô xác nhận nêu số từ bị ảnh hưởng; các từ vẫn còn trong thư viện |
+
+- **Ngoại lệ:** deck có sẵn chỉ nhận từ cùng ngôn ngữ; cột `deck` trong file khớp deck theo tên (không phân biệt hoa/thường), tên mới thì tạo deck mới.
+- **Spec:** C6, mục 10 Bản 4. **Mốc:** M13a, M13b.
+
+---
+
+### J13. Liên kết concept và tìm lại từ qua mạng liên kết
+
+- **Mục tiêu:** nối các ý với nhau (cha/con) rồi nhớ lại từ qua mạng liên kết.
+- **Bắt đầu:** PO ở Thư viện hoặc màn concept.
+
+| # | PO làm | Hệ thống phản hồi |
+|---|---|---|
+| 1 | Mở **Liên kết concept**: chọn concept con, concept cha, quan hệ (No link / Association / Type of), Lưu | Dòng `con → cha` luôn hiện cả hai đầu; tìm theo từ hoặc mô tả; gõ từ chưa có thì **Thêm?** tạo ngay; No link = xóa liên kết |
+| 2 | Nối ngược một cặp đã có | Hỏi đổi chiều; nếu tạo vòng dài hơn thì báo "Vòng tròn" và giữ liên kết cũ |
+| 3 | Mở **Cây** của một concept | Cha ở trên, concept ở giữa, con ở dưới; hàng đếm ví dụ theo 8 loại liên kết, bấm một loại xem ví dụ (cụm tô vàng, nút sửa) |
+| 4 | Ở màn ví dụ, quản lý danh sách **Liên kết** (concept chính + các liên kết kèm loại) | Một danh sách duy nhất; "Đặt làm chính" đổi concept chính; ví dụ ở Hộp chờ gắn concept đầu tiên thì rời Hộp chờ |
+| 5 | Mở **Tìm theo liên kết**, chọn tối đa 10 concept | Đồ thị (đỏ = đã chọn, xám = liên quan, mũi tên con → cha) và danh sách concept nối một bước; chạm nút xám để thêm vào lựa chọn |
+
+- **Spec:** mục 1.4, R1–R7 (Bản 3b). **Mốc:** M11c, M12a–d, Tìm theo liên kết.
+
+---
+
 ## 4. Ma trận: hành trình ↔ chức năng ↔ cột mốc
 
 | Hành trình | Chức năng spec | Cột mốc | Bản |
 |---|---|---|---|
 | J0 Lần đầu mở app | E1, E4, C6 | M0, M7b | 1 |
 | J1 Nhập từ file | A1–A1e, A3, A4, A6, A7 | M3 | 1 |
-| J2 Ghi nhanh | A5, C4, C7 | M2 | 1 |
+| J2 Thêm từ / example / concept (nút +) | A5, C4, C7 | M2, Bản 5 | 1 và 5 |
 | J3 Tra cứu tự động | A8 | M3b | 1 |
 | J4 Tiếng Đức Rộng | B, 5.1, C5, D1, D2 | M4, M5 | 1 |
 | J5 Tiếng Anh Rộng | 5.2 (Rộng) | M9a, M9b | 2 |
@@ -414,6 +458,8 @@ flowchart TD
 | J9 Đồng bộ và sao lưu | E2–E4 | M7, M7b | 1 |
 | J10 Tô sáng cụm và gắn TMRND | C7, F3 | M2, M10a | 1 và 2 |
 | J11 Tìm kiếm | F1–F5, 6.7 | M2b | 1 |
+| J12 Gom từ theo deck | C6, Bản 4, Bản 5 | M13a, M13b, Bản 5 | 4 và 5 |
+| J13 Liên kết concept và tìm qua mạng liên kết | 1.4, R1–R7 | M11c, M12a–d | 3 và 3b |
 
 ---
 
@@ -455,13 +501,20 @@ Các điểm dưới đây là chỗ hành trình dựa vào **giả định c�
 | G5 | Khi concept chuyển `acquired`, tool **chỉ thông báo cuối phiên**, không ngắt giữa lúc làm bài | J7 |
 | G6 | Khi concept `acquired` trả lời sai/chậm trở lại thì tự hạ về `loaded` | 2.1 |
 | G7 | PO có thể **thêm, sửa, xóa** concept và example thủ công trong tool (không chỉ nhập file) | J6, J8 |
-| G8 | Mỗi concept chỉ thuộc một bộ từ điển; bản đầu mỗi ngôn ngữ một bộ tự tạo | J0 |
+| G8 | Mỗi concept thuộc một từ điển (mỗi ngôn ngữ một bộ tự tạo) và có thể nằm trong **nhiều deck** để gom theo mục đích | J0, J12 |
 | G9 | Một example có **một** cụm tô sáng; muốn học thêm cụm thứ hai trong cùng câu thì tạo example mới (cùng câu, tô sáng khác) | J10 |
 | G10 | Bài che cụm (điền): chỉ cụm tô sáng bị che và kiểm tra; phần còn lại của câu luôn hiện làm ngữ cảnh | J5, J10 |
 | G11 | Nghe chép tiếng Đức khi có tô sáng: mặc định chép cụm tô sáng, có tùy chọn chép cả câu | J4 |
 | G12 | Tìm kiếm không phân biệt hoa/thường, bỏ dấu tiếng Việt khi tìm nghĩa, ä=ae, ö=oe, ü=ue, ß=ss; chạy offline | J11 |
 | G13 | ~~AI chỉ chạy khi PO bấm yêu cầu~~ **Không còn áp dụng (v7: đã bỏ AI)** | J6, J10 |
 | G14 | Câu chưa tô sáng vẫn lưu được vào Hộp chờ duyệt và chưa có lịch ôn cho đến khi tô sáng | J2, J10 |
+| G15 | **Deck** là nhãn gắn vào concept: một từ nằm được trong nhiều deck mà không nhập lại; xóa deck không xóa từ. Học/Ôn, Tìm kiếm, Thư viện, Nhập và Xuất file đều theo được deck | J12 |
+| G16 | Xóa luôn có **ô xác nhận tại chỗ** nêu hậu quả, và sau đó có badge **Hoàn tác** (xóa mềm); không dùng hộp xác nhận của trình duyệt | J6, J8, J12 |
+| G19 | Nút (+) có **ba lựa chọn tách hẳn**: Thêm từ, Thêm example, Thêm concept. Từ và concept cùng là một dòng `concepts`, chỉ khác `kind`; Thêm concept không tạo example tối thiểu | J2 |
+| G20 | Từ không thuộc deck nào tự nằm trong deck **General** (mặc định ở Thư viện và các ô chọn deck); Thư viện đi **card deck → card con Concept/Word → danh sách**, chỉ tải khi bấm | J12 |
+| G21 | Bài nhập chính tả **không phân biệt hoa/thường** (Anh và Đức), vẫn phân biệt `ä ö ü ß`; tìm kiếm chỉ chạy khi bấm Enter/"Tìm" | J4, J11 |
+| G17 | Lưu xong thì **báo bằng badge và chuyển trang** (concept → Thư viện, ví dụ → concept hoặc Hộp chờ, Ghi nhanh → Thư viện); Ghi nhanh có ô "Ở lại trang này để ghi tiếp" cho nhập hàng loạt | J2, J10 |
+| G18 | Liên kết concept luôn đọc theo chiều **con → cha**; nối ngược một cặp đã có thì hỏi đổi chiều; vòng tròn bị chặn | J13 |
 
 ### Còn mở từ spec (không cần quyết trong buổi này)
 1. **Định dạng file nhập:** cần vài dòng đầu của file thật từ công cụ ngoài để chốt bộ cột (spec mục 9.2, câu 1).

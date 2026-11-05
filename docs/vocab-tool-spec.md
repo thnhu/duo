@@ -1,7 +1,7 @@
 # SPEC: Công cụ học từ vựng Anh – Đức (Breadth & Depth)
 
 > Tài liệu này dành cho Claude Code đọc để triển khai. Product Owner (PO): người dùng, dùng một mình.
-> Phiên bản **v9** (quy luật UI quan hệ rút từ HUST PVO và kế hoạch M12, xem mục 12). Trước đó **v8** (làm rõ Concept/Example, tri-fold, kế hoạch Bản 3) và **v7** (bỏ AI gợi ý nhãn). **Tool không đọc PDF và không dùng AI**: PO dùng công cụ ngoài rồi nhập bằng file CSV hoặc XLSX, và gắn nhãn TMRND (Tone, Mode, Register, Nuance, Dialect) bằng tay. Xem mục 12 để biết thay đổi so với các bản trước.
+> Phiên bản **v11** (nút (+) tách Thêm từ / Thêm example / Thêm concept, deck General và card con Word/Concept, chấm chính tả không phân biệt hoa/thường, chọn giọng đọc, tìm kiếm bấm Enter; xem mục 12). Trước đó **v10** (M12 xong, Deck/M13, quy ước phản hồi UI). Trước đó **v9** (quy luật UI quan hệ rút từ HUST PVO và kế hoạch M12) và **v8** (làm rõ Concept/Example, tri-fold, kế hoạch Bản 3) và **v7** (bỏ AI gợi ý nhãn). **Tool không đọc PDF và không dùng AI**: PO dùng công cụ ngoài rồi nhập bằng file CSV hoặc XLSX, và gắn nhãn TMRND (Tone, Mode, Register, Nuance, Dialect) bằng tay. Xem mục 12 để biết thay đổi so với các bản trước.
 > Quy ước: **[CHỐT]** = đã thống nhất. **[ĐỀ XUẤT]** = đề xuất, có thể chỉnh. **[MỞ]** = chưa quyết định, cần hỏi PO trước khi làm.
 
 ---
@@ -37,6 +37,7 @@ Tài liệu công khai: https://hieupham2000.github.io/HUSTPVO-documentation/doc
 | **Concept** | Một từ, cụm từ hoặc nhóm từ đại diện cho một nghĩa (ví dụ *free*, *look after*, hoặc nhóm như *reason-cause*) |
 | **Example** | Một cụm, câu hoặc đoạn văn cho thấy cách dùng. **Example mới là nơi mang các thuộc tính ngữ cảnh** (tone, mode, register, nuance, dialect). Ví dụ *shake a leg*: tone informal, nuance old-fashioned, mode spoken |
 | **Dictionary** | Nơi chứa concept và example. Một người dùng có thể có nhiều bộ cho nhiều mục đích (ví dụ giao tiếp, luyện IELTS) |
+| **Deck** (`WordSet`) | Nhãn có tên gắn vào concept để gom từ theo mục đích (IT, từ phim…). Một concept nằm được trong nhiều deck; deck không chứa dữ liệu, từ điển theo ngôn ngữ vẫn giữ concept/example (v10) |
 | **Liên kết concept – concept** | *Association*, *Type of*. Mặc định là không liên kết. Quan hệ cha–con và **không cho phép vòng tròn** |
 | **Liên kết example – concept** | *Idiom, Nominal, Agent, Patient, Action, Described by, Describing, Other phrase*. Mặc định là không liên kết |
 | **Tree** | Màn hình xem cấu trúc cây của concept |
@@ -71,6 +72,15 @@ Tài liệu công khai: https://hieupham2000.github.io/HUSTPVO-documentation/doc
 1. `Example.targetConceptId`: concept **chủ** của example, tức example này là một cách diễn đạt/một câu minh họa của concept đó. Mỗi example tối đa một concept chủ; là khóa của lịch ôn, Hộp chờ duyệt, tìm kiếm.
 2. `ExampleLink`: quan hệ **bổ sung** từ example tới một concept khác (một cách nói có thể thuộc nhiều ý), kèm loại (Idiom, Nominal, Agent, Patient, Action, Described by, Describing, Other phrase). Mặc định *Other phrase*.
 3. `ConceptLink`: concept–concept (*Association*, *Type of*), con → cha, cấm vòng tròn.
+
+**Ba thao tác thêm dữ liệu (v11, nút (+), đừng lẫn):**
+| Thao tác | Tạo ra | Dùng khi |
+|---|---|---|
+| **Thêm từ** (`/add/word`) | Một concept `kind: 'word'` + một example tối thiểu (chính nó) để ôn được; nhập từ/cụm, nghĩa, loại từ, deck | Từ hoặc cụm đứng riêng, hợp với danh từ ("máy bay", "cửa sổ"); không cần đặt vào câu |
+| **Thêm example** (`/add/example`) | Một example; tô sáng cụm thì tạo concept mới (`kind: 'word'`) hoặc gắn vào concept có sẵn; chưa tô sáng thì vào Hộp chờ duyệt | Câu hoặc cách diễn đạt đang dùng, hợp với động từ |
+| **Thêm concept** (`/add/concept`) | Một concept `kind: 'concept'`, KHÔNG có example tối thiểu; tên + mô tả + deck | Một ý trừu tượng để gom các cách nói ("số lượng nhiều"); cách nói thêm sau bằng example (concept Sâu `mode: 'depth'` luôn là kind concept) |
+
+Word và concept cùng là một dòng bảng `concepts`, chỉ khác `Concept.kind` (tùy chọn; dòng cũ không có thì suy ra: `mode: 'depth'` là concept, còn lại là word, không cần migration). `kind` quyết định concept hiện ở card con nào trong deck (mục C6).
 
 **Đếm tri-fold:** một concept đạt khi có **ít nhất N cách diễn đạt khác nhau ở ít nhất một nhãn TMRND** (N mặc định 3, chỉnh trong Cài đặt). Chỉ example có nhãn `verified` được tính; cách diễn đạt gồm example có concept chủ là concept đó và example nối tới nó bằng `ExampleLink`.
 
@@ -125,7 +135,7 @@ Nếu sau này trả lời sai/chậm trở lại, có thể hạ về `loaded` 
 | A1e | **Tải file mẫu** (template CSV/XLSX) để PO hoặc công cụ ngoài xuất đúng định dạng | ĐỀ XUẤT |
 | A3 | Màn hình duyệt danh sách ứng viên: thêm hoặc bỏ từng từ | CHỐT |
 | A4 | Chọn nơi nạp: **ngôn ngữ** (Anh/Đức) và **chế độ** (Rộng/Sâu) | CHỐT |
-| A5 | **Ghi nhanh thủ công** từ phim/sách: gõ **từ/cụm**, hoặc gõ/dán **cả câu rồi tô sáng cụm cần học** (C7); tùy chọn gợi ý tone. Tool bổ sung nghĩa/ví dụ (A8) và gợi ý TMRND (A9) sau, PO duyệt khi rảnh | CHỐT |
+| A5 | **Thêm thủ công bằng nút (+)** (tên cũ: Ghi nhanh), tách ba lựa chọn (mục 1.4, v11): **Thêm từ** (từ/cụm kèm nghĩa), **Thêm example** (gõ/dán **cả câu rồi tô sáng cụm cần học**, C7), **Thêm concept** (một ý, chưa có cách nói). Tool bổ sung nghĩa/ví dụ (A8) và gợi ý TMRND (A9) sau, PO duyệt khi rảnh | CHỐT |
 | A6 | Tự ẩn các concept đã `acquired` khỏi danh sách ứng viên ở bước duyệt (PO vẫn tự bỏ thủ công những từ chưa được tool ghi nhận) | ĐỀ XUẤT |
 | A7 | **Chỉ lưu dữ liệu đã nhập**, không lưu file gốc | ĐỀ XUẤT |
 | A8 | **Module tra cứu tự động**: bổ sung nghĩa, loại từ, giống/số nhiều, dạng chia động từ, ví dụ; kết quả luôn `unverified` (mục 6.5) | CHỐT |
@@ -145,7 +155,7 @@ Ghi chú:
 - C2. Mỗi **example** (cụm/câu/đoạn) lưu: nội dung, phần được tô sáng (highlight) là concept đang học, và các thuộc tính **tone, mode, register, nuance, dialect**, cùng ô **Note**.
 - C3. **Liên kết** concept – concept và example – concept, đầy đủ loại của PVO (mục 8). Liên kết tạo trong tool (file nhập ở bản đầu chưa mang liên kết, xem mục 9).
 - C4. **Mỗi concept có ít nhất một example** [ĐỀ XUẤT]: nếu chưa có câu ví dụ, tool tự tạo example tối thiểu (chính văn bản của concept) để có đơn vị ôn tập; khi có câu thật thì thay hoặc bổ sung.
-- C5. Phát âm tiếng Đức bằng giọng đọc có sẵn của trình duyệt/điện thoại (Web Speech API, `de-DE`). Chất lượng giọng tùy thiết bị. Bản sau có thể thử lấy file ghi âm từ Wiktionary nếu có (kiểm tra giấy phép từng file).
+- C5. Phát âm tiếng Đức bằng giọng đọc có sẵn của trình duyệt/điện thoại (Web Speech API, `de-DE`). Chất lượng giọng tùy thiết bị: app tự xếp hạng giọng (ưu tiên Natural/Neural/Online/Premium/Google, đẩy eSpeak/compact xuống cuối) và **Cài đặt → Giọng đọc** cho chọn giọng khác, nghe thử, nghe chậm (lưu riêng từng thiết bị, v11). Bản sau có thể thử lấy file ghi âm từ Wiktionary nếu có (kiểm tra giấy phép từng file).
 - C6. **Bộ từ điển (Dictionary)**: mỗi ngôn ngữ một bộ tự tạo, giữ concept/example/liên kết/lịch ôn. **Cập nhật 2026-11-05 (PO yêu cầu, M13):** để gom từ theo mục đích (IT, từ phim…) thêm khái niệm **Deck (`WordSet`, trước đây gọi "bộ từ"; PO đổi tên vì "bộ" tối nghĩa)**: nhãn có tên, thuộc một ngôn ngữ, gắn vào concept qua `Concept.setIds`; một concept nằm được trong nhiều bộ (dùng chung, không nhập lại). Không đổi `dictionaryId`.
 
 - C7. **Học cụm từ trong câu ví dụ bằng cách tô sáng (highlight)** **[CHỐT hướng, ĐỀ XUẤT chi tiết]:** khi PO nhập một câu nhưng chỉ muốn học **một cụm** trong đó, PO **tô sáng cụm đó**. Quy tắc:
@@ -176,7 +186,7 @@ Ghi chú:
 ### F. Tìm kiếm **[CHỐT chức năng, ĐỀ XUẤT chi tiết]**
 | # | Chức năng | Trạng thái |
 |---|---|---|
-| F1 | **Ô tìm kiếm toàn cục** trên màn hình Hôm nay và Thư viện: tìm trong văn bản concept, nghĩa, câu ví dụ, ghi chú | CHỐT |
+| F1 | **Ô tìm kiếm toàn cục** trên màn hình Hôm nay và Thư viện: tìm trong văn bản concept, nghĩa, câu ví dụ, ghi chú. **Từ v11 chỉ tìm khi bấm Enter hoặc nút "Tìm"**, không tìm theo từng ký tự (một người dùng, dữ liệu cục bộ, không cần realtime; tránh ghi mỗi ký tự vào lịch sử trình duyệt qua `?q=`) | CHỐT |
 | F2 | **Bộ lọc** kết hợp với từ khóa: ngôn ngữ, trạng thái (`loaded`/`acquired`), độ kiểm chứng, từng thuộc tính TMRND, bài (lesson), nguồn, "câu chưa gắn concept", loại liên kết; có sắp xếp | ĐỀ XUẤT |
 | F3 | **Tìm khi chọn:** dùng cùng bộ tìm kiếm khi chọn concept để gắn với cụm tô sáng, khi tạo liên kết concept – concept hoặc example – concept, và khi xử lý từ trùng lúc nhập file. Nếu không có kết quả thì cho **thêm nhanh ngay từ ô tìm** (giống PVO) | ĐỀ XUẤT |
 | F4 | **Chuẩn hóa khi tìm:** không phân biệt hoa/thường; bỏ dấu tiếng Việt khi tìm trong nghĩa; tiếng Đức coi `ä/ae`, `ö/oe`, `ü/ue`, `ß/ss` là tương đương | ĐỀ XUẤT |
@@ -209,7 +219,7 @@ Bài tập đơn giản, tập trung chính tả và hình thái từ:
   - `en.meaning-to-word`: cho nghĩa, gõ từ (danh từ đơn).
   - `en.word-to-meaning`: cho từ/cụm, chọn nghĩa trong 4 lựa chọn; 3 nghĩa nhiễu lấy từ các concept khác đã `verified` (cụm động từ).
   - `en.dictation` (tùy chọn): nghe và gõ, dùng giọng đọc `en-US`/`en-GB` có sẵn.
-- **Chấm tiếng Anh [ĐỀ XUẤT]:** không phân biệt hoa/thường (tiếng Anh không viết hoa danh từ như tiếng Đức); vẫn chính xác từng ký tự, chỉ bỏ khoảng trắng thừa.
+- **Chấm điểm nhập chính tả (cả Anh và Đức, v11):** không phân biệt hoa/thường (`Guck mal` = `guck mal`; đã áp dụng cho bốn bài tiếng Đức, trước đó tiếng Đức phân biệt); vẫn chính xác từng ký tự khác, `ä ö ü ß` phải gõ đúng (`Aepfel` không thay được `Äpfel`), chỉ bỏ khoảng trắng thừa và dấu câu cuối câu.
 - **Chỉ concept đã `verified` mới vào bài nghĩa/từ** (nguyên tắc 8): nghĩa tra cứu bằng tiếng Anh chưa được PO sửa sang tiếng Việt khi duyệt thì chưa dùng làm đáp án.
 - Danh từ/động từ phân theo `pos` của concept; từ chưa có `pos` vẫn làm được `en.cloze`.
 
@@ -347,6 +357,11 @@ Dictionary {
   id, name, lang                       // MVP: một bộ tự tạo mỗi ngôn ngữ
 }
 
+WordSet {                              // "Deck" (v10): nhãn gom concept theo mục đích
+  id, name, lang                       // tên duy nhất trong một ngôn ngữ
+  updatedAt, deletedAt?
+}
+
 Concept {                              // một từ, cụm từ hoặc nhóm từ đại diện cho một nghĩa
   id, dictionaryId, lang ("en"|"de"),
   text, pos,
@@ -354,6 +369,8 @@ Concept {                              // một từ, cụm từ hoặc nhóm t�
   grammar?: {                          // tiếng Đức
     gender?, plural?, verbForms?       // Infinitiv, Präteritum, Partizip II...
   },
+  setIds?: string[],                   // deck chứa concept này (v10); rỗng = nằm trong deck General (v11)
+  kind?: "word" | "concept",          // card con trong deck (v11); không có thì suy ra từ mode
   verification: "unverified" | "verified",
   source: { type ("import"|"quick-add"|"lookup"), fileName?, lesson?, row? },
   status: "unknown" | "loaded" | "acquired",
@@ -451,9 +468,9 @@ Ghi chú:
 1. ~~Gửi câu ví dụ tới AI~~ **Không còn áp dụng (v7: đã bỏ AI).**
 2. **Quy tắc tô sáng (C7):** "một example một cụm tô sáng, muốn thêm cụm thì tạo example mới" có ổn không, hay PO muốn một câu mang nhiều cụm cùng lúc?
 3. **Định dạng file nhập:** công cụ ngoài của PO xuất ra những cột nào? Cần vài dòng đầu của file thật để chốt bộ cột ở mục 6.4.
-4. **Liên kết trong file nhập:** có cần nhập liên kết concept/example từ file không? **[ĐỀ XUẤT]** bản đầu chưa nhập liên kết từ file.
+4. **Liên kết trong file nhập:** có cần nhập liên kết concept/example từ file không? **[ĐỀ XUẤT]** chưa nhập liên kết từ file (PO giữ đề xuất; file nhập hiện chỉ có cột `deck` cho deck).
 5. **Thuật toán spaced repetition** (đơn vị là example): kiểu SM-2 đơn giản hay mới hơn?
-6. **Bộ từ điển (Dictionary):** đang **mặc định mỗi ngôn ngữ một bộ tự tạo** (C6). PO xác nhận hoặc yêu cầu nhiều bộ ngay từ MVP.
+6. ~~Bộ từ điển (Dictionary)~~ **Đã chốt (2026-11-05):** từ điển vẫn mỗi ngôn ngữ một bộ; để gom từ theo mục đích PO yêu cầu thêm **Deck** (`WordSet`), một concept nằm được trong nhiều deck (C6, mục 10 Bản 4).
 7. ~~Ngưỡng chấp nhận chất lượng gợi ý AI~~ **Không còn áp dụng (v7).**
 8. **Chi tiết kỹ thuật cần kiểm khi triển khai (không cần PO quyết):** CORS và hạn mức khi gọi Free Dictionary API, Wikimedia API, Gemini API từ trình duyệt; cách phân tích mục từ tiếng Đức của Wiktionary; thư viện tìm kiếm.
 
@@ -510,7 +527,7 @@ Mục tiêu: **quản lý và tra cứu kho từ** theo tri-fold (mục 1.4); b�
 - Chưa nhập liên kết từ file (PO giữ đề xuất). S3 (nhớ liên kết) làm sau.
 - Bài S1/S2 chỉ ghi log và lịch ôn theo example, **chưa** ảnh hưởng trạng thái `acquired` của concept (chờ dữ liệu dùng thật).
 
-### Bản 3b: Làm lại UI quan hệ theo quy luật HUST PVO (v9, PO đã đồng ý)
+### Bản 3b: Làm lại UI quan hệ theo quy luật HUST PVO (v9, PO đã đồng ý; **M12a–d xong, v10**)
 Lý do: UI quan hệ concept/example hiện khó định hướng (PO phản hồi 2026-11-05). PO yêu cầu đọc toàn bộ ảnh trong `docs/reference/hustpvo` (40 ảnh) và rút quy luật. Dưới đây là quy luật quan sát được; chỉ mượn **mô hình khái niệm và cách tổ chức màn hình**, không sao chép mã nguồn hay đồ họa.
 
 **Quy luật rút ra (R1–R8):**
@@ -536,10 +553,31 @@ Lý do: UI quan hệ concept/example hiện khó định hướng (PO phản h�
 | **M12b** Màn liên kết concept (R1–R4) | Màn Concept dạng "con → cha": ô tìm con, dòng `con → cha`, Relation (No link / Association / Type of), Save; tìm có mô tả; "Thêm?" tạo concept tại chỗ; chọn "No link" để xóa; nối ngược cặp đã có thì hỏi đổi chiều, vòng dài hơn báo "Vòng tròn"; menu thao tác theo concept (Thêm ví dụ, Xem cây, Sửa, Xóa) | Tạo, đổi loại, xóa, đổi chiều một liên kết chỉ trong một màn; C→A vẫn bị chặn |
 | **M12c** Màn Tree theo R6 | Cha ở trên, concept giữa, con dưới; hàng đếm 8 loại liên kết; bấm loại để xem ví dụ (cụm tô vàng, nút sửa); điều hướng nhanh sang concept cha/con | Từ concept thấy cha, con, và số ví dụ từng loại; bấm loại hiện đúng ví dụ |
 | **M12d** Liên kết trong màn example (R5) | Một danh sách "Liên kết" (chip kèm loại), chọn concept bằng tìm kiếm có mô tả + tạo tại chỗ, Relation + nút Link, đánh dấu liên kết chủ; "Giữ tham số" + "Lưu và nhập tiếp" để nhập hàng loạt | Một example nối nhiều concept bằng một thao tác thống nhất; dữ liệu cũ (`targetConceptId`, `ExampleLink`) hiện đúng trong danh sách |
-| Để sau | Search Concept Association + đồ thị (R7), lọc ví dụ theo concept liên kết, nhập liên kết từ file (bảng *Child/Parent/Relation* như PVO), chế độ Full của Tree | PO quyết sau khi dùng M12a–d |
+| Làm thêm sau M12d | Lối vào sửa example từ Hộp chờ duyệt (ví dụ chưa có concept: "Gắn concept" đặt concept chủ). **Tìm theo liên kết (R7)**: `/association`, chọn tối đa 10 concept, thấy concept nối một bước (cả hai chiều) dạng đồ thị SVG tự vẽ (đỏ = đã chọn, xám = liên quan, mũi tên con → cha, nét đứt = Association; chạm nút để thêm/bỏ) và danh sách | Xong (v10). Làm theo yêu cầu của PO 2026-11-05; thay cho dòng "chưa hiển thị đồ thị" của các bản đầu |
+| Để sau | Lọc ví dụ theo concept liên kết, nhập liên kết từ file (bảng *Child/Parent/Relation* như PVO), chế độ Full của Tree, Tree/đồ thị lọc theo deck | PO quyết sau khi dùng thật |
+
+### Bản 4: Deck (v10, PO yêu cầu 2026-11-05)
+Lý do: gom tất cả từ vào một thư viện của một ngôn ngữ thì khó chọn ra sau này (bộ từ cho ngành IT, từ thu thập khi xem phim…). PO chọn hướng **một concept dùng chung cho nhiều deck**. Tên hiển thị là **Deck** ("bộ từ" nghe tối nghĩa); trong mã vẫn là `WordSet`.
+- **Mô hình:** deck là nhãn gắn vào concept (`Concept.setIds`), không chứa dữ liệu; từ điển theo ngôn ngữ vẫn giữ concept, example, liên kết, lịch ôn nên liên kết cha/con vẫn xuyên deck và dữ liệu cũ không phải chuyển. Bảng `wordSets` (schema v6), vào đồng bộ và sao lưu, xóa mềm. Tên deck duy nhất trong một ngôn ngữ (không phân biệt hoa/thường). Xóa deck chỉ bỏ nhãn, không xóa từ.
+- **M13a:** quản lý deck (`/sets`: tạo, đổi tên, xóa), hàng lọc ở Thư viện (Tất cả / từng deck / Chưa xếp deck, có số đếm, nhớ lần trước), thẻ "Deck" ở màn concept (tick nhiều deck, tạo tại chỗ), ô "Thêm vào deck" ở Ghi nhanh (nhớ lần trước; từ đã có cũng được thêm vào deck, không nhân đôi).
+- **M13b:** Nhập file có cột `deck` (nhiều deck cách nhau `;`; tên cột `set`, `bộ từ`… vẫn nhận) và ô chọn deck đích là **danh sách deck có sẵn** hoặc "+ Tạo deck mới…" (dùng lại deck cùng tên nếu đã có); deck có sẵn chỉ nhận từ cùng ngôn ngữ; từ đã có cũng được thêm vào deck kể cả khi chọn "Bỏ qua"; hoàn tác khôi phục deck cũ. Màn Học (theo từng ngôn ngữ) và Hôm nay (cả hai ngôn ngữ) cho chọn deck cần học/ôn (rỗng = tất cả). Tìm kiếm có bộ lọc Deck. Xuất xlsx có cột `deck`.
+- **Chưa làm:** Tree và đồ thị liên kết lọc theo deck; đối chiếu tên deck trong cột `deck` của file với deck có sẵn.
+
+### Bản 5: Thêm dữ liệu và duyệt Thư viện (v11, PO yêu cầu 2026-11-05)
+Lý do: PO thấy UI thêm dữ liệu gây rối giữa **deck – word – example – concept – association** (HUST PVO tách rõ Concept và Example; Duo có thêm "Ghi nhanh" và "thêm từ" nên khó biết (+) làm được gì), kéo theo rối cách tìm kiếm và ôn tập.
+- **Deck General (có sẵn, mỗi ngôn ngữ một cái, không lưu dữ liệu):** concept không thuộc deck nào tự nằm trong General; gán vào deck khác thì rời General. Là mặc định của Thư viện, ô "Deck của concept" ở các màn thêm ("General (mặc định)") và ô chọn deck đích khi nhập file. Không đổi tên/xóa được. Câu chưa tô sáng ở Hộp chờ chưa có concept nên chưa thuộc deck nào.
+- **Thư viện theo ba cấp, chỉ tải khi bấm:** (1) card deck (General, các deck, kèm số; nút "Xem tất cả" và "Quản lý deck"); (2) bấm deck → hai **card con** "Concept <deck>" và "Word <deck>" kèm số mục (chỉ đếm, chưa tải danh sách); (3) bấm card con → mới tải danh sách concept hoặc word của deck đó; bấm một concept → màn chi tiết liệt kê example của concept (Ví dụ N). Địa chỉ `/library?deck=general|all|<id>&sub=word|concept`; nút quay lại đi từng cấp. Số đếm và danh sách đọc từ IndexedDB trên máy (không có request mạng); chưa có chỉ mục theo deck nên vẫn duyệt các dòng concept của ngôn ngữ đó, nhưng không giữ cả danh sách trong bộ nhớ trang ở màn card.
+- **Nút (+) mở màn "Bạn muốn thêm gì?"** với ba thẻ lớn (Thêm từ / Thêm example / Thêm concept), mỗi thẻ một định nghĩa một dòng và một ví dụ (mục 1.4); `/quick-add` cũ chuyển sang `/add`. Thêm từ và Thêm concept có ô "Ở lại trang này để ghi tiếp" như trước.
+- **Chưa làm (PO quyết sau):** đổi nhãn "từ" còn lại trong toàn app sang word/concept cho nhất quán; lối tắt theo ngữ cảnh (card deck có "+ Concept" chọn sẵn deck; concept có "+ Example" chọn sẵn concept ngoài nút "Thêm ví dụ" đã có); nhãn "Chưa có ví dụ"; đổi loại word ⇄ concept sau khi tạo; Học, Ôn, Tìm kiếm chưa có lựa chọn "General" riêng (rỗng = tất cả).
+
+### Quy ước phản hồi giao diện (v10, PO yêu cầu 2026-11-05) **[CHỐT]**
+- **Không dùng `confirm()`/`alert()` của trình duyệt.** Thông báo dùng **badge (toast)** ở đầu màn hình: nhỏ (cao ~38 px), tự tắt sau 2,5 s (4,5 s nếu có nút hoặc là lỗi), dừng khi rê chuột/focus, vẫn còn sau khi chuyển trang.
+- **Xóa phải có ô xác nhận** hiện ngay tại nút (panel trong trang, không phủ màn hình), nêu hậu quả bằng số, focus ở "Hủy", Esc để hủy; sau khi xóa vẫn có badge **"Hoàn tác"** (xóa mềm nên khôi phục được concept, ví dụ và mọi liên kết đi kèm).
+- **Lưu xong thì báo bằng badge và chuyển trang**: lưu concept → Thư viện; lưu ví dụ → concept (hoặc Hộp chờ nếu chưa có concept); Ghi nhanh → Thư viện (câu chưa tô sáng → Hộp chờ duyệt), có ô "Ở lại trang này để ghi tiếp" cho nhập hàng loạt; "Lưu và nhập tiếp" ở màn ví dụ ở lại trang. Lỗi nhập liệu vẫn hiện cạnh ô.
+- **Mọi control có phản hồi hover (chỉ trên thiết bị có chuột), focus bàn phím (`:focus-visible`) và trạng thái bấm**; placeholder mờ khi ô được focus; tôn trọng `prefers-reduced-motion`.
 
 ### Về sau
-Đồ thị trực quan, mở rộng chiều sâu cho tiếng Đức, nhiều bộ từ điển, ghi âm từ Wiktionary, các module nguồn từ mới nếu cần.
+Mở rộng chiều sâu cho tiếng Đức, ghi âm từ Wiktionary, nguồn tra cứu dự phòng cho tiếng Anh (khi Free Dictionary API không kết nối được trên máy PO), các module nguồn từ mới nếu cần.
 
 ---
 
@@ -566,7 +604,20 @@ Lý do: UI quan hệ concept/example hiện khó định hướng (PO phản h�
 
 ## 12. Lịch sử thay đổi
 
-**v9 (bản này):**
+**v11 (bản này):**
+- **Nút (+) tách ba thao tác** Thêm từ / Thêm example / Thêm concept (mục 1.4, A5, Bản 5); thêm `Concept.kind` (word/concept, tùy chọn, không migration). "Thêm concept" không còn tạo example tối thiểu.
+- **Deck General** mặc định và **Thư viện theo card deck → card con Word/Concept → danh sách**, chỉ tải khi bấm (C6, Bản 5).
+- **Chấm nhập chính tả không phân biệt hoa/thường** cho cả tiếng Đức (mục 5.2).
+- **Chọn giọng đọc** trong Cài đặt + tự xếp hạng giọng (C5).
+- **Tìm kiếm chỉ chạy khi bấm Enter/"Tìm"** (F1).
+
+**v10:**
+- Ghi nhận M12a–d đã xong, lối vào sửa example từ Hộp chờ, Tìm theo liên kết kèm đồ thị (R7).
+- Thêm **Deck** (`WordSet`, schema v6; mục C6, 9.2 câu 6 và "Bản 4" ở mục 10), M13a và M13b.
+- Thêm **quy ước phản hồi giao diện** (mục 10): badge thay `confirm()`, ô xác nhận xóa tại chỗ kèm Hoàn tác, lưu xong báo và chuyển trang, hover/focus cho mọi control.
+- Hoãn: lỗi "không kết nối được dịch vụ tra cứu" trên máy PO (mã không đổi, Chrome sạch gọi được dịch vụ; nghi mạng hoặc tiện ích chặn tên miền); đề xuất nguồn dự phòng en.wiktionary, chưa làm.
+
+**v9:**
 - Thêm mục "Bản 3b" (mục 10): quy luật R1–R8 rút từ toàn bộ 40 ảnh `docs/reference/hustpvo`, ba quyết định của PO (gộp thành một danh sách liên kết ở giao diện, thứ tự làm, bố cục điện thoại) và kế hoạch M12a–M12d, trong đó M12a là căn chỉnh nút/khoảng cách toàn app.
 
 **v8:**

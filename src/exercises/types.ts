@@ -32,6 +32,11 @@ export interface Exercise {
   // one entry per gap field, so each gap is logged, scheduled and counted
   // towards acquisition on its own example. Absent = the single example above.
   parts?: ExercisePart[];
+  // A passage drill draws its answer boxes inside the text: the passage cut
+  // into plain text and gap fields (`field` is a key of `fields`). When set,
+  // the screen shows the passage with the boxes in place instead of a prompt
+  // followed by a list of boxes.
+  segments?: Array<{ text: string } | { field: string }>;
 }
 
 export interface ExercisePart {

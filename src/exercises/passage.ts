@@ -55,18 +55,22 @@ function makePassageModule(lang: Lang, label: string, input: ExerciseModule['inp
       const expected: Record<string, string[]> = {};
       const parts: NonNullable<Exercise['parts']> = [];
       let prompt = '';
+      const segments: NonNullable<Exercise['segments']> = [];
       let cursor = 0;
       asked.forEach((gap, i) => {
         const { start, end } = gap.highlight!;
         if (start < cursor) return; // overlapping gap: not asked
         const key = `g${i + 1}`;
         prompt += text.slice(cursor, start) + `(${i + 1}) ${BLANK}`;
+        if (start > cursor) segments.push({ text: text.slice(cursor, start) });
+        segments.push({ field: key });
         cursor = end;
         fields.push({ key, label: `Chỗ trống ${i + 1}`, type: 'text' });
         expected[key] = [text.slice(start, end)];
         parts.push({ field: key, conceptId: gap.targetConceptId!, exampleId: gap.id });
       });
       prompt += text.slice(cursor);
+      if (cursor < text.length) segments.push({ text: text.slice(cursor) });
 
       return {
         moduleId: `${lang}.passage-cloze`,
@@ -78,6 +82,7 @@ function makePassageModule(lang: Lang, label: string, input: ExerciseModule['inp
         fields,
         expected,
         parts,
+        segments,
       };
     },
 

@@ -452,7 +452,7 @@ flowchart TD
 | 1 | Bấm **(+) → Thêm đoạn văn**, dán đoạn văn (tiêu đề không bắt buộc) | Hiện ô đoạn văn |
 | 2 | Chuyển sang chế độ **Đục lỗ**: chạm một word để đục lỗ (chạm lại để bỏ); muốn đục cả cụm thì bôi đen rồi bấm **Đục lỗ cụm đã chọn** | Lỗ hiện nền màu kèm số (1), (2)… ngay trên đoạn văn; chuyển **Sửa chữ** khi cần gõ, lỗ đi theo chữ |
 | 3 | Chọn deck cho các word mới (mặc định General), bấm **Lưu đoạn văn** | Mỗi lỗ tự tạo word (hoặc gắn word đã có); chuyển sang màn **Đoạn văn** |
-| 4 | Vào **Học → Điền vào đoạn văn** | Cả đoạn hiện với các chỗ trống đánh số, mỗi chỗ một ô nhập, không gợi ý |
+| 4 | Vào **Học → Điền vào đoạn văn** | Cả đoạn hiện ra và **các ô nhập nằm ngay trong đoạn văn**, đúng chỗ trống (đánh số nhỏ), không gợi ý |
 | 5 | Điền các chỗ trống, bấm Kiểm tra | Chấm từng lỗ (không phân biệt hoa/thường), hiện đáp án lỗ sai; ghi log và lịch ôn cho từng lỗ |
 
 - **Sửa đoạn đã lưu:** ở màn Đoạn văn bấm **Sửa**, sửa chữ hoặc tiêu đề; các lỗ đi theo chữ (không phải đục lại), có thể đục thêm hoặc bỏ lỗ; lỗ giữ lại vẫn giữ lịch ôn.

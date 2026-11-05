@@ -70,6 +70,9 @@ describe('passages', () => {
     expect(exercise.prompt).toContain('(1) _____');
     expect(exercise.prompt).not.toContain('brushes');
     expect(exercise.prompt).toContain('his teeth,');
+    // The screen draws the boxes inside the text: text pieces and gap fields alternate in reading order.
+    expect(exercise.segments?.filter((x) => 'field' in x).map((x) => (x as { field: string }).field)).toEqual(['g1', 'g2', 'g3']);
+    expect(exercise.segments?.map((x) => ('text' in x ? x.text : '')).join('')).toBe(TEXT.replace('brushes', '').replace('shaves', '').replace('towel', ''));
 
     const right = await recordAnswer(englishPassage, exercise, { g1: 'BRUSHES', g2: 'shaves', g3: 'wrong' }, 9000);
     expect(right.result.perField).toEqual({ g1: true, g2: true, g3: false });

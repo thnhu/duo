@@ -241,11 +241,57 @@ function Session({ config }: { config: SessionConfig }) {
               </Button>
             </div>
           ) : null}
-          <p className={exercise.speak ? styles.instruction : exercise.parts ? styles.passagePrompt : styles.prompt}>{exercise.prompt}</p>
+          {exercise.segments ? (
+            // A passage: the answer boxes sit inside the text where the gaps are.
+            <p className={styles.passagePrompt}>
+              {exercise.segments.map((seg, i) => {
+                if ('text' in seg) return <span key={i}>{seg.text}</span>;
+                const no = exercise.fields.findIndex((f) => f.key === seg.field) + 1;
+                const state = result ? (result.perField[seg.field] ? styles.gapRight : styles.gapWrong) : '';
+                return (
+                  <span key={i} className={styles.gapWrap}>
+                    <sup className={styles.gapNo}>{no}</sup>
+                    <input
+                      ref={(el) => {
+                        inputs.current[seg.field] = el;
+                      }}
+                      className={[styles.gapInput, state].filter(Boolean).join(' ')}
+                      aria-label={`Chỗ trống ${no}`}
+                      value={answer[seg.field] ?? ''}
+                      disabled={!!record}
+                      lang={pair?.module.input?.lang}
+                      autoFocus={no === 1}
+                      autoCapitalize="off"
+                      autoCorrect="off"
+                      autoComplete="off"
+                      spellCheck={false}
+                      size={Math.max(6, (answer[seg.field] ?? '').length + 1)}
+                      onFocus={() => setFocusedKey(seg.field)}
+                      onChange={(e) => setAnswer({ ...answer, [seg.field]: e.target.value })}
+                    />
+                  </span>
+                );
+              })}
+            </p>
+          ) : (
+            <p className={exercise.speak ? styles.instruction : styles.prompt}>{exercise.prompt}</p>
+          )}
           {exercise.detail && <p className={styles.detail}>{exercise.detail}</p>}
         </Card>
 
-        {exercise.fields.map((field) => (
+        {exercise.segments && result && !result.correct && (
+          <div className={styles.expectedList}>
+            {exercise.fields
+              .filter((f) => !result.perField[f.key])
+              .map((f) => (
+                <p key={f.key} className={styles.expected}>
+                  {f.label.replace('Chỗ trống', 'Chỗ')}: {result.expected[f.key]}
+                </p>
+              ))}
+          </div>
+        )}
+
+        {(exercise.segments ? [] : exercise.fields).map((field) => (
           <div key={field.key}>
             <label className={fieldStyles.label} htmlFor={`f-${field.key}`}>
               {field.label}

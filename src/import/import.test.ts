@@ -306,6 +306,9 @@ describe('undo', () => {
     await importCsv('text,lang,meaning\nswallow,en,nuốt');
     const first = await getLatestUndoableBatch();
     expect(first).toBeDefined();
+    // Batches are ordered by createdAt; two in the same millisecond would tie
+    // (flaky on fast CI machines).
+    await new Promise((resolve) => setTimeout(resolve, 5));
 
     const second = await importCsv('text,lang,meaning\nswallow,en,nuốt chửng\nchew,en,nhai', 'update');
     expect(second.result.createdConcepts).toBe(1);

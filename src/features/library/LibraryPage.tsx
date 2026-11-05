@@ -1,5 +1,7 @@
+import { liveQuery } from 'dexie';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { db } from '../../db/schema';
 import { Card } from '../../ui/Card';
 import { LinkButton } from '../../ui/LinkButton';
 import { LangToggle } from '../../ui/LangToggle';
@@ -51,6 +53,21 @@ export function LibraryPage() {
     setFilterState(readSetFilter(lang));
     void loadConcepts(lang);
     void loadInboxCount();
+  }, [lang]);
+
+  // Any change to a concept (a lookup result, a delete, "Hoàn tác" on the
+  // toast after one) refreshes the list: no stale rows, no manual reload.
+  useEffect(() => {
+    const watch = liveQuery(async () => [await db.concepts.count(), (await db.concepts.orderBy('updatedAt').last())?.updatedAt]);
+    let first = true;
+    const sub = watch.subscribe(() => {
+      if (first) {
+        first = false; // the initial load is done by the effect above
+        return;
+      }
+      void loadConcepts(lang);
+    });
+    return () => sub.unsubscribe();
   }, [lang]);
 
   // Lookup results arrive in the background: refresh the list as they do.

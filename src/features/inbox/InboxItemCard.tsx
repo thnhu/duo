@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { Card } from '../../ui/Card';
+import { useToast } from '../../ui/Toast';
 import { Button } from '../../ui/Button';
 import { ButtonRow } from '../../ui/ButtonRow';
 import { LinkButton } from '../../ui/LinkButton';
@@ -18,6 +19,7 @@ interface InboxItemCardProps {
 }
 
 export function InboxItemCard({ example, lang, onResolved }: InboxItemCardProps) {
+  const toast = useToast();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [selection, setSelection] = useState<Selection | null>(null);
   const [matchedConcept, setMatchedConcept] = useState<Concept | undefined>(undefined);
@@ -42,7 +44,10 @@ export function InboxItemCard({ example, lang, onResolved }: InboxItemCardProps)
   async function handleSave() {
     if (!selection) return;
     const result = await resolveInboxExample(example, lang, selection, pickedConceptId);
-    if (result) onResolved(example.id, result.concept);
+    if (result) {
+      toast.show(`Đã tô sáng và gắn vào "${result.concept.text}".`);
+      onResolved(example.id, result.concept);
+    }
   }
 
   return (

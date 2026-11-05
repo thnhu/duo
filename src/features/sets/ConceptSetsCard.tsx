@@ -5,6 +5,7 @@ import { ButtonRow } from '../../ui/ButtonRow';
 import { Card } from '../../ui/Card';
 import fieldStyles from '../../ui/field.module.css';
 import type { Concept, WordSet } from '../../db/types';
+import { useToast } from '../../ui/Toast';
 import { addConceptToSet, createWordSet, listWordSets, setConceptSets } from '../../wordsets';
 import styles from './Sets.module.css';
 
@@ -14,6 +15,7 @@ export function ConceptSetsCard({ concept, onChanged }: { concept: Concept; onCh
   const [sets, setSets] = useState<WordSet[]>([]);
   const [draft, setDraft] = useState('');
   const [error, setError] = useState('');
+  const toast = useToast();
 
   useEffect(() => {
     void listWordSets(concept.lang).then(setSets);
@@ -24,6 +26,7 @@ export function ConceptSetsCard({ concept, onChanged }: { concept: Concept; onCh
   async function toggle(set: WordSet, on: boolean) {
     const next = on ? [...current, set.id] : [...current].filter((id) => id !== set.id);
     await setConceptSets(concept.id, next);
+    toast.show(on ? `Đã thêm vào deck "${set.name}".` : `Đã bỏ khỏi deck "${set.name}".`, { kind: 'info' });
     onChanged();
   }
 
@@ -36,6 +39,7 @@ export function ConceptSetsCard({ concept, onChanged }: { concept: Concept; onCh
     }
     await addConceptToSet(concept.id, result.set.id);
     setDraft('');
+    toast.show(`Đã tạo deck "${result.set.name}" và thêm từ này vào.`);
     onChanged();
   }
 

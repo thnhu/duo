@@ -3,13 +3,17 @@ import { db } from '../../db/schema';
 import { conceptRepository, exampleRepository } from '../../db/repositories';
 import { listInboxExamples } from '../../db/queries';
 import { saveQuickWord } from '../quick-add/actions';
-import { deleteConceptCascade, deleteExample } from './actions';
+import { createDepthConcept, addExpression, linkExample } from '../../depth';
+import { linkConcepts } from '../../links';
+import { deleteConceptCascade, deleteExample, restoreDeleted } from './actions';
 
 const DICT_EN = 'dict-en';
 
 beforeEach(async () => {
   await db.concepts.clear();
   await db.examples.clear();
+  await db.exampleLinks.clear();
+  await db.conceptLinks.clear();
 });
 
 describe('deleteConceptCascade', () => {
@@ -58,5 +62,39 @@ describe('deleteExample', () => {
     await deleteExample('ex-1');
 
     expect(await listInboxExamples(DICT_EN)).toHaveLength(0);
+  });
+});
+
+describe('undo of a delete', () => {
+  it('brings back the concept, its examples and every link the delete took away', async () => {
+    const a = await createDepthConcept(DICT_EN, 'quantity', '');
+    const b = await createDepthConcept(DICT_EN, 'amount', '');
+    const parent = await createDepthConcept(DICT_EN, 'idea', '');
+    const e = await addExpression(a, 'a lot of');
+    await linkExample(e.id, b.id, 'idiom');
+    await linkConcepts(a.id, parent.id, 'typeOf');
+
+    const deleted = await deleteConceptCascade(a.id);
+    expect((await conceptRepository.listActive()).map((c) => c.text).sort()).toEqual(['amount', 'idea']);
+    expect(await exampleRepository.listActive()).toHaveLength(0);
+
+    await restoreDeleted(deleted);
+    expect((await conceptRepository.listActive()).map((c) => c.text).sort()).toEqual(['amount', 'idea', 'quantity']);
+    expect(await exampleRepository.listActive()).toHaveLength(1);
+    expect((await db.exampleLinks.toArray()).filter((l) => l.deletedAt === undefined)).toHaveLength(1);
+    expect((await db.conceptLinks.toArray()).filter((l) => l.deletedAt === undefined)).toHaveLength(1);
+  });
+
+  it('does not revive a link that was already deleted before the delete', async () => {
+    const a = await createDepthConcept(DICT_EN, 'quantity', '');
+    const b = await createDepthConcept(DICT_EN, 'amount', '');
+    const e = await addExpression(a, 'a lot of');
+    const link = await linkExample(e.id, b.id, 'idiom');
+    await db.exampleLinks.update(link!.id, { deletedAt: 1 });
+
+    const deleted = await deleteExample(e.id);
+    await restoreDeleted(deleted);
+    expect((await db.exampleLinks.get(link!.id))?.deletedAt).toBe(1);
+    expect(await exampleRepository.listActive()).toHaveLength(1);
   });
 });

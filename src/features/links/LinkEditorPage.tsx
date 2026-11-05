@@ -18,6 +18,7 @@ import {
 } from '../../links';
 import { CONCEPT_LINK_LABEL } from '../../links/labels';
 import { saveQuickWord } from '../quick-add/actions';
+import { useToast } from '../../ui/Toast';
 import { ConceptPicker } from './ConceptPicker';
 import styles from './LinkEditorPage.module.css';
 
@@ -34,7 +35,7 @@ export function LinkEditorPage() {
   const [pair, setPair] = useState<PairState>({ state: 'none' });
   const [relation, setRelation] = useState<Relation>('none');
   const [error, setError] = useState('');
-  const [done, setDone] = useState('');
+  const toast = useToast();
   const [asking, setAsking] = useState<ConceptLink | null>(null);
 
   async function loadConcepts() {
@@ -59,7 +60,6 @@ export function LinkEditorPage() {
   const parentId = parent?.id;
   useEffect(() => {
     setError('');
-    setDone('');
     setAsking(null);
     if (!childId || !parentId) {
       setPair({ state: 'none' });
@@ -92,7 +92,7 @@ export function LinkEditorPage() {
     const p = await describePair(child.id, parent.id);
     setPair(p);
     setRelation(p.state === 'same' ? p.link.type : 'none');
-    setDone(
+    toast.show(
       action === 'removed'
         ? 'Đã bỏ liên kết.'
         : action === 'created'
@@ -100,13 +100,13 @@ export function LinkEditorPage() {
           : action === 'changed'
             ? 'Đã cập nhật liên kết.'
             : 'Không có gì thay đổi.',
+      { kind: action === 'unchanged' ? 'info' : 'success' },
     );
   }
 
   async function handleSave() {
     if (!child || !parent) return;
     setError('');
-    setDone('');
     const result = await saveConceptLink(child.id, parent.id, relation === 'none' ? undefined : relation);
     if (!result.ok) {
       if (result.reason === 'reversed') setAsking(result.link);
@@ -163,7 +163,6 @@ export function LinkEditorPage() {
             disabled={!child || !parent}
             onChange={(e) => {
               setRelation(e.target.value as Relation);
-              setDone('');
             }}
           >
             <option value="none">No link</option>
@@ -184,7 +183,6 @@ export function LinkEditorPage() {
             {error}
           </p>
         )}
-        {done && <p className={styles.notice}>{done}</p>}
         {asking && child && parent && (
           <div className={styles.dialog} role="alertdialog" aria-label="Đổi chiều liên kết">
             <p>

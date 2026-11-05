@@ -1,0 +1,119 @@
+/* Top of the screen, under the status bar: the bottom is taken by the nav and
+   the "+" button, and a badge there would be hidden by the thumb. */
+.region {
+  position: fixed;
+  top: max(var(--space-3), env(safe-area-inset-top));
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 480px;
+  min-height: 48px;
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-md);
+  font-size: 0.95rem;
+  animation: toast-in 0.2s ease-out;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.success {
+  background: var(--color-success-bg);
+  border-color: var(--color-success);
+}
+
+.error {
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger);
+}
+
+.info {
+  background: var(--color-primary-100);
+  border-color: var(--color-primary-400);
+}
+
+.icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-surface);
+}
+
+.success .icon {
+  background: var(--color-success);
+}
+
+.error .icon {
+  background: var(--color-danger);
+}
+
+.info .icon {
+  background: var(--color-primary-600);
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+}
+
+.action,
+.close {
+  flex: none;
+  min-height: 44px;
+  border: none;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+  border-radius: var(--radius-pill);
+  transition: background-color var(--transition);
+}
+
+.action {
+  padding: 0 var(--space-3);
+  font-weight: 600;
+  color: var(--color-primary-600);
+}
+
+.close {
+  width: 44px;
+  color: var(--color-ink-muted);
+}
+
+@media (hover: hover) {
+  .action:hover,
+  .close:hover {
+    background: rgba(14, 26, 43, 0.08);
+  }
+}

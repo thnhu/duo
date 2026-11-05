@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '../../ui/Button';
 import { ButtonRow } from '../../ui/ButtonRow';
 import { Card } from '../../ui/Card';
+import { useToast } from '../../ui/Toast';
 import fieldStyles from '../../ui/field.module.css';
 import type { Concept, ConceptGrammar, LookupEntry } from '../../db/types';
 import { applyReview, dismissSuggestion } from '../../lookup/apply';
@@ -79,6 +80,7 @@ function EntryReview({
   entry: LookupEntry;
   onChanged: () => void;
 }) {
+  const toast = useToast();
   const isGerman = concept.lang === 'de';
   const [pickedDefs, setPickedDefs] = useState<Set<number>>(
     () => new Set(entry.definitions.slice(0, 1).map((_, i) => i)),
@@ -134,6 +136,7 @@ function EntryReview({
       ),
     });
     setBusy(false);
+    toast.show(`Đã duyệt và áp dụng gợi ý cho "${concept.text}".`);
     onChanged();
   }
 
@@ -141,6 +144,7 @@ function EntryReview({
     setBusy(true);
     await dismissSuggestion(concept.id);
     setBusy(false);
+    toast.show('Đã bỏ gợi ý.', { kind: 'info' });
     onChanged();
   }
 

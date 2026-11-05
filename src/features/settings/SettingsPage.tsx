@@ -6,6 +6,7 @@ import { BackupError, exportBackup, restoreBackup } from '../../backup/json';
 import { dateStamp, downloadBlob, getLastBackupAt, setLastBackupAt } from '../../backup/download';
 import { exportXlsx } from '../../backup/table';
 import { conceptRepository, exampleRepository, wordSetRepository } from '../../db/repositories';
+import { useToast } from '../../ui/Toast';
 import { StudyCard } from './StudyCard';
 import { DepthCard } from './DepthCard';
 import { SyncCard } from './SyncCard';
@@ -20,6 +21,7 @@ function formatTime(ms: number): string {
 export function SettingsPage() {
   const fileInput = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const toast = useToast();
   const [notice, setNotice] = useState<Notice>(null);
   const [lastBackup, setLastBackup] = useState<number | null>(getLastBackupAt());
 
@@ -27,7 +29,7 @@ export function SettingsPage() {
     setBusy(true);
     setNotice(null);
     try {
-      setNotice({ kind: 'ok', text: await task() });
+      toast.show(await task());
     } catch (error) {
       const text = error instanceof BackupError ? error.message : 'Có lỗi xảy ra, dữ liệu không bị thay đổi.';
       setNotice({ kind: 'error', text });

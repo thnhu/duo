@@ -13,6 +13,7 @@ import {
   type CriteriaForm,
 } from '../../settings/criteria';
 import { SESSION_COUNT_RANGE, defaultStudySettings, loadStudy, saveStudy } from '../../settings/study';
+import { useToast } from '../../ui/Toast';
 import styles from './SettingsPage.module.css';
 
 type Notice = { kind: 'ok' | 'error'; text: string } | null;
@@ -24,6 +25,7 @@ const THRESHOLD_KEYS = ['minCorrect', 'minDistinctContexts', 'minDistinctDays'] 
 export function StudyCard() {
   const [form, setForm] = useState<CriteriaForm | null>(null);
   const [count, setCount] = useState(String(defaultStudySettings.sessionCount));
+  const toast = useToast();
   const [notice, setNotice] = useState<Notice>(null);
   const modules = exerciseModules.list();
 
@@ -69,10 +71,8 @@ export function StudyCard() {
     const changes: string[] = [];
     if (result.promoted > 0) changes.push(`${result.promoted} từ trở thành đã thụ đắc`);
     if (result.demoted > 0) changes.push(`${result.demoted} từ quay lại đang học`);
-    setNotice({
-      kind: 'ok',
-      text: `Đã lưu.${changes.length > 0 ? ` ${changes.join(', ')}.` : ' Không có từ nào đổi trạng thái.'}`,
-    });
+    setNotice(null);
+    toast.show(`Đã lưu.${changes.length > 0 ? ` ${changes.join(', ')}.` : ' Không có từ nào đổi trạng thái.'}`);
   }
 
   function handleReset() {

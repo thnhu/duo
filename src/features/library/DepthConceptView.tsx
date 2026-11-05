@@ -16,7 +16,8 @@ import {
   triFoldProgress,
   type TriFoldProgress,
 } from '../../depth';
-import { deleteConceptCascade, deleteExample } from './actions';
+import { useToast } from '../../ui/Toast';
+import { deleteConceptCascade, deleteExample, restoreDeleted } from './actions';
 import { ConceptSetsCard } from '../sets/ConceptSetsCard';
 import styles from './ConceptDetailPage.module.css';
 
@@ -34,6 +35,7 @@ const KEY_TITLE: Record<(typeof LABEL_KEYS)[number], string> = {
 // and how close the idea is to "tri-fold" (several distinct ways).
 export function DepthConceptView({ concept, onChanged }: { concept: Concept; onChanged: () => void }) {
   const navigate = useNavigate();
+  const toast = useToast();
   const [name, setName] = useState(concept.text);
   const [description, setDescription] = useState(concept.meanings[0] ?? '');
   const [expressions, setExpressions] = useState<Example[]>([]);
@@ -55,30 +57,48 @@ export function DepthConceptView({ concept, onChanged }: { concept: Concept; onC
   }, [concept.id]);
 
   async function handleSave() {
+    if (!name.trim()) {
+      toast.show('Hãy nhập tên concept trước khi lưu.', { kind: 'error' });
+      return;
+    }
     await conceptRepository.update(concept.id, {
-      text: name.trim() || concept.text,
+      text: name.trim(),
       meanings: description.trim() ? [description.trim()] : [],
     });
     onChanged();
+    toast.show(`Đã lưu "${name.trim()}".`);
+    navigate('/library');
   }
 
   async function handleAdd() {
     if (!draft.trim()) return;
+    const text = draft.trim();
     await addExpression(concept, draft);
     setDraft('');
     await load();
+    toast.show(`Đã thêm "${text}".`);
   }
 
   async function handleDeleteExpression(example: Example) {
-    if (!confirm(`Xóa cách diễn đạt "${example.text}"?`)) return;
-    await deleteExample(example.id);
+    const deleted = await deleteExample(example.id);
     await load();
+    toast.show(`Đã xóa "${example.text}".`, {
+      action: {
+        label: 'Hoàn tác',
+        onClick: async () => {
+          await restoreDeleted(deleted);
+          await load();
+        },
+      },
+    });
   }
 
   async function handleDeleteConcept() {
-    if (!confirm(`Xóa concept "${concept.text}" và các cách diễn đạt của nó?`)) return;
-    await deleteConceptCascade(concept.id);
+    const deleted = await deleteConceptCascade(concept.id);
     navigate('/library');
+    toast.show(`Đã xóa "${concept.text}" và các cách diễn đạt của nó.`, {
+      action: { label: 'Hoàn tác', onClick: () => restoreDeleted(deleted) },
+    });
   }
 
   const duplicateIds = new Set(progress?.duplicates.map((e) => e.id));

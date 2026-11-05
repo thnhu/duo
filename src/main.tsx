@@ -33,6 +33,7 @@ import { SettingsPage } from './features/settings/SettingsPage'
 import { LearnPage } from './features/learn/LearnPage'
 import { SessionPage } from './features/learn/SessionPage'
 import { SearchPage } from './features/search/SearchPage'
+import { ToastProvider } from './ui/Toast'
 
 async function bootstrap() {
   // The AI suggestion feature was removed; drop the API key it left on this device.
@@ -48,6 +49,7 @@ async function bootstrap() {
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <HashRouter>
+        <ToastProvider>
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<TodayPage />} />
@@ -71,6 +73,7 @@ async function bootstrap() {
             <Route path="example/:exampleId" element={<ExampleEditPage />} />
           </Route>
         </Routes>
+        </ToastProvider>
       </HashRouter>
     </StrictMode>,
   )

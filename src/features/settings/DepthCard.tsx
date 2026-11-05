@@ -8,12 +8,14 @@ import {
   loadDepthSettings,
   saveDepthSettings,
 } from '../../depth';
+import { useToast } from '../../ui/Toast';
 import styles from './SettingsPage.module.css';
 
 // Settings → Học sâu: how many different ways of saying a concept count as
 // tri-fold complete (spec 1.4).
 export function DepthCard() {
   const [value, setValue] = useState(String(defaultDepthSettings.minExpressions));
+  const toast = useToast();
   const [notice, setNotice] = useState('');
 
   useEffect(() => {
@@ -33,7 +35,8 @@ export function DepthCard() {
       return;
     }
     await saveDepthSettings({ minExpressions: n });
-    setNotice('Đã lưu.');
+    setNotice('');
+    toast.show('Đã lưu.');
   }
 
   return (

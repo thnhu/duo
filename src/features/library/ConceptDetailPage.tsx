@@ -10,7 +10,8 @@ import { computeProgress, type AcquisitionProgress } from '../../acquisition';
 import { loadCriteria } from '../../acquisition/update';
 import { conceptRepository, reviewLogRepository } from '../../db/repositories';
 import type { AcquisitionCriteria, Concept, Example } from '../../db/types';
-import { deleteConceptCascade, deleteExample } from './actions';
+import { useToast } from '../../ui/Toast';
+import { deleteConceptCascade, deleteExample, restoreDeleted } from './actions';
 import { isSingleWord, lookupQueue } from '../../lookup';
 import { dismissSuggestion, markVerified } from '../../lookup/apply';
 import { LookupReview } from '../lookup/LookupReview';
@@ -22,6 +23,7 @@ import styles from './ConceptDetailPage.module.css';
 export function ConceptDetailPage() {
   const { conceptId } = useParams<{ conceptId: string }>();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [concept, setConcept] = useState<Concept | null>(null);
   const [examples, setExamples] = useState<Example[]>([]);
@@ -53,6 +55,10 @@ export function ConceptDetailPage() {
 
   async function handleSave() {
     if (!concept) return;
+    if (!text.trim()) {
+      toast.show('Hãy nhập từ hoặc cụm từ trước khi lưu.', { kind: 'error' });
+      return;
+    }
     await conceptRepository.update(concept.id, {
       text: text.trim(),
       pos: pos.trim() || undefined,
@@ -61,20 +67,33 @@ export function ConceptDetailPage() {
         .map((m) => m.trim())
         .filter(Boolean),
     });
-    await load(concept.id);
-  }
-
-  async function handleDeleteConcept() {
-    if (!concept) return;
-    if (!confirm(`Xóa "${concept.text}" và mọi ví dụ của nó?`)) return;
-    await deleteConceptCascade(concept.id);
+    // Saved: say so and go back to the Library, so nobody has to find the way.
+    toast.show(`Đã lưu "${text.trim()}".`);
     navigate('/library');
   }
 
+  // No "are you sure?" box: the delete is soft, so it can be undone.
+  async function handleDeleteConcept() {
+    if (!concept) return;
+    const deleted = await deleteConceptCascade(concept.id);
+    navigate('/library');
+    toast.show(`Đã xóa "${concept.text}" và các ví dụ của nó.`, {
+      action: { label: 'Hoàn tác', onClick: () => restoreDeleted(deleted) },
+    });
+  }
+
   async function handleDeleteExample(exampleId: string) {
-    if (!confirm('Xóa ví dụ này?')) return;
-    await deleteExample(exampleId);
+    const deleted = await deleteExample(exampleId);
     if (conceptId) await load(conceptId);
+    toast.show('Đã xóa ví dụ.', {
+      action: {
+        label: 'Hoàn tác',
+        onClick: async () => {
+          await restoreDeleted(deleted);
+          if (conceptId) await load(conceptId);
+        },
+      },
+    });
   }
 
   if (!concept) {

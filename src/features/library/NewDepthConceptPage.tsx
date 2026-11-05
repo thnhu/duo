@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../../ui/Button';
+import { useToast } from '../../ui/Toast';
 import fieldStyles from '../../ui/field.module.css';
 import { dictionaryIdForLang } from '../../db/queries';
 import { createDepthConcept } from '../../depth';
@@ -10,6 +11,7 @@ import styles from './ConceptDetailPage.module.css';
 // of saying it are added afterwards (spec 1.4, journey J6 part A).
 export function NewDepthConceptPage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [busy, setBusy] = useState(false);
@@ -18,6 +20,7 @@ export function NewDepthConceptPage() {
     if (!name.trim() || busy) return;
     setBusy(true);
     const concept = await createDepthConcept(await dictionaryIdForLang('en'), name, description);
+    toast.show(`Đã tạo concept "${concept.text}". Thêm các cách diễn đạt bên dưới.`);
     navigate(`/library/${concept.id}`, { replace: true });
   }
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useToast } from '../../ui/Toast';
 import { Button } from '../../ui/Button';
 import { ButtonRow } from '../../ui/ButtonRow';
 import { LangToggle } from '../../ui/LangToggle';
@@ -16,7 +17,19 @@ import styles from './QuickAddPage.module.css';
 type Mode = 'word' | 'sentence';
 type Message = { kind: 'success' | 'info'; text: string; linkTo?: string } | null;
 
+// "Stay to keep entering": by default a save goes back to the Library (or the
+// inbox for an unhighlighted sentence) so nobody has to find the way; for a
+// long list the box keeps the form open. Remembered on this device.
+const STAY_KEY = 'duo:quick-add-stay';
+
 export function QuickAddPage() {
+  const navigate = useNavigate();
+  const toast = useToast();
+  const [stay, setStayState] = useState(() => localStorage.getItem(STAY_KEY) === '1');
+  function chooseStay(on: boolean) {
+    localStorage.setItem(STAY_KEY, on ? '1' : '0');
+    setStayState(on);
+  }
   const [lang, setLang] = useLastLanguage();
   const [mode, setMode] = useState<Mode>('word');
 
@@ -58,16 +71,17 @@ export function QuickAddPage() {
     // several sets without a second copy.
     if (setId) await addConceptToSet(concept.id, setId);
 
+    setWordMessage(null);
+    setWordText('');
     if (outcome === 'created') {
-      setWordMessage({ kind: 'success', text: `Đã lưu "${concept.text}".${inSet}` });
-      setWordText('');
+      toast.show(`Đã lưu "${concept.text}".${inSet}`);
     } else {
-      setWordMessage({
+      toast.show(`"${concept.text}" đã có trong thư viện.${inSet}`, {
         kind: 'info',
-        text: `"${concept.text}" đã có trong thư viện.${inSet}`,
-        linkTo: `/library/${concept.id}`,
+        action: { label: 'Mở', onClick: () => navigate(`/library/${concept.id}`) },
       });
     }
+    if (!stay) navigate('/library');
   }
 
   async function handlePickHighlight() {
@@ -112,27 +126,25 @@ export function QuickAddPage() {
     if (!result) return;
     if (setId) await addConceptToSet(result.concept.id, setId);
 
-    setSentenceMessage({
-      kind: 'success',
-      text:
-        result.conceptOutcome === 'created'
-          ? `Đã tạo concept mới "${result.concept.text}" và lưu ví dụ.${inSet}`
-          : `Đã gắn vào concept có sẵn "${result.concept.text}".${inSet}`,
-      linkTo: `/library/${result.concept.id}`,
-    });
+    setSentenceMessage(null);
+    toast.show(
+      result.conceptOutcome === 'created'
+        ? `Đã tạo concept mới "${result.concept.text}" và lưu ví dụ.${inSet}`
+        : `Đã gắn vào concept có sẵn "${result.concept.text}".${inSet}`,
+      { action: { label: 'Mở', onClick: () => navigate(`/library/${result.concept.id}`) } },
+    );
     resetSentenceForm();
+    if (!stay) navigate('/library');
   }
 
   async function handleSaveToInbox() {
     if (!sentenceText.trim()) return;
     const dictionaryId = await dictionaryIdForLang(lang);
     await saveSentenceToInbox(dictionaryId, sentenceText.trim());
-    setSentenceMessage({
-      kind: 'success',
-      text: 'Đã lưu vào Hộp chờ duyệt — tô sáng cụm cần học sau.',
-      linkTo: '/inbox',
-    });
+    setSentenceMessage(null);
+    toast.show('Đã lưu vào Hộp chờ duyệt — tô sáng cụm cần học sau.');
     resetSentenceForm();
+    if (!stay) navigate('/inbox');
   }
 
   return (
@@ -162,6 +174,11 @@ export function QuickAddPage() {
           Cả câu
         </button>
       </div>
+
+      <label className={styles.stay}>
+        <input type="checkbox" checked={stay} onChange={(e) => chooseStay(e.target.checked)} />
+        Ở lại trang này để ghi tiếp
+      </label>
 
       {sets.length > 0 && (
         <div>

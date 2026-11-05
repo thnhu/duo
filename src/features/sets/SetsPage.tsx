@@ -8,6 +8,7 @@ import fieldStyles from '../../ui/field.module.css';
 import { conceptRepository } from '../../db/repositories';
 import type { WordSet } from '../../db/types';
 import { countBySet, createWordSet, deleteWordSet, listWordSets, renameWordSet, type SetCounts } from '../../wordsets';
+import { useToast } from '../../ui/Toast';
 import { useLastLanguage } from '../quick-add/useLastLanguage';
 import styles from './Sets.module.css';
 
@@ -20,6 +21,9 @@ export function SetsPage() {
   const [draft, setDraft] = useState('');
   const [editing, setEditing] = useState<{ id: string; name: string } | null>(null);
   const [error, setError] = useState('');
+  // Delete asks inline, on the deck's own card, never in a box over the screen.
+  const [confirming, setConfirming] = useState<string | null>(null);
+  const toast = useToast();
 
   async function load() {
     const [list, concepts] = await Promise.all([listWordSets(lang), conceptRepository.listActive()]);
@@ -30,6 +34,7 @@ export function SetsPage() {
   useEffect(() => {
     setError('');
     setEditing(null);
+    setConfirming(null);
     void load();
   }, [lang]);
 
@@ -41,6 +46,7 @@ export function SetsPage() {
     const result = await createWordSet(lang, draft);
     if (!result.ok) return setError(reasonText(result.reason));
     setDraft('');
+    toast.show(`Đã tạo deck "${result.set.name}".`);
     await load();
   }
 
@@ -50,17 +56,14 @@ export function SetsPage() {
     const result = await renameWordSet(editing.id, editing.name);
     if (!result.ok) return setError(reasonText(result.reason));
     setEditing(null);
+    toast.show('Đã đổi tên deck.');
     await load();
   }
 
   async function handleDelete(set: WordSet) {
-    const n = counts?.bySet.get(set.id) ?? 0;
-    const message =
-      n > 0
-        ? `Xóa deck "${set.name}"? ${n} từ trong deck vẫn còn trong thư viện, chỉ bỏ nhãn deck.`
-        : `Xóa deck "${set.name}"?`;
-    if (!confirm(message)) return;
     await deleteWordSet(set.id);
+    setConfirming(null);
+    toast.show(`Đã xóa deck "${set.name}". Các từ vẫn còn trong thư viện.`, { kind: 'info' });
     await load();
   }
 
@@ -136,10 +139,28 @@ export function SetsPage() {
                 <Button variant="secondary" onClick={() => setEditing({ id: set.id, name: set.name })}>
                   Đổi tên
                 </Button>
-                <Button variant="ghost" onClick={() => void handleDelete(set)}>
+                <Button variant="ghost" onClick={() => setConfirming(set.id)}>
                   Xóa deck
                 </Button>
               </ButtonRow>
+              {confirming === set.id && (
+                <div className={styles.confirm} role="group" aria-label="Xác nhận xóa deck">
+                  <p>
+                    Xóa deck "{set.name}"?{' '}
+                    {(counts?.bySet.get(set.id) ?? 0) > 0
+                      ? `${counts?.bySet.get(set.id)} từ trong deck vẫn còn trong thư viện, chỉ bỏ nhãn deck.`
+                      : 'Deck đang trống.'}
+                  </p>
+                  <ButtonRow>
+                    <Button variant="ghost" onClick={() => setConfirming(null)}>
+                      Hủy
+                    </Button>
+                    <Button variant="destructive" onClick={() => void handleDelete(set)}>
+                      Xóa deck
+                    </Button>
+                  </ButtonRow>
+                </div>
+              )}
             </>
           )}
         </Card>

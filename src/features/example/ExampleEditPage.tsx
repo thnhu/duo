@@ -10,6 +10,7 @@ import { dictionaryIdForLang } from '../../db/queries';
 import type { AttributeValueSets, Concept, Example, ExampleAttributes, Lang } from '../../db/types';
 import { normalizeSelection, type Selection } from '../quick-add/highlight';
 import { addSecondPhrase, clearExampleAttributes, createNextExample, saveExampleEdits } from './actions';
+import { useToast } from '../../ui/Toast';
 import { ExampleLinksCard } from './ExampleLinksCard';
 import styles from './ExampleEditPage.module.css';
 
@@ -32,6 +33,7 @@ const STATUS_LABEL = {
 export function ExampleEditPage() {
   const { exampleId } = useParams<{ exampleId: string }>();
   const navigate = useNavigate();
+  const toast = useToast();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [example, setExample] = useState<Example | null>(null);
@@ -102,7 +104,8 @@ export function ExampleEditPage() {
     setMessage('');
   }
 
-  async function handleSave(): Promise<boolean> {
+  // Writes the edits; the callers decide where to go next.
+  async function persist(): Promise<boolean> {
     if (!example || !attributes) return false;
     const changedHighlight =
       highlight &&
@@ -114,14 +117,24 @@ export function ExampleEditPage() {
       setMessage('Không lưu được: cụm tô sáng không hợp lệ.');
       return false;
     }
-    setMessage('Đã lưu. Nhãn được đánh dấu là đã duyệt.');
+    setMessage('');
     await load(example.id);
     return true;
   }
 
+  // Saved: a badge, then back to the concept (or the inbox), so nobody has
+  // to find the way out.
+  async function handleSave() {
+    if (!(await persist())) return;
+    toast.show('Đã lưu ví dụ. Nhãn được đánh dấu là đã duyệt.');
+    navigate(backTo);
+  }
+
   // "Save & next" (R5): save this one, then ask for the next sentence.
   async function handleSaveAndNext() {
-    if (await handleSave()) setNextText('');
+    if (!(await persist())) return;
+    toast.show('Đã lưu. Nhập câu kế tiếp bên dưới.');
+    setNextText('');
   }
 
   async function handleCreateNext() {
@@ -130,19 +143,22 @@ export function ExampleEditPage() {
     const saved = (await exampleRepository.getById(example.id)) ?? example;
     const created = await createNextExample(saved, nextText, keep);
     setNextText(null);
+    toast.show('Đã tạo ví dụ kế tiếp.');
     navigate(`/example/${created.id}`);
   }
 
   async function handleClear() {
     if (!example) return;
     await clearExampleAttributes(example.id);
-    setMessage('Đã bỏ nhãn.');
+    setMessage('');
+    toast.show('Đã bỏ nhãn.', { kind: 'info' });
     await load(example.id);
   }
 
   async function handleSecondPhrase() {
     if (!example) return;
     await addSecondPhrase(example);
+    toast.show('Đã tạo ví dụ mới trong Hộp chờ duyệt, tô sáng cụm khác ở đó.', { kind: 'info' });
     navigate('/inbox');
   }
 

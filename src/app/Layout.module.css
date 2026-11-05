@@ -1,4 +1,8 @@
 .shell {
+  /* Measured height of the bottom nav; the "+" button sits a gap above it. */
+  --nav-height: 65px;
+  --fab-size: 56px;
+  --fab-gap: 12px;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -10,8 +14,9 @@
   width: 100%;
   max-width: 640px;
   margin: 0 auto;
-  /* Clears the bottom nav and the floating "+" button (top edge ~112px). */
-  padding: var(--space-4) var(--space-4) calc(112px + var(--space-5));
+  /* Clears the bottom nav and the floating "+" button above it. */
+  padding: var(--space-4) var(--space-4)
+    calc(var(--nav-height) + var(--fab-gap) + var(--fab-size) + var(--space-5) + env(safe-area-inset-bottom));
 }
 
 .nav {
@@ -52,11 +57,11 @@
 
 .fab {
   position: fixed;
-  bottom: 56px;
+  bottom: calc(var(--nav-height) + var(--fab-gap) + env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
-  width: 56px;
-  height: 56px;
+  width: var(--fab-size);
+  height: var(--fab-size);
   border-radius: var(--radius-pill);
   background: var(--color-ink);
   color: var(--color-surface);

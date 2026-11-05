@@ -72,7 +72,7 @@ export function ConceptSetsCard({ concept, onChanged }: { concept: Concept; onCh
         </Button>
       </ButtonRow>
       <p className={styles.hint}>
-        Một từ có thể nằm trong nhiều deck mà không phải nhập lại. <Link to="/sets">Quản lý deck</Link>
+        Một từ có thể nằm trong nhiều deck mà không phải nhập lại. Không chọn deck nào = nằm trong deck General. <Link to="/sets">Quản lý deck</Link>
       </p>
     </Card>
   );

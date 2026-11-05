@@ -410,7 +410,7 @@ export function ImportPage() {
                 value={targetChoice}
                 onChange={(e) => setTargetChoice(e.target.value)}
               >
-                <option value="">Không thêm vào deck nào</option>
+                <option value="">General (mặc định)</option>
                 {wordSets.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name} ({s.lang === 'en' ? 'Anh' : 'Đức'})

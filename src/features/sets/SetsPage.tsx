@@ -78,7 +78,7 @@ export function SetsPage() {
         <LangToggle value={lang} onChange={setLang} />
       </div>
       <p className={styles.hint}>
-        Deck gom các từ theo mục đích (ví dụ IT, từ phim). Một từ có thể nằm trong nhiều deck.
+        Deck gom các từ theo mục đích (ví dụ IT, từ phim). Một từ có thể nằm trong nhiều deck. Từ không thuộc deck nào tự nằm trong deck General (có sẵn cho mỗi ngôn ngữ, không xóa được).
       </p>
 
       {error && (

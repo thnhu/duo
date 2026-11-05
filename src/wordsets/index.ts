@@ -1,7 +1,7 @@
 import { createId } from '../core/id';
 import { db } from '../db/schema';
 import { conceptRepository, wordSetRepository } from '../db/repositories';
-import type { Concept, Lang, WordSet } from '../db/types';
+import type { Concept, ConceptKind, Lang, WordSet } from '../db/types';
 
 // Word sets (M13): named groups of concepts inside one language, e.g. "IT" or
 // "From films". A concept can be in several sets; a set is only a label on the
@@ -13,6 +13,12 @@ import type { Concept, Lang, WordSet } from '../db/types';
 export type SetFilter = { kind: 'all' } | { kind: 'none' } | { kind: 'set'; id: string };
 
 export const ALL_SETS: SetFilter = { kind: 'all' };
+
+// "General" is the built-in deck of each language: a concept in no other deck
+// is in General, so nothing is stored for it. This is the Library default, so
+// opening it shows the General deck instead of every word.
+export const GENERAL_DECK_NAME = 'General';
+export const GENERAL_FILTER: SetFilter = { kind: 'none' };
 
 const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
@@ -109,6 +115,83 @@ export function countBySet(concepts: Concept[], sets: WordSet[]): SetCounts {
   return { all: concepts.length, none, bySet };
 }
 
+// ---- Library: deck cards first, words only when a deck is opened ----
+
+// Counts for the deck cards. Reads the concept rows but keeps none of them, so
+// the Library landing screen holds numbers, not the whole word list.
+export async function countDecks(lang: Lang, sets: WordSet[]): Promise<SetCounts> {
+  const liveIds = new Set(sets.map((s) => s.id));
+  const bySet = new Map<string, number>(sets.map((s) => [s.id, 0]));
+  let all = 0;
+  let none = 0;
+  await db.concepts
+    .where('lang')
+    .equals(lang)
+    .each((c) => {
+      if (c.deletedAt !== undefined) return;
+      all++;
+      const own = (c.setIds ?? []).filter((id) => liveIds.has(id));
+      if (own.length === 0) none++;
+      for (const id of own) bySet.set(id, (bySet.get(id) ?? 0) + 1);
+    });
+  return { all, none, bySet };
+}
+
+// Word or concept? Stored for new rows; older rows are derived (no migration).
+export function conceptKind(c: Concept): ConceptKind {
+  return c.kind ?? (c.mode === 'depth' ? 'concept' : 'word');
+}
+
+// Sizes of the two sub decks inside one deck (numbers only, no rows kept).
+export async function countSubDecks(
+  lang: Lang,
+  filter: SetFilter,
+  sets: WordSet[],
+): Promise<Record<ConceptKind, number>> {
+  const liveIds = new Set(sets.map((s) => s.id));
+  const counts: Record<ConceptKind, number> = { word: 0, concept: 0 };
+  await db.concepts
+    .where('lang')
+    .equals(lang)
+    .each((c) => {
+      if (c.deletedAt !== undefined) return;
+      if (filterBySet([c], filter, liveIds).length === 0) return;
+      counts[conceptKind(c)]++;
+    });
+  return counts;
+}
+
+// The rows of ONE sub deck (words or concepts) of a deck, newest first. The
+// only place the Library loads rows, and only after a sub deck card is opened.
+export async function listDeckConcepts(
+  lang: Lang,
+  filter: SetFilter,
+  sets: WordSet[],
+  sub: ConceptKind,
+): Promise<Concept[]> {
+  const liveIds = new Set(sets.map((s) => s.id));
+  const rows = await db.concepts
+    .where('lang')
+    .equals(lang)
+    .filter((c) => c.deletedAt === undefined)
+    .toArray();
+  return filterBySet(rows, filter, liveIds)
+    .filter((c) => conceptKind(c) === sub)
+    .sort((a, b) => b.updatedAt - a.updatedAt);
+}
+
+// Deck key used in the Library address: "general", "all" or a deck id.
+export function deckToKey(filter: SetFilter): string {
+  return filter.kind === 'none' ? 'general' : filter.kind === 'all' ? 'all' : filter.id;
+}
+
+export function deckFromKey(key: string | null): SetFilter | null {
+  if (!key) return null;
+  if (key === 'general') return GENERAL_FILTER;
+  if (key === 'all') return ALL_SETS;
+  return { kind: 'set', id: key };
+}
+
 // ---- Remembered choices (per device) ----
 
 const filterKey = (lang: Lang) => `duo:set-filter:${lang}`;
@@ -116,9 +199,9 @@ const addKey = (lang: Lang) => `duo:add-set:${lang}`;
 
 export function readSetFilter(lang: Lang): SetFilter {
   const raw = localStorage.getItem(filterKey(lang));
-  if (raw === 'none') return { kind: 'none' };
-  if (raw && raw !== 'all') return { kind: 'set', id: raw };
-  return ALL_SETS;
+  if (raw === 'all') return ALL_SETS;
+  if (raw && raw !== 'none') return { kind: 'set', id: raw };
+  return GENERAL_FILTER;
 }
 
 export function writeSetFilter(lang: Lang, filter: SetFilter): void {

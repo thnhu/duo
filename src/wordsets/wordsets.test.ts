@@ -5,11 +5,14 @@ import { createDepthConcept } from '../depth';
 import { saveQuickWord } from '../features/quick-add/actions';
 import {
   addConceptToSet,
+  conceptKind,
   countBySet,
+  countSubDecks,
   createWordSet,
   deleteWordSet,
   filterBySet,
   inSelectedSets,
+  listDeckConcepts,
   listWordSets,
   renameWordSet,
   setConceptSets,
@@ -161,5 +164,30 @@ describe('word sets in search, study and export', () => {
     const [header, ...rows] = exportTable(await conceptRepository.listActive(), [], sets);
     expect(rows[0][header.indexOf('deck')].split('; ').sort()).toEqual(['Films', 'IT']);
     expect(importFields.some((f) => f.id === 'deck')).toBe(true);
+  });
+});
+
+describe('sub decks: word and concept inside a deck', () => {
+  it('splits a deck into words and concepts and lists only the opened one', async () => {
+    const { saveConceptOnly } = await import('../features/quick-add/actions');
+    const it1 = await createWordSet('en', 'IT');
+    if (!it1.ok) throw new Error('set');
+    const w = await word('window');
+    const c = (await saveConceptOnly(DICT, 'en', 'large quantity')).concept;
+    const depth = await createDepthConcept(DICT, 'quantity idea', 'số lượng');
+    await setConceptSets(w.id, [it1.set.id]);
+    await setConceptSets(c.id, [it1.set.id]);
+    await setConceptSets(depth.id, [it1.set.id]);
+    const sets = await listWordSets('en');
+    const filter = { kind: 'set', id: it1.set.id } as const;
+
+    expect(conceptKind(w)).toBe('word');
+    expect(conceptKind(c)).toBe('concept');
+    expect(conceptKind(depth)).toBe('concept'); // older depth rows are derived
+    expect(await countSubDecks('en', filter, sets)).toEqual({ word: 1, concept: 2 });
+    expect((await listDeckConcepts('en', filter, sets, 'word')).map((x) => x.text)).toEqual(['window']);
+    expect(await listDeckConcepts('en', filter, sets, 'concept')).toHaveLength(2);
+    // General holds none of them: they all sit in IT.
+    expect(await countSubDecks('en', { kind: 'none' }, sets)).toEqual({ word: 0, concept: 0 });
   });
 });

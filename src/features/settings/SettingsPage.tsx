@@ -10,6 +10,7 @@ import { useToast } from '../../ui/Toast';
 import { StudyCard } from './StudyCard';
 import { DepthCard } from './DepthCard';
 import { SyncCard } from './SyncCard';
+import { VoiceCard } from './VoiceCard';
 import styles from './SettingsPage.module.css';
 
 type Notice = { kind: 'ok' | 'error'; text: string } | null;
@@ -79,6 +80,8 @@ export function SettingsPage() {
       <StudyCard />
 
       <DepthCard />
+
+      <VoiceCard />
 
       <SyncCard />
 

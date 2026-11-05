@@ -418,7 +418,7 @@ flowchart TD
 | 3 | Nhập file: chọn deck đích **từ danh sách deck có sẵn** (hoặc tạo mới); file có thể có cột `deck` | Từ mới và từ đã có đều vào deck; báo "N từ đã có được thêm vào deck"; hoàn tác khôi phục deck cũ |
 | 4 | Ở Thư viện bấm một **card deck** (General hoặc deck của bạn) | Hiện hai **card con**: **Concept <deck>** và **Word <deck>**, kèm số mục (chỉ đếm). Bấm một card con mới tải danh sách; bấm một concept để xem example của nó |
 | 5 | Ở Học hoặc Hôm nay chọn một hay nhiều deck | Số từ dùng được, số từ đến hạn và phiên ôn chỉ tính từ trong các deck đã chọn |
-| 6 | Xóa deck | Ô xác nhận nêu số từ bị ảnh hưởng; các từ vẫn còn trong thư viện |
+| 6 | Xóa deck | Ô xác nhận nêu số concept và example sẽ bị **xóa cùng deck** (v11, PO yêu cầu); concept còn nằm ở deck khác thì được giữ, chỉ bỏ khỏi deck này; có badge **Hoàn tác** khôi phục cả deck và nội dung |
 
 - **Ngoại lệ:** deck có sẵn chỉ nhận từ cùng ngôn ngữ; cột `deck` trong file khớp deck theo tên (không phân biệt hoa/thường), tên mới thì tạo deck mới.
 - **Spec:** C6, mục 10 Bản 4. **Mốc:** M13a, M13b.
@@ -450,7 +450,7 @@ flowchart TD
 | # | PO làm | Hệ thống phản hồi |
 |---|---|---|
 | 1 | Bấm **(+) → Thêm đoạn văn**, dán đoạn văn (tiêu đề không bắt buộc) | Hiện ô đoạn văn |
-| 2 | Bôi đen một word, bấm **Đục lỗ chỗ đã chọn**; lặp lại cho các word khác | Xem trước đoạn văn với các lỗ đánh số (1), (2)…; mỗi lỗ có nút Bỏ |
+| 2 | Chuyển sang chế độ **Đục lỗ**: chạm một word để đục lỗ (chạm lại để bỏ); muốn đục cả cụm thì bôi đen rồi bấm **Đục lỗ cụm đã chọn** | Lỗ hiện nền màu kèm số (1), (2)… ngay trên đoạn văn; chuyển **Sửa chữ** khi cần gõ, lỗ đi theo chữ |
 | 3 | Chọn deck cho các word mới (mặc định General), bấm **Lưu đoạn văn** | Mỗi lỗ tự tạo word (hoặc gắn word đã có); chuyển sang màn **Đoạn văn** |
 | 4 | Vào **Học → Điền vào đoạn văn** | Cả đoạn hiện với các chỗ trống đánh số, mỗi chỗ một ô nhập, không gợi ý |
 | 5 | Điền các chỗ trống, bấm Kiểm tra | Chấm từng lỗ (không phân biệt hoa/thường), hiện đáp án lỗ sai; ghi log và lịch ôn cho từng lỗ |
@@ -528,7 +528,7 @@ Các điểm dưới đây là chỗ hành trình dựa vào **giả định c�
 | G12 | Tìm kiếm không phân biệt hoa/thường, bỏ dấu tiếng Việt khi tìm nghĩa, ä=ae, ö=oe, ü=ue, ß=ss; chạy offline | J11 |
 | G13 | ~~AI chỉ chạy khi PO bấm yêu cầu~~ **Không còn áp dụng (v7: đã bỏ AI)** | J6, J10 |
 | G14 | Câu chưa tô sáng vẫn lưu được vào Hộp chờ duyệt và chưa có lịch ôn cho đến khi tô sáng | J2, J10 |
-| G15 | **Deck** là nhãn gắn vào concept: một từ nằm được trong nhiều deck mà không nhập lại; xóa deck không xóa từ. Học/Ôn, Tìm kiếm, Thư viện, Nhập và Xuất file đều theo được deck | J12 |
+| G15 | **Deck** là nhãn gắn vào concept: một từ nằm được trong nhiều deck mà không nhập lại; xóa deck xóa luôn các concept (và example) chỉ nằm trong deck đó, concept còn ở deck khác được giữ, có Hoàn tác. Học/Ôn, Tìm kiếm, Thư viện, Nhập và Xuất file đều theo được deck | J12 |
 | G16 | Xóa luôn có **ô xác nhận tại chỗ** nêu hậu quả, và sau đó có badge **Hoàn tác** (xóa mềm); không dùng hộp xác nhận của trình duyệt | J6, J8, J12 |
 | G19 | Nút (+) có **ba lựa chọn tách hẳn**: Thêm từ, Thêm example, Thêm concept. Từ và concept cùng là một dòng `concepts`, chỉ khác `kind`; Thêm concept không tạo example tối thiểu | J2 |
 | G20 | Từ không thuộc deck nào tự nằm trong deck **General** (mặc định ở Thư viện và các ô chọn deck); Thư viện đi **card deck → card con Concept/Word → danh sách**, chỉ tải khi bấm | J12 |

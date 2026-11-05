@@ -7,7 +7,9 @@ import { LangToggle } from '../../ui/LangToggle';
 import fieldStyles from '../../ui/field.module.css';
 import { conceptRepository } from '../../db/repositories';
 import type { WordSet } from '../../db/types';
-import { countBySet, createWordSet, deleteWordSet, listWordSets, renameWordSet, type SetCounts } from '../../wordsets';
+import { countBySet, createWordSet, listWordSets, renameWordSet, type SetCounts } from '../../wordsets';
+import { restoreDeleted } from '../library/actions';
+import { deleteDeckWithContents, previewDeckDelete, type DeckDeletePreview } from './actions';
 import { InlineConfirm } from '../../ui/InlineConfirm';
 import { useToast } from '../../ui/Toast';
 import { useLastLanguage } from '../quick-add/useLastLanguage';
@@ -24,6 +26,7 @@ export function SetsPage() {
   const [error, setError] = useState('');
   // Delete asks inline, on the deck's own card, never in a box over the screen.
   const [confirming, setConfirming] = useState<string | null>(null);
+  const [preview, setPreview] = useState<DeckDeletePreview | null>(null);
   const toast = useToast();
 
   async function load() {
@@ -61,10 +64,28 @@ export function SetsPage() {
     await load();
   }
 
+  // Asking first: the box says how many concepts and examples go with the deck.
+  async function askDelete(set: WordSet) {
+    setPreview(await previewDeckDelete(set.id));
+    setConfirming(set.id);
+  }
+
   async function handleDelete(set: WordSet) {
-    await deleteWordSet(set.id);
+    const rows = await deleteDeckWithContents(set.id);
     setConfirming(null);
-    toast.show(`Đã xóa deck "${set.name}". Các concept vẫn còn trong thư viện.`, { kind: 'info' });
+    setPreview(null);
+    toast.show(
+      `Đã xóa deck "${set.name}" cùng ${rows.concepts.length} concept và ${rows.examples.length} example.`,
+      {
+        kind: 'info',
+        action: {
+          label: 'Hoàn tác',
+          onClick: () => {
+            void restoreDeleted(rows).then(() => load());
+          },
+        },
+      },
+    );
     await load();
   }
 
@@ -140,19 +161,26 @@ export function SetsPage() {
                 <Button variant="secondary" onClick={() => setEditing({ id: set.id, name: set.name })}>
                   Đổi tên
                 </Button>
-                <Button variant="ghost" onClick={() => setConfirming(set.id)}>
+                <Button variant="ghost" onClick={() => void askDelete(set)}>
                   Xóa deck
                 </Button>
               </ButtonRow>
               {confirming === set.id && (
                 <InlineConfirm
-                  confirmLabel="Xóa deck"
-                  onCancel={() => setConfirming(null)}
+                  confirmLabel="Xóa deck và nội dung"
+                  onCancel={() => {
+                    setConfirming(null);
+                    setPreview(null);
+                  }}
                   onConfirm={() => void handleDelete(set)}
                 >
-                  Xóa deck "{set.name}"?{' '}
-                  {(counts?.bySet.get(set.id) ?? 0) > 0
-                    ? `${counts?.bySet.get(set.id)} concept trong deck vẫn còn trong thư viện, chỉ bỏ nhãn deck.`
+                  Xóa deck "{set.name}" và toàn bộ nội dung?{' '}
+                  {preview && preview.concepts + preview.shared > 0
+                    ? `${preview.concepts} concept cùng ${preview.examples} example sẽ bị xóa.${
+                        preview.shared > 0
+                          ? ` ${preview.shared} concept còn nằm ở deck khác nên được giữ, chỉ bỏ khỏi deck này.`
+                          : ''
+                      } Có thể Hoàn tác ngay sau đó.`
                     : 'Deck đang trống.'}
                 </InlineConfirm>
               )}

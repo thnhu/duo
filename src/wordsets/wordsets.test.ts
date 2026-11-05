@@ -191,3 +191,50 @@ describe('sub decks: word and concept inside a deck', () => {
     expect(await countSubDecks('en', { kind: 'none' }, sets)).toEqual({ word: 0, concept: 0 });
   });
 });
+
+describe('deleting a deck deletes its contents', () => {
+  it('removes own concepts with their examples, keeps shared ones, and can be undone', async () => {
+    const { deleteDeckWithContents, previewDeckDelete } = await import('../features/sets/actions');
+    const { restoreDeleted } = await import('../features/library/actions');
+    const { createPassage } = await import('../passages');
+    const it1 = await createWordSet('en', 'IT');
+    const films = await createWordSet('en', 'Films');
+    if (!it1.ok || !films.ok) throw new Error('sets');
+
+    const own = await word('router');
+    const shared = await word('ball');
+    const outside = await word('window'); // General: must not be touched
+    await setConceptSets(own.id, [it1.set.id]);
+    await setConceptSets(shared.id, [it1.set.id, films.set.id]);
+    // A passage whose only gap is a word of the deck goes away with it.
+    const text = 'The router works.';
+    const made = await createPassage({
+      dictionaryId: DICT, lang: 'en', text, gaps: [{ start: 4, end: 10 }], setId: it1.set.id,
+    });
+    if (!made.ok) throw new Error('passage');
+
+    const preview = await previewDeckDelete(it1.set.id);
+    expect(preview.shared).toBe(1);
+    expect(preview.concepts).toBe(1); // "router" (the passage reuses it)
+    expect(preview.examples).toBeGreaterThanOrEqual(2); // minimal + passage gap
+
+    const rows = await deleteDeckWithContents(it1.set.id);
+    const alive = async (id: string) => (await db.concepts.get(id))?.deletedAt === undefined;
+    expect(await alive(own.id)).toBe(false);
+    expect(await alive(shared.id)).toBe(true);
+    expect((await db.concepts.get(shared.id))?.setIds).toEqual([films.set.id]);
+    expect(await alive(outside.id)).toBe(true);
+    const liveExamples = (await db.examples.toArray()).filter((e) => e.deletedAt === undefined && e.targetConceptId === own.id);
+    expect(liveExamples).toHaveLength(0);
+    expect((await listWordSets('en')).map((s) => s.name)).toEqual(['Films']);
+    expect((await db.passages.get(made.passage.id))?.deletedAt).toBeDefined();
+
+    // Undo brings back the deck, the concepts, the examples, the passage and the label.
+    await restoreDeleted(rows);
+    expect(await alive(own.id)).toBe(true);
+    expect((await db.concepts.get(shared.id))?.setIds?.sort()).toEqual([it1.set.id, films.set.id].sort());
+    expect((await listWordSets('en')).map((s) => s.name).sort()).toEqual(['Films', 'IT']);
+    expect((await db.passages.get(made.passage.id))?.deletedAt).toBeUndefined();
+    expect((await db.examples.toArray()).filter((e) => e.deletedAt === undefined && e.targetConceptId === own.id).length).toBeGreaterThanOrEqual(2);
+  });
+});

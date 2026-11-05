@@ -54,6 +54,10 @@ export function LibraryPage() {
         <Card tinted>Nhập từ file CSV/XLSX →</Card>
       </Link>
 
+      <Link to="/tree" className={styles.banner}>
+        <Card tinted>Xem cây concept (cha, con, ví dụ) →</Card>
+      </Link>
+
       {lang === 'en' && (
         <Link to="/depth/new" className={styles.banner}>
           <Card tinted>Tạo concept Sâu (một ý, nhiều cách diễn đạt) →</Card>

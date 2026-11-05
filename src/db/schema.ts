@@ -1,6 +1,7 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type {
   Concept,
+  ConceptLink,
   Dictionary,
   Example,
   ExampleLink,
@@ -15,6 +16,7 @@ import type {
 export class DuoDB extends Dexie {
   dictionaries!: EntityTable<Dictionary, 'id'>;
   concepts!: EntityTable<Concept, 'id'>;
+  conceptLinks!: EntityTable<ConceptLink, 'id'>;
   examples!: EntityTable<Example, 'id'>;
   exampleLinks!: EntityTable<ExampleLink, 'id'>;
   scheduleStates!: EntityTable<ScheduleState, 'exampleId'>;
@@ -69,6 +71,18 @@ export class DuoDB extends Dexie {
           .toCollection()
           .modify((row: { schemaVersion?: number }) => {
             row.schemaVersion = 4;
+          });
+      });
+    // v5 (M11c): adds conceptLinks (concept -> concept, child -> parent).
+    // Existing rows are untouched.
+    this.version(5)
+      .stores({ conceptLinks: 'id, childId, parentId, updatedAt, deletedAt' })
+      .upgrade(async (tx) => {
+        await tx
+          .table('settings')
+          .toCollection()
+          .modify((row: { schemaVersion?: number }) => {
+            row.schemaVersion = 5;
           });
       });
   }

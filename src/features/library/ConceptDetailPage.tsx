@@ -144,6 +144,8 @@ export function ConceptDetailPage() {
         </div>
       </div>
 
+      <Link to={`/tree/${concept.id}`}>Xem cây (concept cha, con)</Link>
+
       <GrammarSummary concept={concept} />
 
       <AcquisitionCard concept={concept} />

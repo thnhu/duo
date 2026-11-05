@@ -3,6 +3,7 @@ import { db } from './schema';
 import { Repository } from './repository';
 import type {
   Concept,
+  ConceptLink,
   Dictionary,
   Example,
   ExampleLink,
@@ -18,6 +19,9 @@ export const dictionaryRepository = new Repository<Dictionary, string>(
 );
 export const conceptRepository = new Repository<Concept, string>(
   db.concepts as unknown as Table<Concept, string>,
+);
+export const conceptLinkRepository = new Repository<ConceptLink, string>(
+  db.conceptLinks as unknown as Table<ConceptLink, string>,
 );
 export const exampleRepository = new Repository<Example, string>(
   db.examples as unknown as Table<Example, string>,

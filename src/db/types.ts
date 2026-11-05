@@ -156,6 +156,22 @@ export interface Example {
   deletedAt?: number;
 }
 
+// Concept -> concept link (spec 1.4, kind 3). Direction is always
+// child -> parent: "hello" (child) is a "typeOf" "greeting" (parent). Only
+// concepts have parents and children, never examples. No cycles (checked
+// when saving, and tolerated when reading because sync can merge two devices'
+// edits into one).
+export type ConceptLinkType = LinkTypeSets['conceptConcept'][number];
+
+export interface ConceptLink {
+  id: string;
+  childId: string;
+  parentId: string;
+  type: ConceptLinkType;
+  updatedAt: number;
+  deletedAt?: number;
+}
+
 // Example -> concept link (spec 1.4, kind 2): an EXTRA relation beyond the
 // example's own concept (`targetConceptId`). One example can be a way of
 // saying several concepts.

@@ -6,18 +6,8 @@ import { SETTINGS_ID } from '../../db/defaults';
 import { conceptRepository, settingsRepository } from '../../db/repositories';
 import type { Concept, Example, ExampleLink, ExampleLinkType } from '../../db/types';
 import { linkExample, listLinksOfExample, unlinkExample } from '../../depth';
+import { EXAMPLE_LINK_LABEL as TYPE_LABEL } from '../../links/labels';
 import styles from './ExampleEditPage.module.css';
-
-const TYPE_LABEL: Record<ExampleLinkType, string> = {
-  idiom: 'Idiom',
-  nominal: 'Nominal',
-  agent: 'Agent',
-  patient: 'Patient',
-  action: 'Action',
-  describedBy: 'Described by',
-  describing: 'Describing',
-  otherPhrase: 'Other phrase',
-};
 
 // "Also a way of saying another concept" (spec 1.4, kind 2). The example's
 // own concept (`targetConceptId`) is NOT listed here; this is the extra link.

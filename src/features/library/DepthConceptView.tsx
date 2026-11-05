@@ -112,6 +112,7 @@ export function DepthConceptView({ concept, onChanged }: { concept: Concept; onC
             onChange={(e) => setDescription(e.target.value)}
           />
         </div>
+        <Link to={`/tree/${concept.id}`}>Xem cây (concept cha, con)</Link>
         <div className={styles.actions}>
           <Button onClick={() => void handleSave()}>Lưu</Button>
           <Button variant="destructive" onClick={() => void handleDeleteConcept()}>

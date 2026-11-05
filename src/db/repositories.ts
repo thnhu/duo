@@ -12,6 +12,7 @@ import type {
   ReviewLog,
   ScheduleState,
   Settings,
+  WordSet,
 } from './types';
 
 export const dictionaryRepository = new Repository<Dictionary, string>(
@@ -59,3 +60,6 @@ export const reviewLogRepository = {
     return db.reviewLogs.toArray();
   },
 };
+export const wordSetRepository = new Repository<WordSet, string>(
+  db.wordSets as unknown as Table<WordSet, string>,
+);

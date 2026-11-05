@@ -14,6 +14,18 @@ export interface Dictionary {
   deletedAt?: number;
 }
 
+// A word set ("bo tu", spec M13): a named group of concepts of one language,
+// e.g. "IT" or "From films". A concept can belong to several sets, so the
+// same word is never entered twice. Sets are only labels on concepts: the
+// dictionary (one per language) still owns the data.
+export interface WordSet {
+  id: string;
+  name: string;
+  lang: Lang;
+  updatedAt: number;
+  deletedAt?: number;
+}
+
 export interface ConceptGrammar {
   gender?: string;
   plural?: string;
@@ -76,6 +88,8 @@ export interface Concept {
   grammar?: ConceptGrammar;
   // Undefined = breadth (concepts created before M3 have no mode).
   mode?: StudyMode;
+  // Word sets this concept belongs to (M13). Undefined/empty = in no set.
+  setIds?: string[];
   // Pending lookup suggestion awaiting PO review (M3b).
   lookup?: LookupSuggestion;
   verification: Verification;

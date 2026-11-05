@@ -16,6 +16,7 @@ import { dismissSuggestion, markVerified } from '../../lookup/apply';
 import { LookupReview } from '../lookup/LookupReview';
 import { useLookupQueue } from '../lookup/useLookupQueue';
 import { DepthConceptView } from './DepthConceptView';
+import { ConceptSetsCard } from '../sets/ConceptSetsCard';
 import styles from './ConceptDetailPage.module.css';
 
 export function ConceptDetailPage() {
@@ -150,6 +151,8 @@ export function ConceptDetailPage() {
         <LinkButton to={`/tree/${concept.id}`}>Xem cây (concept cha, con)</LinkButton>
         <LinkButton to={`/links/${concept.id}`}>Liên kết cha/con</LinkButton>
       </ButtonRow>
+
+      <ConceptSetsCard concept={concept} onChanged={() => void load(concept.id)} />
 
       <GrammarSummary concept={concept} />
 

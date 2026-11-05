@@ -17,6 +17,7 @@ import {
   type TriFoldProgress,
 } from '../../depth';
 import { deleteConceptCascade, deleteExample } from './actions';
+import { ConceptSetsCard } from '../sets/ConceptSetsCard';
 import styles from './ConceptDetailPage.module.css';
 
 const LABEL_KEYS = ['tone', 'mode', 'register', 'nuance', 'dialect'] as const;
@@ -125,6 +126,8 @@ export function DepthConceptView({ concept, onChanged }: { concept: Concept; onC
           </Button>
         </ButtonRow>
       </div>
+
+      <ConceptSetsCard concept={concept} onChanged={onChanged} />
 
       {progress && (
         <Card tinted className={styles.lookupCard}>

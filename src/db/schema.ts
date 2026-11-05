@@ -11,6 +11,7 @@ import type {
   ScheduleState,
   Settings,
   SyncMetaRow,
+  WordSet,
 } from './types';
 
 export class DuoDB extends Dexie {
@@ -25,6 +26,7 @@ export class DuoDB extends Dexie {
   importBatches!: EntityTable<ImportBatch, 'id'>;
   settings!: EntityTable<Settings, 'id'>;
   syncMeta!: EntityTable<SyncMetaRow, 'key'>;
+  wordSets!: EntityTable<WordSet, 'id'>;
 
   constructor(name = 'duo') {
     super(name);
@@ -83,6 +85,18 @@ export class DuoDB extends Dexie {
           .toCollection()
           .modify((row: { schemaVersion?: number }) => {
             row.schemaVersion = 5;
+          });
+      });
+    // v6 (M13): adds wordSets (named groups of concepts). Concepts get an
+    // optional `setIds`; existing rows are untouched (in no set).
+    this.version(6)
+      .stores({ wordSets: 'id, lang, updatedAt, deletedAt' })
+      .upgrade(async (tx) => {
+        await tx
+          .table('settings')
+          .toCollection()
+          .modify((row: { schemaVersion?: number }) => {
+            row.schemaVersion = 6;
           });
       });
   }

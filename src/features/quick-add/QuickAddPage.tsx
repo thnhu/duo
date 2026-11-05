@@ -1,11 +1,12 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../../ui/Button';
 import { ButtonRow } from '../../ui/ButtonRow';
 import { LangToggle } from '../../ui/LangToggle';
 import fieldStyles from '../../ui/field.module.css';
 import { dictionaryIdForLang, findConceptByExactText } from '../../db/queries';
-import type { Concept } from '../../db/types';
+import type { Concept, WordSet } from '../../db/types';
+import { addConceptToSet, listWordSets, readAddSet, writeAddSet } from '../../wordsets';
 import { useLastLanguage } from './useLastLanguage';
 import { ConceptSuggestions } from '../search/ConceptSuggestions';
 import { normalizeSelection, textForSelection, type Selection } from './highlight';
@@ -18,6 +19,23 @@ type Message = { kind: 'success' | 'info'; text: string; linkTo?: string } | nul
 export function QuickAddPage() {
   const [lang, setLang] = useLastLanguage();
   const [mode, setMode] = useState<Mode>('word');
+
+  // The word set new words go into, remembered from last time ('' = none).
+  const [sets, setSets] = useState<WordSet[]>([]);
+  const [setId, setSetIdState] = useState('');
+  useEffect(() => {
+    void listWordSets(lang).then((list) => {
+      setSets(list);
+      const remembered = readAddSet(lang);
+      setSetIdState(list.some((s) => s.id === remembered) ? remembered : '');
+    });
+  }, [lang]);
+  function chooseSet(id: string) {
+    writeAddSet(lang, id);
+    setSetIdState(id);
+  }
+  const setName = sets.find((s) => s.id === setId)?.name;
+  const inSet = setName ? ` Đã thêm vào bộ "${setName}".` : '';
 
   const [wordText, setWordText] = useState('');
   const [wordMessage, setWordMessage] = useState<Message>(null);
@@ -36,13 +54,17 @@ export function QuickAddPage() {
     const dictionaryId = await dictionaryIdForLang(lang);
     const { outcome, concept } = await saveQuickWord(dictionaryId, lang, trimmed);
 
+    // Also for a word that already exists: that is how one word ends up in
+    // several sets without a second copy.
+    if (setId) await addConceptToSet(concept.id, setId);
+
     if (outcome === 'created') {
-      setWordMessage({ kind: 'success', text: `Đã lưu "${concept.text}".` });
+      setWordMessage({ kind: 'success', text: `Đã lưu "${concept.text}".${inSet}` });
       setWordText('');
     } else {
       setWordMessage({
         kind: 'info',
-        text: `"${concept.text}" đã có trong thư viện.`,
+        text: `"${concept.text}" đã có trong thư viện.${inSet}`,
         linkTo: `/library/${concept.id}`,
       });
     }
@@ -88,13 +110,14 @@ export function QuickAddPage() {
       pickedConceptId,
     );
     if (!result) return;
+    if (setId) await addConceptToSet(result.concept.id, setId);
 
     setSentenceMessage({
       kind: 'success',
       text:
         result.conceptOutcome === 'created'
-          ? `Đã tạo concept mới "${result.concept.text}" và lưu ví dụ.`
-          : `Đã gắn vào concept có sẵn "${result.concept.text}".`,
+          ? `Đã tạo concept mới "${result.concept.text}" và lưu ví dụ.${inSet}`
+          : `Đã gắn vào concept có sẵn "${result.concept.text}".${inSet}`,
       linkTo: `/library/${result.concept.id}`,
     });
     resetSentenceForm();
@@ -139,6 +162,28 @@ export function QuickAddPage() {
           Cả câu
         </button>
       </div>
+
+      {sets.length > 0 && (
+        <div>
+          <label className={fieldStyles.label} htmlFor="quick-set">
+            Thêm vào bộ
+          </label>
+          <select id="quick-set" className={fieldStyles.input} value={setId} onChange={(e) => chooseSet(e.target.value)}>
+            <option value="">Không xếp bộ</option>
+            {sets.map((set) => (
+              <option key={set.id} value={set.id}>
+                {set.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {sets.length === 0 && (
+        <p className={fieldStyles.hint}>
+          Muốn gom từ theo mục đích (IT, từ phim…)? <Link to="/sets">Tạo bộ từ</Link>.
+        </p>
+      )}
 
       {mode === 'word' && (
         <form

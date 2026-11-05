@@ -1,10 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../../ui/Card';
+import { LinkButton } from '../../ui/LinkButton';
 import { LangToggle } from '../../ui/LangToggle';
 import { SearchLink } from '../../ui/SearchLink';
 import { dictionaryIdForLang, listConceptsByDictionary, listInboxExamples } from '../../db/queries';
-import type { Concept } from '../../db/types';
+import type { Concept, WordSet } from '../../db/types';
+import {
+  ALL_SETS,
+  countBySet,
+  filterBySet,
+  listWordSets,
+  readSetFilter,
+  writeSetFilter,
+  type SetFilter,
+} from '../../wordsets';
 import { LookupBar } from '../lookup/LookupBar';
 import { useLookupQueue } from '../lookup/useLookupQueue';
 import { useLastLanguage } from '../quick-add/useLastLanguage';
@@ -14,10 +24,18 @@ export function LibraryPage() {
   const [lang, setLang] = useLastLanguage();
   const [concepts, setConcepts] = useState<Concept[] | null>(null);
   const [inboxCount, setInboxCount] = useState(0);
+  const [sets, setSets] = useState<WordSet[]>([]);
+  const [filter, setFilterState] = useState<SetFilter>(() => readSetFilter(lang));
 
   async function loadConcepts(currentLang: typeof lang) {
     const dictionaryId = await dictionaryIdForLang(currentLang);
     setConcepts(await listConceptsByDictionary(dictionaryId));
+    setSets(await listWordSets(currentLang));
+  }
+
+  function setFilter(next: SetFilter) {
+    writeSetFilter(lang, next);
+    setFilterState(next);
   }
 
   async function loadInboxCount() {
@@ -30,6 +48,7 @@ export function LibraryPage() {
   }
 
   useEffect(() => {
+    setFilterState(readSetFilter(lang));
     void loadConcepts(lang);
     void loadInboxCount();
   }, [lang]);
@@ -40,6 +59,14 @@ export function LibraryPage() {
     void loadConcepts(lang);
   }, [queue.done, queue.status]);
 
+  const liveIds = new Set(sets.map((s) => s.id));
+  // A remembered filter whose set was deleted falls back to "all".
+  const activeFilter: SetFilter = filter.kind === 'set' && !liveIds.has(filter.id) ? ALL_SETS : filter;
+  const visible = concepts ? filterBySet(concepts, activeFilter, liveIds) : null;
+  const counts = concepts ? countBySet(concepts, sets) : null;
+  const isActive = (f: SetFilter) =>
+    f.kind === activeFilter.kind && (f.kind !== 'set' || (activeFilter.kind === 'set' && f.id === activeFilter.id));
+
   return (
     <section className={styles.page}>
       <div className={styles.header}>
@@ -49,6 +76,27 @@ export function LibraryPage() {
           <SearchLink />
         </div>
       </div>
+
+      {counts && (
+        <div className={styles.filters} role="group" aria-label="Lọc theo bộ từ">
+          {([
+            { f: ALL_SETS, label: 'Tất cả', n: counts.all },
+            ...sets.map((set) => ({ f: { kind: 'set', id: set.id } as SetFilter, label: set.name, n: counts.bySet.get(set.id) ?? 0 })),
+            ...(sets.length > 0 ? [{ f: { kind: 'none' } as SetFilter, label: 'Chưa xếp bộ', n: counts.none }] : []),
+          ]).map(({ f, label, n }) => (
+            <button
+              key={f.kind === 'set' ? f.id : f.kind}
+              type="button"
+              className={[styles.filter, isActive(f) ? styles.filterOn : ''].filter(Boolean).join(' ')}
+              aria-pressed={isActive(f)}
+              onClick={() => setFilter(f)}
+            >
+              {label} <strong>{n}</strong>
+            </button>
+          ))}
+          <LinkButton to="/sets">Quản lý bộ</LinkButton>
+        </div>
+      )}
 
       <Link to="/import" className={styles.banner}>
         <Card tinted>Nhập từ file CSV/XLSX →</Card>
@@ -78,14 +126,17 @@ export function LibraryPage() {
         </Link>
       )}
 
-      {concepts && <LookupBar concepts={concepts} />}
+      {visible && <LookupBar concepts={visible} />}
 
       {concepts && concepts.length === 0 && (
         <p className={styles.empty}>Chưa có từ nào. Dùng nút "+" để ghi nhanh một từ.</p>
       )}
+      {concepts && concepts.length > 0 && visible && visible.length === 0 && (
+        <p className={styles.empty}>Không có từ nào trong lựa chọn này.</p>
+      )}
 
       <div className={styles.list}>
-        {concepts?.map((concept) => (
+        {visible?.map((concept) => (
           <Link key={concept.id} to={`/library/${concept.id}`} className={styles.rowLink}>
             <Card className={styles.row}>
               <span>

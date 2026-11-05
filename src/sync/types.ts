@@ -16,6 +16,7 @@ export const SYNC_TABLES = [
   ['examples', 'id'],
   ['exampleLinks', 'id'],
   ['conceptLinks', 'id'],
+  ['wordSets', 'id'],
   ['scheduleStates', 'exampleId'],
   ['reviewLogs', 'id'],
   ['importMappings', 'id'],

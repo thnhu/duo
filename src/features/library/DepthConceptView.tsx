@@ -16,6 +16,7 @@ import {
   triFoldProgress,
   type TriFoldProgress,
 } from '../../depth';
+import { InlineConfirm } from '../../ui/InlineConfirm';
 import { useToast } from '../../ui/Toast';
 import { deleteConceptCascade, deleteExample, restoreDeleted } from './actions';
 import { ConceptSetsCard } from '../sets/ConceptSetsCard';
@@ -41,6 +42,7 @@ export function DepthConceptView({ concept, onChanged }: { concept: Concept; onC
   const [expressions, setExpressions] = useState<Example[]>([]);
   const [progress, setProgress] = useState<TriFoldProgress | null>(null);
   const [draft, setDraft] = useState('');
+  const [confirm, setConfirm] = useState<{ kind: 'concept' } | { kind: 'expression'; id: string } | null>(null);
   // Shelf view: group the ways of saying the idea by one label (or not).
   const [groupBy, setGroupBy] = useState<(typeof LABEL_KEYS)[number] | ''>('');
   const [valueSets, setValueSets] = useState<AttributeValueSets | null>(null);
@@ -80,6 +82,7 @@ export function DepthConceptView({ concept, onChanged }: { concept: Concept; onC
   }
 
   async function handleDeleteExpression(example: Example) {
+    setConfirm(null);
     const deleted = await deleteExample(example.id);
     await load();
     toast.show(`Đã xóa "${example.text}".`, {
@@ -94,6 +97,7 @@ export function DepthConceptView({ concept, onChanged }: { concept: Concept; onC
   }
 
   async function handleDeleteConcept() {
+    setConfirm(null);
     const deleted = await deleteConceptCascade(concept.id);
     navigate('/library');
     toast.show(`Đã xóa "${concept.text}" và các cách diễn đạt của nó.`, {
@@ -141,10 +145,19 @@ export function DepthConceptView({ concept, onChanged }: { concept: Concept; onC
       </ButtonRow>
         <ButtonRow>
           <Button onClick={() => void handleSave()}>Lưu</Button>
-          <Button variant="destructive" onClick={() => void handleDeleteConcept()}>
+          <Button variant="destructive" onClick={() => setConfirm({ kind: 'concept' })}>
             Xóa
           </Button>
         </ButtonRow>
+        {confirm?.kind === 'concept' && (
+          <InlineConfirm
+            confirmLabel="Xóa concept"
+            onCancel={() => setConfirm(null)}
+            onConfirm={() => void handleDeleteConcept()}
+          >
+            Xóa concept "{concept.text}" và {expressions.length} cách diễn đạt của nó?
+          </InlineConfirm>
+        )}
       </div>
 
       <ConceptSetsCard concept={concept} onChanged={onChanged} />
@@ -236,11 +249,20 @@ export function DepthConceptView({ concept, onChanged }: { concept: Concept; onC
                   Sửa / gắn nhãn
                 </LinkButton>
                 {example.targetConceptId === concept.id && (
-                  <Button variant="ghost" onClick={() => void handleDeleteExpression(example)}>
+                  <Button variant="ghost" onClick={() => setConfirm({ kind: 'expression', id: example.id })}>
                     Xóa
                   </Button>
                 )}
               </div>
+              {confirm?.kind === 'expression' && confirm.id === example.id && (
+                <InlineConfirm
+                  confirmLabel="Xóa cách diễn đạt"
+                  onCancel={() => setConfirm(null)}
+                  onConfirm={() => void handleDeleteExpression(example)}
+                >
+                  Xóa cách diễn đạt "{example.text}"?
+                </InlineConfirm>
+              )}
             </Card>
               ))}
             </div>

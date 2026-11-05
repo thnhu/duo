@@ -12,7 +12,7 @@ export interface ToastOptions {
   kind?: ToastKind;
   // One optional action, e.g. "Hoàn tác" after a delete.
   action?: { label: string; onClick: () => void | Promise<void> };
-  // Milliseconds; default 4 s, 7 s when there is an action or it is an error.
+  // Milliseconds; default 2.5 s, 4.5 s when there is an action or it is an error.
   duration?: number;
 }
 
@@ -61,7 +61,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 function ToastView({ item, onDismiss }: { item: ToastItem; onDismiss: () => void }) {
   const [paused, setPaused] = useState(false);
   const kind = item.kind ?? 'success';
-  const duration = item.duration ?? (item.action || kind === 'error' ? 7000 : 4000);
+  const duration = item.duration ?? (item.action || kind === 'error' ? 4500 : 2500);
 
   // The timer stops while the pointer or focus is on the toast, so a user
   // reading it or reaching for "Hoàn tác" is never raced.

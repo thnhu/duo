@@ -10,6 +10,7 @@ import { computeProgress, type AcquisitionProgress } from '../../acquisition';
 import { loadCriteria } from '../../acquisition/update';
 import { conceptRepository, reviewLogRepository } from '../../db/repositories';
 import type { AcquisitionCriteria, Concept, Example } from '../../db/types';
+import { InlineConfirm } from '../../ui/InlineConfirm';
 import { useToast } from '../../ui/Toast';
 import { deleteConceptCascade, deleteExample, restoreDeleted } from './actions';
 import { isSingleWord, lookupQueue } from '../../lookup';
@@ -30,6 +31,8 @@ export function ConceptDetailPage() {
   const [text, setText] = useState('');
   const [pos, setPos] = useState('');
   const [meanings, setMeanings] = useState('');
+  // What is waiting for a yes/no: the whole concept, or one example.
+  const [confirm, setConfirm] = useState<{ kind: 'concept' } | { kind: 'example'; id: string } | null>(null);
 
   async function load(id: string) {
     const found = await conceptRepository.getById(id);
@@ -75,6 +78,7 @@ export function ConceptDetailPage() {
   // No "are you sure?" box: the delete is soft, so it can be undone.
   async function handleDeleteConcept() {
     if (!concept) return;
+    setConfirm(null);
     const deleted = await deleteConceptCascade(concept.id);
     navigate('/library');
     toast.show(`Đã xóa "${concept.text}" và các ví dụ của nó.`, {
@@ -83,6 +87,7 @@ export function ConceptDetailPage() {
   }
 
   async function handleDeleteExample(exampleId: string) {
+    setConfirm(null);
     const deleted = await deleteExample(exampleId);
     if (conceptId) await load(conceptId);
     toast.show('Đã xóa ví dụ.', {
@@ -160,10 +165,19 @@ export function ConceptDetailPage() {
 
         <ButtonRow>
           <Button onClick={() => void handleSave()}>Lưu</Button>
-          <Button variant="destructive" onClick={() => void handleDeleteConcept()}>
+          <Button variant="destructive" onClick={() => setConfirm({ kind: 'concept' })}>
             Xóa
           </Button>
         </ButtonRow>
+        {confirm?.kind === 'concept' && (
+          <InlineConfirm
+            confirmLabel="Xóa concept"
+            onCancel={() => setConfirm(null)}
+            onConfirm={() => void handleDeleteConcept()}
+          >
+            Xóa "{concept.text}" và {examples.length} ví dụ của nó?
+          </InlineConfirm>
+        )}
       </div>
 
       <ButtonRow>
@@ -244,10 +258,19 @@ export function ConceptDetailPage() {
                 <LinkButton to={`/example/${example.id}`}>
                   Sửa / gắn nhãn
                 </LinkButton>
-                <Button variant="ghost" onClick={() => void handleDeleteExample(example.id)}>
+                <Button variant="ghost" onClick={() => setConfirm({ kind: 'example', id: example.id })}>
                   Xóa
                 </Button>
               </div>
+              {confirm?.kind === 'example' && confirm.id === example.id && (
+                <InlineConfirm
+                  confirmLabel="Xóa ví dụ"
+                  onCancel={() => setConfirm(null)}
+                  onConfirm={() => void handleDeleteExample(example.id)}
+                >
+                  Xóa ví dụ này?
+                </InlineConfirm>
+              )}
             </Card>
           ))}
         </div>

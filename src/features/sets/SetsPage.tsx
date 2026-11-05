@@ -8,6 +8,7 @@ import fieldStyles from '../../ui/field.module.css';
 import { conceptRepository } from '../../db/repositories';
 import type { WordSet } from '../../db/types';
 import { countBySet, createWordSet, deleteWordSet, listWordSets, renameWordSet, type SetCounts } from '../../wordsets';
+import { InlineConfirm } from '../../ui/InlineConfirm';
 import { useToast } from '../../ui/Toast';
 import { useLastLanguage } from '../quick-add/useLastLanguage';
 import styles from './Sets.module.css';
@@ -144,22 +145,16 @@ export function SetsPage() {
                 </Button>
               </ButtonRow>
               {confirming === set.id && (
-                <div className={styles.confirm} role="group" aria-label="Xác nhận xóa deck">
-                  <p>
-                    Xóa deck "{set.name}"?{' '}
-                    {(counts?.bySet.get(set.id) ?? 0) > 0
-                      ? `${counts?.bySet.get(set.id)} từ trong deck vẫn còn trong thư viện, chỉ bỏ nhãn deck.`
-                      : 'Deck đang trống.'}
-                  </p>
-                  <ButtonRow>
-                    <Button variant="ghost" onClick={() => setConfirming(null)}>
-                      Hủy
-                    </Button>
-                    <Button variant="destructive" onClick={() => void handleDelete(set)}>
-                      Xóa deck
-                    </Button>
-                  </ButtonRow>
-                </div>
+                <InlineConfirm
+                  confirmLabel="Xóa deck"
+                  onCancel={() => setConfirming(null)}
+                  onConfirm={() => void handleDelete(set)}
+                >
+                  Xóa deck "{set.name}"?{' '}
+                  {(counts?.bySet.get(set.id) ?? 0) > 0
+                    ? `${counts?.bySet.get(set.id)} từ trong deck vẫn còn trong thư viện, chỉ bỏ nhãn deck.`
+                    : 'Deck đang trống.'}
+                </InlineConfirm>
               )}
             </>
           )}

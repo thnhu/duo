@@ -8,6 +8,7 @@ import { conceptRepository, exampleRepository, settingsRepository } from '../../
 import type { AttributeValueSets, Concept, Example, ExampleAttributes } from '../../db/types';
 import { normalizeSelection, type Selection } from '../quick-add/highlight';
 import { addSecondPhrase, clearExampleAttributes, saveExampleEdits } from './actions';
+import { ExampleLinksCard } from './ExampleLinksCard';
 import styles from './ExampleEditPage.module.css';
 
 // Attribute display order and labels. The value lists come from Settings
@@ -71,7 +72,8 @@ export function ExampleEditPage() {
   const backTo = concept ? `/library/${concept.id}` : '/inbox';
   const backLabel = concept ? `← ${concept.text}` : '← Hộp chờ duyệt';
   // A minimal example is just the concept text: nothing to re-highlight.
-  const canHighlight = !example.isMinimal;
+  // A depth expression is a whole phrase: nothing to highlight inside it.
+  const canHighlight = !example.isMinimal && concept?.mode !== 'depth';
 
   function handlePickHighlight() {
     const textarea = textareaRef.current;
@@ -130,7 +132,7 @@ export function ExampleEditPage() {
       </Link>
 
       <div>
-        <h1 className={styles.title}>Sửa ví dụ</h1>
+        <h1 className={styles.title}>{concept?.mode === 'depth' ? 'Sửa cách diễn đạt' : 'Sửa ví dụ'}</h1>
         <p className={styles.sentence}>
           {highlight ? (
             <>
@@ -199,6 +201,8 @@ export function ExampleEditPage() {
           Chọn "Other" thì ghi rõ trong ghi chú. Nhãn không có trong bộ (ví dụ slang) cũng ghi vào ghi chú.
         </p>
       </Card>
+
+      {concept && <ExampleLinksCard example={example} />}
 
       <div>
         <label className={fieldStyles.label} htmlFor="example-note">

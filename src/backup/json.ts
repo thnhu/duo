@@ -14,6 +14,7 @@ export const BACKUP_TABLES = [
   ['dictionaries', 'id'],
   ['concepts', 'id'],
   ['examples', 'id'],
+  ['exampleLinks', 'id'],
   ['scheduleStates', 'exampleId'],
   ['reviewLogs', 'id'],
   ['importMappings', 'id'],

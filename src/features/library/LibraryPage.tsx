@@ -54,6 +54,12 @@ export function LibraryPage() {
         <Card tinted>Nhập từ file CSV/XLSX →</Card>
       </Link>
 
+      {lang === 'en' && (
+        <Link to="/depth/new" className={styles.banner}>
+          <Card tinted>Tạo concept Sâu (một ý, nhiều cách diễn đạt) →</Card>
+        </Link>
+      )}
+
       {inboxCount > 0 && (
         <Link to="/inbox" className={styles.banner}>
           <Card tinted>
@@ -83,7 +89,7 @@ export function LibraryPage() {
                   .filter(Boolean)
                   .join(' ')}
               >
-                {concept.status === 'acquired' ? 'Đã thụ đắc' : 'Đang học'}
+                {concept.mode === 'depth' ? 'Sâu' : concept.status === 'acquired' ? 'Đã thụ đắc' : 'Đang học'}
               </span>
               {concept.lookup?.status === 'found' && concept.verification === 'unverified' && (
                 <span className={styles.badge}>Có gợi ý</span>

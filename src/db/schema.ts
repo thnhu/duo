@@ -3,6 +3,7 @@ import type {
   Concept,
   Dictionary,
   Example,
+  ExampleLink,
   ImportBatch,
   ImportMapping,
   ReviewLog,
@@ -15,6 +16,7 @@ export class DuoDB extends Dexie {
   dictionaries!: EntityTable<Dictionary, 'id'>;
   concepts!: EntityTable<Concept, 'id'>;
   examples!: EntityTable<Example, 'id'>;
+  exampleLinks!: EntityTable<ExampleLink, 'id'>;
   scheduleStates!: EntityTable<ScheduleState, 'exampleId'>;
   reviewLogs!: EntityTable<ReviewLog, 'id'>;
   importMappings!: EntityTable<ImportMapping, 'id'>;
@@ -55,6 +57,18 @@ export class DuoDB extends Dexie {
           .toCollection()
           .modify((row: { schemaVersion?: number }) => {
             row.schemaVersion = 3;
+          });
+      });
+    // v4 (M11a): adds exampleLinks (example -> concept links, depth mode).
+    // Existing rows are untouched.
+    this.version(4)
+      .stores({ exampleLinks: 'id, exampleId, conceptId, updatedAt, deletedAt' })
+      .upgrade(async (tx) => {
+        await tx
+          .table('settings')
+          .toCollection()
+          .modify((row: { schemaVersion?: number }) => {
+            row.schemaVersion = 4;
           });
       });
   }

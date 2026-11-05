@@ -7,6 +7,7 @@ import { dateStamp, downloadBlob, getLastBackupAt, setLastBackupAt } from '../..
 import { exportXlsx } from '../../backup/table';
 import { conceptRepository, exampleRepository } from '../../db/repositories';
 import { StudyCard } from './StudyCard';
+import { DepthCard } from './DepthCard';
 import { SyncCard } from './SyncCard';
 import styles from './SettingsPage.module.css';
 
@@ -74,6 +75,7 @@ export function SettingsPage() {
 
       <StudyCard />
 
+      <DepthCard />
 
       <SyncCard />
 

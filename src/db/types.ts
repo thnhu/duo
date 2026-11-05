@@ -156,6 +156,20 @@ export interface Example {
   deletedAt?: number;
 }
 
+// Example -> concept link (spec 1.4, kind 2): an EXTRA relation beyond the
+// example's own concept (`targetConceptId`). One example can be a way of
+// saying several concepts.
+export type ExampleLinkType = LinkTypeSets['exampleConcept'][number];
+
+export interface ExampleLink {
+  id: string;
+  exampleId: string;
+  conceptId: string;
+  type: ExampleLinkType;
+  updatedAt: number;
+  deletedAt?: number;
+}
+
 export interface ScheduleState {
   exampleId: string;
   due: number;
@@ -252,10 +266,17 @@ export interface StudySettings {
   sessionCount: number;
 }
 
+// Depth mode (M11a): how many different ways of saying one concept make it
+// "tri-fold" complete.
+export interface DepthSettings {
+  minExpressions: number;
+}
+
 export interface Settings {
   id: string;
   acquisitionCriteria: AcquisitionCriteria;
   study?: StudySettings;
+  depth?: DepthSettings;
   attributeValueSets: AttributeValueSets;
   linkTypes: LinkTypeSets;
   enabledModules: string[];

@@ -1,7 +1,7 @@
 # SPEC: Công cụ học từ vựng Anh – Đức (Breadth & Depth)
 
 > Tài liệu này dành cho Claude Code đọc để triển khai. Product Owner (PO): người dùng, dùng một mình.
-> Phiên bản **v7** (bỏ AI gợi ý nhãn, xem mục 12). **Tool không đọc PDF và không dùng AI**: PO dùng công cụ ngoài rồi nhập bằng file CSV hoặc XLSX, và gắn nhãn TMRND (Tone, Mode, Register, Nuance, Dialect) bằng tay. Xem mục 12 để biết thay đổi so với các bản trước.
+> Phiên bản **v8** (làm rõ Concept/Example và triết lý tri-fold, kế hoạch Bản 3, xem mục 12). Trước đó **v7** (bỏ AI gợi ý nhãn). **Tool không đọc PDF và không dùng AI**: PO dùng công cụ ngoài rồi nhập bằng file CSV hoặc XLSX, và gắn nhãn TMRND (Tone, Mode, Register, Nuance, Dialect) bằng tay. Xem mục 12 để biết thay đổi so với các bản trước.
 > Quy ước: **[CHỐT]** = đã thống nhất. **[ĐỀ XUẤT]** = đề xuất, có thể chỉnh. **[MỞ]** = chưa quyết định, cần hỏi PO trước khi làm.
 
 ---
@@ -54,6 +54,25 @@ Tài liệu công khai: https://hieupham2000.github.io/HUSTPVO-documentation/doc
 - Nếu cần gắn nhãn không có trong bộ trên (ví dụ **slang**), PO ghi vào **ô Note** của example, không thêm giá trị mới [CHỐT]. Tập giá trị vẫn lưu dạng cấu hình để sau này mở rộng nếu PO đổi ý.
 - Lưu ý thuật ngữ: **Tone = mức trang trọng**, **Register = lĩnh vực sử dụng**.
 - **TMRND** là cách viết tắt trong tài liệu này cho 5 thuộc tính: **T**one, **M**ode, **R**egister, **N**uance, **D**ialect.
+
+### 1.4 Thuật ngữ cố định và triết lý tri-fold **[CHỐT, v8]**
+
+**Triết lý PVO (PO giải thích):** PVO là bộ công cụ **tự quản lý kho từ vựng** (self-management): lưu trữ hiệu quả là khi thông tin dễ nạp vào và dễ truy xuất lại, nhờ được **sắp xếp có hệ thống**. Cách học là **tri-fold**: với **một concept (một ý)**, học **ít nhất 3 cách diễn đạt** khác nhau để dùng từ linh hoạt. Ví dụ ý "số lượng nhiều": *a lot of* (Tone Neutral), *a bunch of* (Tone Informal), *a great deal of* (Register Academic).
+
+| Từ | Nghĩa duy nhất | Không phải |
+|---|---|---|
+| **Word/phrase** | Chuỗi chữ (hình thức): *hello*, *a bunch of*. | Không tự là một thành phần của hệ thống. |
+| **Concept** | Một **ý (nút ý nghĩa)** trong kho: có tên, mô tả tiếng Việt; là **chỗ để sắp xếp và tìm lại**. Tên có thể là mô tả ("số lượng nhiều") chứ không nhất thiết là một từ. | Không mang nhãn TMRND. Không phải một câu. |
+| **Example** | Một **cách diễn đạt** (word/phrase/câu) đang được dùng, **mang nhãn TMRND**. Lịch ôn tính theo example. | Không phải nút trong cây, không bao giờ là cha/con của concept. |
+| **Cha–con** | Chỉ giữa **concept và concept**: `ConceptLink` ghi `childId → parentId` (con → cha). | Không áp dụng cho example. |
+| **Tree** | **Màn hình xem** concept theo cha–con; example hiện bên dưới concept, gom theo loại liên kết (chỉ là cách hiển thị). | Không có bảng riêng, không phải đồ thị. |
+
+**Ba kiểu "example nối với concept" (đừng lẫn):**
+1. `Example.targetConceptId`: concept **chủ** của example, tức example này là một cách diễn đạt/một câu minh họa của concept đó. Mỗi example tối đa một concept chủ; là khóa của lịch ôn, Hộp chờ duyệt, tìm kiếm.
+2. `ExampleLink`: quan hệ **bổ sung** từ example tới một concept khác (một cách nói có thể thuộc nhiều ý), kèm loại (Idiom, Nominal, Agent, Patient, Action, Described by, Describing, Other phrase). Mặc định *Other phrase*.
+3. `ConceptLink`: concept–concept (*Association*, *Type of*), con → cha, cấm vòng tròn.
+
+**Đếm tri-fold:** một concept đạt khi có **ít nhất N cách diễn đạt khác nhau ở ít nhất một nhãn TMRND** (N mặc định 3, chỉnh trong Cài đặt). Chỉ example có nhãn `verified` được tính; cách diễn đạt gồm example có concept chủ là concept đó và example nối tới nó bằng `ExampleLink`.
 
 ---
 
@@ -476,11 +495,19 @@ Mỗi phiên làm việc với Claude Code chỉ nên giao **một cột mốc**
 
 - **M10 AI gợi ý TMRND:** đã bỏ ở v7 (mục 6.6). Bản 2 kết thúc ở M10a.
 
-### Bản 3: Tiếng Anh, chế độ Sâu
-- Example kèm thuộc tính (bộ mặc định PVO), đủ loại ConceptLink và ExampleLink, kiểm tra không tạo vòng.
-- Màn hình cây/bảng concept (E5).
-- Bài S1 (gắn nhãn) và S2 (chọn từ hợp ngữ cảnh); S3 (nhớ liên kết) sau.
-- Nhập liên kết từ file (nếu PO muốn, mục 9.2 câu 2).
+### Bản 3: Tiếng Anh, chế độ Sâu (kế hoạch v8, PO đã đồng ý)
+Mục tiêu: **quản lý và tra cứu kho từ** theo tri-fold (mục 1.4); bài tập là phụ. Concept chế độ Sâu là một **ý**; các example là cách diễn đạt khác nhau của ý đó.
+
+| Mốc | Nội dung | Xong khi |
+|---|---|---|
+| **M11a** Concept Sâu + cách diễn đạt | Tạo concept Sâu (tên gõ tự do + mô tả tiếng Việt); thêm example làm cách diễn đạt (concept chủ = concept đó), gắn nhãn tay (dùng màn M10a); nối một example vào concept khác bằng `ExampleLink` (bảng mới, Dexie v4); chỉ báo "x/N cách diễn đạt" và ngưỡng N trong Cài đặt | Tạo "số lượng nhiều", thêm *a lot of / a bunch of / a great deal of* với nhãn khác nhau, thấy 3/3; chưa gắn nhãn thì chưa tính |
+| **M11b** Màn xem concept kiểu kho | Mở concept thấy các cách diễn đạt kèm nhãn, gom theo Tone/Register; tìm theo ý | Tìm "số lượng" ra concept và các cách nói |
+| **M11c** Liên kết concept–concept + cây | `ConceptLink` (*Association*, *Type of*, con → cha), chặn vòng tròn, màn cây thụt lề (E5) | A→B→C tạo được, C→A bị chặn |
+| **M11d** Bài S2 | Cho tình huống có tone/mode xác định, chọn cách diễn đạt hợp nhất trong nhóm cùng concept | Nhóm dưới 2 cách thì bỏ qua và nhắc thêm |
+| **M11e** Bài S1 | Hiện một cách diễn đạt, chọn thuộc tính; chấm theo nhãn `verified` | Chỉ example có nhãn `verified` vào bài |
+
+- Chưa nhập liên kết từ file (PO giữ đề xuất). S3 (nhớ liên kết) làm sau.
+- Bài S1/S2 chỉ ghi log và lịch ôn theo example, **chưa** ảnh hưởng trạng thái `acquired` của concept (chờ dữ liệu dùng thật).
 
 ### Về sau
 Đồ thị trực quan, mở rộng chiều sâu cho tiếng Đức, nhiều bộ từ điển, ghi âm từ Wiktionary, các module nguồn từ mới nếu cần.
@@ -510,7 +537,11 @@ Mỗi phiên làm việc với Claude Code chỉ nên giao **một cột mốc**
 
 ## 12. Lịch sử thay đổi
 
-**v7 (bản này):**
+**v8 (bản này):**
+- Làm rõ Concept (một ý) khác word/phrase (hình thức) và Example (cách diễn đạt mang nhãn TMRND); ghi triết lý tri-fold (mục 1.4); phân biệt ba kiểu liên kết example/concept; cha–con chỉ cho concept–concept, chiều con → cha.
+- Viết lại kế hoạch Bản 3 thành M11a–M11e (mục 10), ưu tiên quản lý kho trước bài tập.
+
+**v7:**
 - **Bỏ AI gợi ý nhãn TMRND** (A9, mục 6.6, M10b) theo quyết định của PO sau khi thử: Gemini không phản hồi sau hơn 1 phút. Xóa mã `src/ai/`, màn `/labels`, mục AI ở Cài đặt, `AiProvider`; PO gắn nhãn tay (M10a). Giữ các trường dữ liệu cũ để không mất dữ liệu. Không đồng bộ khóa API (tính năng đồng bộ khóa làm dở đã hủy).
 
 **v6:**

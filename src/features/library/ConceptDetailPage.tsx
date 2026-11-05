@@ -13,6 +13,7 @@ import { isSingleWord, lookupQueue } from '../../lookup';
 import { dismissSuggestion, markVerified } from '../../lookup/apply';
 import { LookupReview } from '../lookup/LookupReview';
 import { useLookupQueue } from '../lookup/useLookupQueue';
+import { DepthConceptView } from './DepthConceptView';
 import styles from './ConceptDetailPage.module.css';
 
 export function ConceptDetailPage() {
@@ -82,6 +83,11 @@ export function ConceptDetailPage() {
         <p>Đang tải...</p>
       </section>
     );
+  }
+
+  // Depth concepts are ideas with several ways of saying them (spec 1.4).
+  if (concept.mode === 'depth') {
+    return <DepthConceptView concept={concept} onChanged={() => void load(concept.id)} />;
   }
 
   return (

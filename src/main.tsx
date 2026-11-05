@@ -22,6 +22,7 @@ import { QuickAddPage } from './features/quick-add/QuickAddPage'
 import { InboxPage } from './features/inbox/InboxPage'
 import { LibraryPage } from './features/library/LibraryPage'
 import { ConceptDetailPage } from './features/library/ConceptDetailPage'
+import { NewDepthConceptPage } from './features/library/NewDepthConceptPage'
 import { ExampleEditPage } from './features/example/ExampleEditPage'
 import { ImportPage } from './features/import/ImportPage'
 import { SettingsPage } from './features/settings/SettingsPage'
@@ -55,6 +56,7 @@ async function bootstrap() {
             <Route path="search" element={<SearchPage />} />
             <Route path="library" element={<LibraryPage />} />
             <Route path="library/:conceptId" element={<ConceptDetailPage />} />
+            <Route path="depth/new" element={<NewDepthConceptPage />} />
             <Route path="example/:exampleId" element={<ExampleEditPage />} />
           </Route>
         </Routes>

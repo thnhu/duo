@@ -57,6 +57,9 @@ export function LibraryPage() {
       <Link to="/links" className={styles.banner}>
         <Card tinted>Liên kết concept (con → cha) →</Card>
       </Link>
+      <Link to="/association" className={styles.banner}>
+        <Card tinted>Tìm theo liên kết (đồ thị) →</Card>
+      </Link>
       <Link to="/tree" className={styles.banner}>
         <Card tinted>Xem cây concept (cha, con, ví dụ) →</Card>
       </Link>

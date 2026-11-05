@@ -13,10 +13,12 @@ import {
   listNeighbours,
   reverseConceptLink,
   saveConceptLink,
+  searchAssociations,
   unlinkConcepts,
   type PairState,
   type TreeNode,
 } from './index';
+import { layoutGraph } from './graph';
 
 const DICT = 'dict-en';
 const make = (name: string) => createDepthConcept(DICT, name, '');
@@ -200,5 +202,55 @@ describe('link editor (M12b)', () => {
     expect(hits.map((c) => c.text)).toEqual(['large quantity']);
     expect(filterConcepts([q, other], 'bun').map((c) => c.text)).toEqual(['bunch']);
     expect(filterConcepts([q, other], '  ')).toEqual([]);
+  });
+});
+
+describe('association search (R7)', () => {
+  it('finds concepts linked to the selection in either direction, one step', async () => {
+    const color = await make('color');
+    const blue = await make('blue');
+    const navy = await make('navy');
+    const paint = await make('paint');
+    const far = await make('far');
+    await linkConcepts(blue.id, color.id, 'typeOf'); // blue -> color
+    await linkConcepts(navy.id, blue.id, 'typeOf'); // navy -> blue
+    await linkConcepts(color.id, paint.id, 'association'); // color -> paint
+    await linkConcepts(far.id, paint.id, 'association'); // far -> paint (two steps from blue)
+
+    const r = await searchAssociations([blue.id]);
+    expect(r.nodes.map((n) => [n.concept.text, n.selected])).toEqual([
+      ['blue', true],
+      ['color', false],
+      ['navy', false],
+    ]);
+    expect(r.links.map((l) => `${l.childId === blue.id ? 'blue' : 'navy'}>${l.parentId === color.id ? 'color' : 'blue'}`).sort()).toEqual([
+      'blue>color',
+      'navy>blue',
+    ]);
+
+    const two = await searchAssociations([blue.id, paint.id]);
+    expect(two.nodes.filter((n) => n.selected).map((n) => n.concept.text)).toEqual(['blue', 'paint']);
+    // color is related to both; the link color -> paint joins two shown nodes.
+    expect(two.links).toHaveLength(4);
+    expect((await searchAssociations([])).nodes).toEqual([]);
+  });
+
+  it('lays nodes out inside the box, deterministically, and handles edge cases', () => {
+    const ids = ['a', 'b', 'c', 'd'];
+    const edges = [
+      { from: 'a', to: 'b' },
+      { from: 'c', to: 'b' },
+    ];
+    const one = layoutGraph(ids, edges, 400, 300);
+    const two = layoutGraph(ids, edges, 400, 300);
+    expect([...one]).toEqual([...two]);
+    for (const p of one.values()) {
+      expect(p.x).toBeGreaterThanOrEqual(24);
+      expect(p.x).toBeLessThanOrEqual(376);
+      expect(p.y).toBeGreaterThanOrEqual(24);
+      expect(p.y).toBeLessThanOrEqual(276);
+    }
+    expect(layoutGraph(['x'], [], 400, 300).get('x')).toEqual({ x: 200, y: 150 });
+    expect(layoutGraph([], [], 400, 300).size).toBe(0);
   });
 });

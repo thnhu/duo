@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '../../ui/Button';
+import { ButtonRow } from '../../ui/ButtonRow';
 import { Card } from '../../ui/Card';
 import { HighlightedText } from '../../ui/HighlightedText';
+import { LinkButton } from '../../ui/LinkButton';
 import fieldStyles from '../../ui/field.module.css';
 import { SETTINGS_ID } from '../../db/defaults';
 import { dictionaryIdForLang } from '../../db/queries';
@@ -107,6 +109,9 @@ export function SearchPage() {
   return (
     <section className={styles.page}>
       <h1>Tìm kiếm</h1>
+      <ButtonRow>
+        <LinkButton to="/association">Tìm theo liên kết (đồ thị)</LinkButton>
+      </ButtonRow>
 
       <input
         type="search"

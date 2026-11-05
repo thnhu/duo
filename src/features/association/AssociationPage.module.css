@@ -1,0 +1,127 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.back {
+  color: var(--color-ink-muted);
+  text-decoration: none;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-100);
+  border: none;
+  font: inherit;
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.graphCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.graph {
+  width: 100%;
+  height: auto;
+  touch-action: manipulation;
+}
+
+.edge {
+  stroke: var(--color-ink-muted);
+  stroke-width: 1.5;
+}
+
+.arrowHead {
+  fill: var(--color-ink-muted);
+}
+
+.node {
+  cursor: pointer;
+}
+
+.node:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.nodeSelected {
+  fill: var(--color-danger);
+}
+
+.nodeRelated {
+  fill: var(--color-ink-muted);
+  opacity: 0.7;
+}
+
+.label {
+  font-size: 12px;
+  fill: var(--color-ink);
+  paint-order: stroke;
+  stroke: var(--color-surface);
+  stroke-width: 3px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  font-size: 0.8rem;
+  color: var(--color-ink-muted);
+}
+
+.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: var(--space-1);
+}
+
+.dotSelected {
+  background: var(--color-danger);
+}
+
+.dotRelated {
+  background: var(--color-ink-muted);
+  opacity: 0.7;
+}
+
+.related {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.relatedRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+.desc {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--color-ink-muted);
+}
+
+.hint {
+  color: var(--color-ink-muted);
+  font-size: 0.9rem;
+}

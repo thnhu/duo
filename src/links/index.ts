@@ -306,3 +306,43 @@ export function filterConcepts(concepts: Concept[], query: string, limit = 8): C
     .slice(0, limit)
     .map((s) => s.concept);
 }
+
+// ---- Concept association search (R7) --------------------------------------
+
+export const MAX_ASSOCIATION_SELECTION = 10;
+
+export interface AssociationNode {
+  concept: Concept;
+  selected: boolean;
+}
+
+export interface AssociationResult {
+  // Selected concepts first (in the order given), then the related ones by name.
+  nodes: AssociationNode[];
+  // Every active link between two shown concepts, child -> parent.
+  links: ConceptLink[];
+}
+
+// "Search Concept Association": from the chosen concepts, every concept linked
+// to one of them (either direction, one step). Links between two related
+// concepts are included too, so the picture shows the whole small network.
+export async function searchAssociations(selectedIds: string[]): Promise<AssociationResult> {
+  const graph = await loadGraph();
+  const selectedSet = new Set(selectedIds.filter((id) => graph.concepts.has(id)));
+  const selected = [...new Set(selectedIds)].filter((id) => selectedSet.has(id));
+  const related = new Set<string>();
+  for (const l of graph.links) {
+    if (selectedSet.has(l.childId) && !selectedSet.has(l.parentId)) related.add(l.parentId);
+    if (selectedSet.has(l.parentId) && !selectedSet.has(l.childId)) related.add(l.childId);
+  }
+  const shown = new Set([...selected, ...related]);
+  return {
+    nodes: [
+      ...selected.map((id) => ({ concept: graph.concepts.get(id)!, selected: true })),
+      ...[...related]
+        .map((id) => ({ concept: graph.concepts.get(id)!, selected: false }))
+        .sort((a, b) => a.concept.text.localeCompare(b.concept.text)),
+    ],
+    links: graph.links.filter((l) => shown.has(l.childId) && shown.has(l.parentId)),
+  };
+}

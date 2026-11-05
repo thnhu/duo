@@ -123,6 +123,7 @@ export function TreePage() {
             <ButtonRow>
               <LinkButton to={`/library/${root.id}`}>Mở concept</LinkButton>
               <LinkButton to={`/links/${root.id}`}>Liên kết cha/con</LinkButton>
+              <LinkButton to={`/association/${root.id}`}>Tìm theo liên kết</LinkButton>
             </ButtonRow>
 
             <div className={styles.counters} role="group" aria-label="Ví dụ theo loại liên kết">

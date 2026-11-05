@@ -421,7 +421,7 @@ flowchart TD
 
 - Không đọc PDF, không OCR, không dùng AI (kể cả gợi ý nhãn TMRND, đã bỏ ở v7). [ĐÃ CHỐT]
 - Không gửi dữ liệu nào ra ngoài tài khoản của PO, ngoài **từ đơn lẻ** gửi đi tra cứu. [ĐỀ XUẤT]
-- Không hiển thị đồ thị liên kết trực quan ở các bản đầu (chỉ cây/bảng thụt lề). [ĐÃ CHỐT]
+- Không hiển thị đồ thị liên kết trực quan ở các bản đầu (chỉ cây/bảng thụt lề). [ĐÃ CHỐT] **Cập nhật 2026-11-05:** PO yêu cầu làm đồ thị cho màn Tìm theo liên kết (`/association`, spec R7); màn Tree vẫn là cây/bảng.
 - Không có chế độ Sâu tiếng Đức ở các bản đầu. [ĐÃ CHỐT]
 - Không nhập liên kết concept/example từ file ở bản đầu (PO tạo liên kết trong tool). [ĐỀ XUẤT]
 

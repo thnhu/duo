@@ -18,6 +18,9 @@ export interface StatusChange {
 export async function refreshAcquisition(conceptId: string): Promise<StatusChange | null> {
   const concept = await conceptRepository.getById(conceptId);
   if (!concept || concept.deletedAt !== undefined) return null;
+  // Depth concepts are ideas with several ways of saying them; their drills
+  // log answers and schedule examples but do not set `acquired` (spec 10, Bản 3).
+  if (concept.mode === 'depth') return null;
   const [logs, criteria] = await Promise.all([
     reviewLogRepository.listByConceptId(conceptId),
     loadCriteria(),
@@ -59,7 +62,7 @@ export async function recomputeAcquisition(criteria?: AcquisitionCriteria): Prom
   const summary: RecomputeSummary = { promoted: 0, demoted: 0 };
   for (const concept of concepts) {
     const own = byConcept.get(concept.id);
-    if (!own || own.length === 0) continue;
+    if (!own || own.length === 0 || concept.mode === 'depth') continue;
     const status = computeProgress(own, rules, concept.progressResetAt).met ? 'acquired' : 'loaded';
     if (status === concept.status) continue;
     await conceptRepository.update(concept.id, { status });

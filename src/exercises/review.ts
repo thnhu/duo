@@ -1,7 +1,8 @@
-import { conceptRepository, exampleRepository, reviewLogRepository } from '../db/repositories';
+import { reviewLogRepository } from '../db/repositories';
 import type { Concept, Example, Lang, ReviewLog } from '../db/types';
 import { listDue } from '../scheduling/store';
 import { exerciseModules } from './index';
+import { loadLibrary } from './library';
 import { shuffle, type SessionItem } from './session';
 import type { ExerciseLibrary, ExerciseModule } from './types';
 
@@ -59,12 +60,8 @@ async function latestLogs(): Promise<Map<string, ReviewLog>> {
 // flash: any word that can be drilled, due or not, for quick-fire practice.
 export async function loadReviewItems(request: ReviewRequest): Promise<SessionItem[]> {
   const { kind, count, lang, now = Date.now(), rng = Math.random } = request;
-  const [concepts, examples, logs, due] = await Promise.all([
-    conceptRepository.listActive(),
-    exampleRepository.listActive(),
-    latestLogs(),
-    listDue(now),
-  ]);
+  const [library, logs, due] = await Promise.all([loadLibrary(), latestLogs(), listDue(now)]);
+  const { concepts, examples } = { concepts: library.concepts, examples: library.examples! };
   const dueAt = new Map(due.map((s) => [s.exampleId, s.due]));
   const byConcept = new Map<string, Example[]>();
   for (const example of examples) {
@@ -81,7 +78,7 @@ export async function loadReviewItems(request: ReviewRequest): Promise<SessionIt
     const all = byConcept.get(concept.id) ?? [];
     const dueExamples = all.filter((e) => dueAt.has(e.id));
     if (kind === 'review' && dueExamples.length === 0) continue;
-    const item = pickItem(concept, kind === 'review' ? dueExamples : all, logs.get(concept.id), modules, rng, { concepts });
+    const item = pickItem(concept, kind === 'review' ? dueExamples : all, logs.get(concept.id), modules, rng, library);
     if (!item) continue;
     const overdue = Math.min(...dueExamples.map((e) => dueAt.get(e.id)!), Infinity);
     entries.push({ item, overdue });

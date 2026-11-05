@@ -7,7 +7,7 @@ import { maxResponseTimeFor } from '../../acquisition';
 import { loadCriteria } from '../../acquisition/update';
 import type { AcquisitionCriteria } from '../../db/types';
 import { exerciseModules, type Answer, type ExerciseLibrary } from '../../exercises';
-import { conceptRepository } from '../../db/repositories';
+import { loadLibrary } from '../../exercises/library';
 import { loadReviewItems } from '../../exercises/review';
 import { speak, stopSpeaking } from '../../exercises/speech';
 import {
@@ -68,10 +68,10 @@ function Session({ config }: { config: SessionConfig }) {
             buildSession(all, config.count, Math.random).map((p) => ({ ...p, module: fixedModule })),
           )
         : loadReviewItems({ kind: kind === 'flash' ? 'flash' : 'review', count: config.count, lang: config.lang });
-    void Promise.all([loading, loadCriteria(), conceptRepository.listActive()]).then(([items, loadedCriteria, concepts]) => {
+    void Promise.all([loading, loadCriteria(), loadLibrary()]).then(([items, loadedCriteria, loadedLibrary]) => {
       if (!current) return;
       setCriteria(loadedCriteria);
-      setLibrary({ concepts });
+      setLibrary(loadedLibrary);
       setPairs(items);
       setIndex(0);
       setRecords([]);

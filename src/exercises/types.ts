@@ -1,5 +1,5 @@
 import type { RegistrableModule } from '../core/registry';
-import type { Concept, Example, Lang, StudyMode } from '../db/types';
+import type { Concept, Example, ExampleLink, Lang, StudyMode } from '../db/types';
 
 // ExerciseModule (spec section 7): every exercise type is a module behind
 // this one interface, registered in a registry. The runner and the screens
@@ -74,6 +74,10 @@ export interface InputConfig {
 // Supplied by the runner; a module must cope with it being absent.
 export interface ExerciseLibrary {
   concepts: Concept[];
+  // Depth drills: a concept's ways of saying it are its own examples plus
+  // the examples linked to it.
+  examples?: Example[];
+  exampleLinks?: ExampleLink[];
 }
 
 export interface ExerciseContext {

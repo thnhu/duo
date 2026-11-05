@@ -506,6 +506,7 @@ Mục tiêu: **quản lý và tra cứu kho từ** theo tri-fold (mục 1.4); b�
 | **M11d** Bài S2 | Cho tình huống có tone/mode xác định, chọn cách diễn đạt hợp nhất trong nhóm cùng concept | Nhóm dưới 2 cách thì bỏ qua và nhắc thêm |
 | **M11e** Bài S1 | Hiện một cách diễn đạt, chọn thuộc tính; chấm theo nhãn `verified` | Chỉ example có nhãn `verified` vào bài |
 
+- **S2 (M11d) hỏi thế nào:** tình huống được dựng từ **một nhãn** mà cách nói đúng khác mọi lựa chọn còn lại, nên chỉ một lựa chọn phù hợp; chỉ dùng nhãn `verified` và các cách có tổ hợp nhãn khác nhau. Kịch bản cho từng giá trị là cấu hình. Lựa chọn gồm cả cách nói nối từ concept khác bằng `ExampleLink`, nhưng chỉ hỏi về example chủ của concept.
 - Chưa nhập liên kết từ file (PO giữ đề xuất). S3 (nhớ liên kết) làm sau.
 - Bài S1/S2 chỉ ghi log và lịch ôn theo example, **chưa** ảnh hưởng trạng thái `acquired` của concept (chờ dữ liệu dùng thật).
 

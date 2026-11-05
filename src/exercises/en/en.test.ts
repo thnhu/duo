@@ -176,7 +176,7 @@ describe('English drills in the runner', () => {
 
   it('is registered for English only, and declares an English answer box', () => {
     expect(modulesForLanguage('en').map((m) => m.id).sort()).toEqual([
-      'en.cloze', 'en.dictation', 'en.meaning-to-word', 'en.word-to-meaning',
+      'en.cloze', 'en.deep-situation', 'en.dictation', 'en.meaning-to-word', 'en.word-to-meaning',
     ]);
     for (const module of modulesForLanguage('en')) {
       expect(module.input, module.id).toEqual({ lang: 'en' });

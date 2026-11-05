@@ -87,6 +87,16 @@ export async function addExpression(concept: Concept, text: string): Promise<Exa
   return example;
 }
 
+// Pure version of `listExpressions` for callers that already hold the rows
+// (drill loaders): examples whose home is the concept, plus examples linked
+// to it, once each, oldest first.
+export function expressionsIn(conceptId: string, examples: Example[], links: ExampleLink[]): Example[] {
+  const linked = new Set(links.filter((l) => l.conceptId === conceptId && l.deletedAt === undefined).map((l) => l.exampleId));
+  return examples
+    .filter((e) => e.deletedAt === undefined && !e.isMinimal && (e.targetConceptId === conceptId || linked.has(e.id)))
+    .sort((a, b) => a.createdAt - b.createdAt);
+}
+
 export async function listLinksOfExample(exampleId: string): Promise<ExampleLink[]> {
   const links = await db.exampleLinks.where('exampleId').equals(exampleId).toArray();
   return links.filter((l) => l.deletedAt === undefined);

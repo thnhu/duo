@@ -1,6 +1,7 @@
 import { refreshAcquisition, type StatusChange } from '../acquisition/update';
 import { createId } from '../core/id';
-import { conceptRepository, exampleRepository, reviewLogRepository } from '../db/repositories';
+import { loadLibrary } from './library';
+import { reviewLogRepository } from '../db/repositories';
 import type { Concept, Example, Lang, ReviewLog } from '../db/types';
 import { recordSchedule } from '../scheduling/store';
 import type { Answer, Exercise, ExerciseModule, GradeResult } from './types';
@@ -37,10 +38,8 @@ export async function loadPairs(
   filter: PairFilter,
   rng: () => number = Math.random,
 ): Promise<Pair[]> {
-  const [concepts, examples] = await Promise.all([
-    conceptRepository.listActive(),
-    exampleRepository.listActive(),
-  ]);
+  const library = await loadLibrary();
+  const { concepts, examples } = { concepts: library.concepts, examples: library.examples! };
   const byConcept = new Map<string, Example[]>();
   for (const example of examples) {
     if (!example.targetConceptId) continue; // inbox sentences have no concept yet
@@ -55,7 +54,7 @@ export async function loadPairs(
     if ((concept.mode ?? 'breadth') !== module.mode) continue;
     if (concept.status === 'acquired') continue;
     if (filter.lesson && concept.source.lesson !== filter.lesson) continue;
-    const usable = (byConcept.get(concept.id) ?? []).filter((e) => module.isEligible(concept, e, { concepts }));
+    const usable = (byConcept.get(concept.id) ?? []).filter((e) => module.isEligible(concept, e, library));
     if (usable.length === 0) continue;
     // Real sentences make better drills than the auto-created minimal one.
     const real = usable.filter((e) => !e.isMinimal);

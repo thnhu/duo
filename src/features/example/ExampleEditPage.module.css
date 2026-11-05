@@ -36,10 +36,28 @@
   gap: var(--space-3);
 }
 
-.actions {
+.linkRow {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
-  gap: var(--space-3);
+  gap: var(--space-2);
+}
+
+.mainTag,
+.typeTag {
+  font-size: 0.8rem;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-100);
+  color: var(--color-ink-muted);
+}
+
+.keep {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
 }
 
 .statusRow {

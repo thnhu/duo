@@ -1,45 +1,63 @@
 import { useEffect, useState } from 'react';
 import { Button } from '../../ui/Button';
+import { ButtonRow } from '../../ui/ButtonRow';
 import { Card } from '../../ui/Card';
 import fieldStyles from '../../ui/field.module.css';
 import { SETTINGS_ID } from '../../db/defaults';
 import { conceptRepository, settingsRepository } from '../../db/repositories';
 import type { Concept, Example, ExampleLink, ExampleLinkType } from '../../db/types';
-import { linkExample, listLinksOfExample, unlinkExample } from '../../depth';
+import { linkExample, listLinksOfExample, setMainConcept, unlinkExample } from '../../depth';
 import { EXAMPLE_LINK_LABEL as TYPE_LABEL } from '../../links/labels';
+import { saveQuickWord } from '../quick-add/actions';
+import { ConceptPicker } from '../links/ConceptPicker';
 import styles from './ExampleEditPage.module.css';
 
-// "Also a way of saying another concept" (spec 1.4, kind 2). The example's
-// own concept (`targetConceptId`) is NOT listed here; this is the extra link.
-export function ExampleLinksCard({ example }: { example: Example }) {
+interface ExampleLinksCardProps {
+  example: Example;
+  // Called after the main concept changed, so the page can reload.
+  onMainChanged: () => void;
+}
+
+// ONE list of links (spec R5, PO decision 2026-11-05). In the data the first
+// link is the example's home concept (`targetConceptId`, no type) and the rest
+// are `ExampleLink`s; the PO only sees "Links", with a small "main" mark.
+export function ExampleLinksCard({ example, onMainChanged }: ExampleLinksCardProps) {
   const [links, setLinks] = useState<ExampleLink[]>([]);
-  const [depthConcepts, setDepthConcepts] = useState<Concept[]>([]);
+  const [concepts, setConcepts] = useState<Concept[]>([]);
   const [types, setTypes] = useState<ExampleLinkType[]>(['otherPhrase']);
-  const [conceptId, setConceptId] = useState('');
+  const [picked, setPicked] = useState<Concept | null>(null);
   const [type, setType] = useState<ExampleLinkType>('otherPhrase');
 
   async function load() {
-    const [current, concepts, settings] = await Promise.all([
+    const [current, all, settings] = await Promise.all([
       listLinksOfExample(example.id),
       conceptRepository.listActive(),
       settingsRepository.getById(SETTINGS_ID),
     ]);
     setLinks(current);
-    setDepthConcepts(
-      concepts.filter((c) => c.mode === 'depth' && c.dictionaryId === example.dictionaryId && c.id !== example.targetConceptId),
-    );
+    setConcepts(all.filter((c) => c.dictionaryId === example.dictionaryId));
     setTypes(settings?.linkTypes.exampleConcept ?? ['otherPhrase']);
   }
 
   useEffect(() => {
     void load();
-  }, [example.id]);
+  }, [example.id, example.targetConceptId]);
+
+  const nameOf = (id: string) => concepts.find((c) => c.id === id)?.text ?? '(concept đã xóa)';
+  const main = concepts.find((c) => c.id === example.targetConceptId);
+  const linkedIds = new Set([example.targetConceptId, ...links.map((l) => l.conceptId)]);
 
   async function handleAdd() {
-    if (!conceptId) return;
-    await linkExample(example.id, conceptId, type);
-    setConceptId('');
+    if (!picked) return;
+    await linkExample(example.id, picked.id, type);
+    setPicked(null);
     await load();
+  }
+
+  async function handleAddNew(text: string) {
+    const { concept } = await saveQuickWord(example.dictionaryId, main?.lang ?? 'en', text);
+    await load();
+    setPicked(concept);
   }
 
   async function handleRemove(link: ExampleLink) {
@@ -47,68 +65,71 @@ export function ExampleLinksCard({ example }: { example: Example }) {
     await load();
   }
 
-  const nameOf = (id: string) => depthConcepts.find((c) => c.id === id)?.text ?? '(concept đã xóa hoặc không phải Sâu)';
-  const available = depthConcepts.filter((c) => !links.some((l) => l.conceptId === c.id));
-
-  if (links.length === 0 && depthConcepts.length === 0) return null;
+  async function handleMakeMain(link: ExampleLink) {
+    await setMainConcept(example.id, link.conceptId);
+    onMainChanged();
+  }
 
   return (
     <Card className={styles.section}>
-      <h2>Cũng là cách diễn đạt của concept khác</h2>
-      {links.map((link) => (
-        <div key={link.id} className={styles.actions}>
+      <h2>Liên kết ({links.length + (main ? 1 : 0)})</h2>
+      {main && (
+        <div className={styles.linkRow}>
           <span>
-            {nameOf(link.conceptId)} · {TYPE_LABEL[link.type]}
+            <strong>{main.text}</strong> <span className={styles.mainTag}>chính</span>
           </span>
-          <Button variant="ghost" onClick={() => void handleRemove(link)}>
-            Bỏ liên kết
-          </Button>
+        </div>
+      )}
+      {links.map((link) => (
+        <div key={link.id} className={styles.linkRow}>
+          <span>
+            <strong>{nameOf(link.conceptId)}</strong> <span className={styles.typeTag}>{TYPE_LABEL[link.type]}</span>
+          </span>
+          <ButtonRow>
+            {!example.isMinimal && (
+              <Button variant="ghost" onClick={() => void handleMakeMain(link)}>
+                Đặt làm chính
+              </Button>
+            )}
+            <Button variant="ghost" onClick={() => void handleRemove(link)}>
+              Bỏ
+            </Button>
+          </ButtonRow>
         </div>
       ))}
-      {available.length > 0 && (
-        <>
-          <div>
-            <label className={fieldStyles.label} htmlFor="link-concept">
-              Concept Sâu
-            </label>
-            <select
-              id="link-concept"
-              className={fieldStyles.input}
-              value={conceptId}
-              onChange={(e) => setConceptId(e.target.value)}
-            >
-              <option value="">Chọn concept…</option>
-              {available.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.text}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className={fieldStyles.label} htmlFor="link-type">
-              Loại liên kết
-            </label>
-            <select
-              id="link-type"
-              className={fieldStyles.input}
-              value={type}
-              onChange={(e) => setType(e.target.value as ExampleLinkType)}
-            >
-              {types.map((t) => (
-                <option key={t} value={t}>
-                  {TYPE_LABEL[t]}
-                </option>
-              ))}
-            </select>
-          </div>
-          <Button variant="secondary" disabled={!conceptId} onClick={() => void handleAdd()}>
-            Thêm liên kết
-          </Button>
-        </>
-      )}
+
+      <ConceptPicker
+        id="link-concept"
+        label="Nối thêm concept"
+        concepts={concepts.filter((c) => !linkedIds.has(c.id))}
+        selected={picked}
+        onSelect={setPicked}
+        onAdd={handleAddNew}
+      />
+      <div>
+        <label className={fieldStyles.label} htmlFor="link-type">
+          Relation
+        </label>
+        <select
+          id="link-type"
+          className={fieldStyles.input}
+          value={type}
+          onChange={(e) => setType(e.target.value as ExampleLinkType)}
+        >
+          {types.map((t) => (
+            <option key={t} value={t}>
+              {TYPE_LABEL[t]}
+            </option>
+          ))}
+        </select>
+      </div>
+      <ButtonRow>
+        <Button variant="secondary" disabled={!picked} onClick={() => void handleAdd()}>
+          Thêm liên kết
+        </Button>
+      </ButtonRow>
       <p className={fieldStyles.hint}>
-        Concept chủ của cách diễn đạt này không đổi; liên kết chỉ thêm quan hệ sang concept khác.
+        Concept “chính” là nơi ví dụ này được học và ôn; các liên kết khác chỉ giúp tìm lại ví dụ từ concept khác.
       </p>
     </Card>
   );

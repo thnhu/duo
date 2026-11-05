@@ -8,7 +8,7 @@ import { SETTINGS_ID } from '../../db/defaults';
 import { conceptRepository, exampleRepository, settingsRepository } from '../../db/repositories';
 import type { AttributeValueSets, Concept, Example, ExampleAttributes } from '../../db/types';
 import { normalizeSelection, type Selection } from '../quick-add/highlight';
-import { addSecondPhrase, clearExampleAttributes, saveExampleEdits } from './actions';
+import { addSecondPhrase, clearExampleAttributes, createNextExample, saveExampleEdits } from './actions';
 import { ExampleLinksCard } from './ExampleLinksCard';
 import styles from './ExampleEditPage.module.css';
 
@@ -40,6 +40,8 @@ export function ExampleEditPage() {
   const [note, setNote] = useState('');
   const [highlight, setHighlight] = useState<Selection | null>(null);
   const [message, setMessage] = useState('');
+  const [keep, setKeep] = useState(true);
+  const [nextText, setNextText] = useState<string | null>(null);
 
   async function load(id: string) {
     const found = await exampleRepository.getById(id);
@@ -97,8 +99,8 @@ export function ExampleEditPage() {
     setMessage('');
   }
 
-  async function handleSave() {
-    if (!example || !attributes) return;
+  async function handleSave(): Promise<boolean> {
+    if (!example || !attributes) return false;
     const changedHighlight =
       highlight &&
       (highlight.start !== example.highlight?.start || highlight.end !== example.highlight?.end)
@@ -107,10 +109,25 @@ export function ExampleEditPage() {
     const saved = await saveExampleEdits(example, { highlight: changedHighlight, attributes, note });
     if (!saved) {
       setMessage('Không lưu được: cụm tô sáng không hợp lệ.');
-      return;
+      return false;
     }
     setMessage('Đã lưu. Nhãn được đánh dấu là đã duyệt.');
     await load(example.id);
+    return true;
+  }
+
+  // "Save & next" (R5): save this one, then ask for the next sentence.
+  async function handleSaveAndNext() {
+    if (await handleSave()) setNextText('');
+  }
+
+  async function handleCreateNext() {
+    if (!example || !nextText?.trim()) return;
+    // Saved just now, so read the stored row (labels and links) as the source.
+    const saved = (await exampleRepository.getById(example.id)) ?? example;
+    const created = await createNextExample(saved, nextText, keep);
+    setNextText(null);
+    navigate(`/example/${created.id}`);
   }
 
   async function handleClear() {
@@ -203,7 +220,7 @@ export function ExampleEditPage() {
         </p>
       </Card>
 
-      {concept && <ExampleLinksCard example={example} />}
+      {concept && <ExampleLinksCard example={example} onMainChanged={() => void load(example.id)} />}
 
       <div>
         <label className={fieldStyles.label} htmlFor="example-note">
@@ -222,12 +239,41 @@ export function ExampleEditPage() {
 
       <ButtonRow>
         <Button onClick={() => void handleSave()}>Lưu</Button>
+        <Button variant="secondary" onClick={() => void handleSaveAndNext()}>
+          Lưu và nhập tiếp
+        </Button>
         {example.attributesStatus !== 'empty' && (
           <Button variant="ghost" onClick={() => void handleClear()}>
             Bỏ nhãn
           </Button>
         )}
       </ButtonRow>
+
+      <label className={styles.keep}>
+        <input type="checkbox" checked={keep} onChange={(e) => setKeep(e.target.checked)} />
+        Giữ tham số (liên kết và nhãn) cho ví dụ kế tiếp
+      </label>
+
+      {nextText !== null && (
+        <Card tinted className={styles.section}>
+          <h2>Ví dụ kế tiếp</h2>
+          <textarea
+            className={fieldStyles.textarea}
+            value={nextText}
+            onChange={(e) => setNextText(e.target.value)}
+            aria-label="Câu của ví dụ kế tiếp"
+            placeholder="Nhập câu kế tiếp…"
+          />
+          <ButtonRow>
+            <Button variant="ghost" onClick={() => setNextText(null)}>
+              Hủy
+            </Button>
+            <Button disabled={!nextText.trim()} onClick={() => void handleCreateNext()}>
+              Tạo và sửa tiếp
+            </Button>
+          </ButtonRow>
+        </Card>
+      )}
 
       {canHighlight && concept && (
         <Card tinted className={styles.section}>

@@ -3,7 +3,7 @@ import { db } from '../db/schema';
 import { SETTINGS_ID, createDefaultSettings } from '../db/defaults';
 import { exampleRepository, settingsRepository } from '../db/repositories';
 import { deleteConceptCascade } from '../features/library/actions';
-import { saveExampleEdits } from '../features/example/actions';
+import { createNextExample, saveExampleEdits } from '../features/example/actions';
 import type { Example, ExampleAttributes } from '../db/types';
 import {
   addExpression as addExpressionRaw,
@@ -15,6 +15,7 @@ import {
   loadDepthSettings,
   sanitizeDepth,
   saveDepthSettings,
+  setMainConcept,
   triFoldProgress,
   unlinkExample,
 } from './index';
@@ -179,3 +180,36 @@ describe('grouping expressions on the shelf', () => {
   });
 });
 
+
+describe('one list of links in the UI (M12d)', () => {
+  it('makes a linked concept the main one and keeps the old main as a link', async () => {
+    const a = await createDepthConcept(DICT, 'quantity', '');
+    const b = await createDepthConcept(DICT, 'amount', '');
+    const e = await addExpression(a, 'a lot of');
+    await linkExample(e.id, b.id, 'idiom');
+    expect(await setMainConcept(e.id, b.id)).toBe(true);
+    expect((await exampleRepository.getById(e.id))?.targetConceptId).toBe(b.id);
+    const links = await listLinksOfExample(e.id);
+    expect(links.map((l) => [l.conceptId, l.type])).toEqual([[a.id, 'otherPhrase']]);
+    expect((await listExpressions(a.id)).map((x) => x.id)).toEqual([e.id]);
+    expect(await setMainConcept(e.id, b.id)).toBe(false);
+  });
+
+  it('"Save & next" copies links and labels only when parameters are kept', async () => {
+    const a = await createDepthConcept(DICT, 'quantity', '');
+    const b = await createDepthConcept(DICT, 'amount', '');
+    const e = await addExpression(a, 'a lot of');
+    await linkExample(e.id, b.id, 'idiom');
+    await label(e, { tone: 'Informal' });
+    const source = (await exampleRepository.getById(e.id))!;
+
+    const kept = await createNextExample(source, ' lots of ', true);
+    expect(kept).toMatchObject({ text: 'lots of', targetConceptId: a.id, attributesStatus: 'verified' });
+    expect(kept.attributes.tone).toBe('Informal');
+    expect((await listLinksOfExample(kept.id)).map((l) => [l.conceptId, l.type])).toEqual([[b.id, 'idiom']]);
+
+    const bare = await createNextExample(source, 'loads of', false);
+    expect(bare.attributesStatus).toBe('empty');
+    expect(await listLinksOfExample(bare.id)).toEqual([]);
+  });
+});

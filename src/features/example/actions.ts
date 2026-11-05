@@ -1,6 +1,7 @@
 import { createId } from '../../core/id';
 import { createDefaultAttributes } from '../../db/defaults';
-import { exampleRepository } from '../../db/repositories';
+import { exampleLinkRepository, exampleRepository } from '../../db/repositories';
+import { listLinksOfExample } from '../../depth';
 import type { Example, ExampleAttributes } from '../../db/types';
 import { normalizeSelection, type Selection } from '../quick-add/highlight';
 
@@ -58,4 +59,38 @@ export async function addSecondPhrase(example: Example): Promise<Example> {
   };
   await exampleRepository.add(copy);
   return copy;
+}
+
+// "Save & next" (R5): a new example for the same main concept. With `keep`
+// ("Re-use parameters") it also copies the extra links and the TMRND labels,
+// so a batch of examples of one kind needs only the sentence. Labels copied
+// this way were chosen by the PO a moment ago, so they stay `verified`; a
+// source without verified labels gives an unlabelled copy.
+export async function createNextExample(source: Example, text: string, keep: boolean): Promise<Example> {
+  const now = Date.now();
+  const labelled = keep && source.attributesStatus === 'verified';
+  const next: Example = {
+    id: createId(),
+    dictionaryId: source.dictionaryId,
+    text: text.trim(),
+    targetConceptId: source.targetConceptId,
+    attributes: labelled ? { ...source.attributes } : createDefaultAttributes(),
+    attributesStatus: labelled ? 'verified' : 'empty',
+    verification: 'unverified',
+    createdAt: now,
+    updatedAt: now,
+  };
+  await exampleRepository.add(next);
+  if (keep) {
+    for (const link of await listLinksOfExample(source.id)) {
+      await exampleLinkRepository.add({
+        id: createId(),
+        exampleId: next.id,
+        conceptId: link.conceptId,
+        type: link.type,
+        updatedAt: now,
+      });
+    }
+  }
+  return next;
 }

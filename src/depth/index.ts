@@ -123,6 +123,22 @@ export async function linkExample(
   return link;
 }
 
+// Makes another linked concept the example's main one (`targetConceptId`).
+// The old main concept stays linked as an ordinary link (`otherPhrase`), so
+// nothing the PO connected is lost. The UI shows both as one "Links" list.
+export async function setMainConcept(exampleId: string, conceptId: string): Promise<boolean> {
+  const example = await exampleRepository.getById(exampleId);
+  if (!example || example.deletedAt !== undefined || example.targetConceptId === conceptId) return false;
+  const old = example.targetConceptId;
+  const links = await db.exampleLinks.where('exampleId').equals(exampleId).toArray();
+  for (const l of links) {
+    if (l.conceptId === conceptId && l.deletedAt === undefined) await exampleLinkRepository.softDelete(l.id);
+  }
+  await exampleRepository.update(exampleId, { targetConceptId: conceptId });
+  if (old) await linkExample(exampleId, old, 'otherPhrase');
+  return true;
+}
+
 export async function unlinkExample(linkId: string): Promise<void> {
   await exampleLinkRepository.softDelete(linkId);
 }

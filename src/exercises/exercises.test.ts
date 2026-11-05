@@ -115,15 +115,16 @@ describe('German conjugation rules', () => {
 });
 
 describe('grading', () => {
-  it('is exact: case, umlauts and ß matter, whitespace does not', () => {
-    expect(normalizeAnswer('  Äpfel \n')).toBe('Äpfel');
+  it('ignores case and whitespace, but umlauts and ß still matter', () => {
+    expect(normalizeAnswer('  Äpfel \n')).toBe('äpfel');
     const exercise = germanNounGenderPlural.generate(
       concept('c', 'Apfel', { grammar: { gender: 'der', plural: 'Äpfel' } }),
       example('e', 'c', 'Apfel'),
       { rng: rngFirst, options: {} },
     );
     expect(gradeFields({ gender: 'der', plural: 'Äpfel' }, exercise).correct).toBe(true);
-    expect(gradeFields({ gender: 'der', plural: 'äpfel' }, exercise).correct).toBe(false);
+    expect(gradeFields({ gender: 'der', plural: 'äpfel' }, exercise).correct).toBe(true);
+    expect(gradeFields({ gender: 'Der', plural: 'ÄPFEL' }, exercise).correct).toBe(true);
     expect(gradeFields({ gender: 'der', plural: 'Aepfel' }, exercise).correct).toBe(false);
     const wrongGender = gradeFields({ gender: 'die', plural: 'Äpfel' }, exercise);
     expect(wrongGender).toMatchObject({ correct: false, perField: { gender: false, plural: true } });
@@ -162,7 +163,8 @@ describe('exercise modules', () => {
     const phrase = germanDictation.generate(c, sentence, { rng: rngFirst, options: { scope: 'highlight' } });
     expect(phrase.speak).toEqual({ text: 'Apfel', lang: 'de-DE' });
     expect(germanDictation.grade({ answer: 'Apfel' }, phrase).correct).toBe(true);
-    expect(germanDictation.grade({ answer: 'apfel' }, phrase).correct).toBe(false);
+    expect(germanDictation.grade({ answer: 'apfel' }, phrase).correct).toBe(true);
+    expect(germanDictation.grade({ answer: 'Apfal' }, phrase).correct).toBe(false);
 
     const whole = germanDictation.generate(c, sentence, { rng: rngFirst, options: { scope: 'sentence' } });
     expect(germanDictation.grade({ answer: 'Ich esse jeden Tag einen Apfel' }, whole).correct).toBe(true); // final "." ignored

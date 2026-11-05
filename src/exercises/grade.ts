@@ -1,10 +1,10 @@
 import type { Answer, Exercise, GradeResult } from './types';
 
 // Spelling is what these drills test, so comparison is exact apart from
-// surrounding/duplicate whitespace and Unicode composition (NFC): case,
-// umlauts and ß all count.
+// surrounding/duplicate whitespace, Unicode composition (NFC) and letter
+// case ("Guck mal" = "guck mal"). Umlauts and ß still count.
 export function normalizeAnswer(text: string | undefined): string {
-  return (text ?? '').normalize('NFC').replace(/\s+/g, ' ').trim();
+  return (text ?? '').normalize('NFC').replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
 // Splits "Äpfel / Apfel" or "gegangen, gegangen" style alternatives into

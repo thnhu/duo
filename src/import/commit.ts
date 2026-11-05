@@ -3,6 +3,7 @@ import { createDefaultAttributes } from '../db/defaults';
 import { dictionaryIdForLang } from '../db/queries';
 import { db } from '../db/schema';
 import type { Concept, Example, ImportBatch, Lang, StudyMode } from '../db/types';
+import { wordSetRepository } from '../db/repositories';
 import { createWordSet, listWordSets } from '../wordsets';
 import type { ExampleDraft } from './build';
 import type { DuplicateAction, ImportGroup } from './plan';
@@ -11,8 +12,11 @@ export interface CommitOptions {
   fileName: string;
   mode: StudyMode;
   duplicateAction: DuplicateAction;
-  // Put every imported word in this set (created when missing, one per
-  // language). Added to any sets named in the file's `set` column.
+  // Put every imported word of the set's language in this existing set.
+  targetSetId?: string;
+  // Or put every imported word in a set of this name (found by name or
+  // created, one per language). Both are added to any sets named in the
+  // file's `set` column.
   targetSetName?: string;
 }
 
@@ -85,6 +89,8 @@ export async function commitImport(
 
   // Word sets named in the file or chosen as target: found by name (ignoring
   // case) or created, once per language, before the single write below.
+  const targetSet = options.targetSetId ? await wordSetRepository.getById(options.targetSetId) : undefined;
+  const pickedSet = targetSet && targetSet.deletedAt === undefined ? targetSet : undefined;
   const setIds = new Map<string, string>(); // `${lang}|${lowercased name}` -> set id
   const setKey = (lang: Lang, name: string) => `${lang}|${lower(name)}`;
   for (const group of selected) {
@@ -102,7 +108,10 @@ export async function commitImport(
   }
   const groupSetIds = (group: ImportGroup): string[] => {
     const names = [...group.setNames, ...(options.targetSetName?.trim() ? [options.targetSetName.trim()] : [])];
-    return [...new Set(names.map((n) => setIds.get(setKey(group.lang, n))).filter((id): id is string => !!id))];
+    const ids = names.map((n) => setIds.get(setKey(group.lang, n))).filter((id): id is string => !!id);
+    // The chosen existing set only takes words of its own language.
+    if (pickedSet && pickedSet.lang === group.lang) ids.push(pickedSet.id);
+    return [...new Set(ids)];
   };
 
   const batch: ImportBatch = {

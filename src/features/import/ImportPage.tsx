@@ -32,6 +32,7 @@ import { readTable, type ReadOptions, type TableData } from '../../import/readFi
 import { templateCsv, templateXlsx } from '../../import/template';
 import type { Delimiter, TextEncodingChoice } from '../../import/csv';
 import { useLastLanguage } from '../quick-add/useLastLanguage';
+import type { WordSet } from '../../db/types';
 import { listWordSets } from '../../wordsets';
 import { ReviewStep } from './ReviewStep';
 import styles from './ImportPage.module.css';
@@ -49,6 +50,8 @@ function download(blob: Blob, name: string) {
   URL.revokeObjectURL(url);
 }
 
+const NEW_SET = '__new__';
+
 export function ImportPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>('file');
@@ -63,13 +66,18 @@ export function ImportPage() {
   const [built, setBuilt] = useState<BuildResult | null>(null);
   const [groups, setGroups] = useState<ImportGroup[]>([]);
   const [duplicateAction, setDuplicateAction] = useState<DuplicateAction>('merge');
-  const [targetSet, setTargetSet] = useState('');
-  const [setNames, setSetNames] = useState<string[]>([]);
+  // '' = no set, '__new__' = type a new name, otherwise an existing set id.
+  const [targetChoice, setTargetChoice] = useState('');
+  const [newSetName, setNewSetName] = useState('');
+  const [wordSets, setWordSets] = useState<WordSet[]>([]);
   const [result, setResult] = useState<CommitResult | null>(null);
   const [latestBatch, setLatestBatch] = useState<ImportBatch | undefined>(undefined);
   const [undone, setUndone] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const existingSetNamed = (name: string) =>
+    name.trim() ? wordSets.find((s) => s.name.toLowerCase() === name.trim().toLowerCase())?.name : undefined;
 
   async function refreshLatestBatch() {
     setLatestBatch(await getLatestUndoableBatch());
@@ -78,9 +86,7 @@ export function ImportPage() {
   useEffect(() => {
     void refreshLatestBatch();
     // Existing set names (both languages) as suggestions for the target set.
-    void Promise.all([listWordSets('en'), listWordSets('de')]).then(([en, de]) =>
-      setSetNames([...new Set([...en, ...de].map((s) => s.name))].sort()),
-    );
+    void Promise.all([listWordSets('en'), listWordSets('de')]).then(([en, de]) => setWordSets([...en, ...de]));
   }, []);
 
   async function loadTable(bytes: ArrayBuffer, fileName: string, options: ReadOptions) {
@@ -166,7 +172,8 @@ export function ImportPage() {
         fileName: source.fileName,
         mode,
         duplicateAction,
-        targetSetName: targetSet,
+        targetSetId: targetChoice && targetChoice !== NEW_SET ? targetChoice : undefined,
+        targetSetName: targetChoice === NEW_SET ? newSetName : undefined,
       });
       setResult(committed);
       setUndone(false);
@@ -397,22 +404,40 @@ export function ImportPage() {
               <label className={fieldStyles.label} htmlFor="import-set">
                 Thêm tất cả vào bộ từ (tùy chọn)
               </label>
-              <input
+              <select
                 id="import-set"
                 className={fieldStyles.input}
-                list="import-set-names"
-                value={targetSet}
-                onChange={(e) => setTargetSet(e.target.value)}
-                placeholder="vd: IT, Từ phim — tạo mới nếu chưa có"
-              />
-              <datalist id="import-set-names">
-                {setNames.map((n) => (
-                  <option key={n} value={n} />
+                value={targetChoice}
+                onChange={(e) => setTargetChoice(e.target.value)}
+              >
+                <option value="">Không thêm vào bộ nào</option>
+                {wordSets.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.lang === 'en' ? 'Anh' : 'Đức'})
+                  </option>
                 ))}
-              </datalist>
+                <option value={NEW_SET}>+ Tạo bộ mới…</option>
+              </select>
+              {targetChoice === NEW_SET && (
+                <>
+                  <input
+                    id="import-new-set"
+                    className={fieldStyles.input}
+                    aria-label="Tên bộ mới"
+                    value={newSetName}
+                    onChange={(e) => setNewSetName(e.target.value)}
+                    placeholder="Tên bộ mới, vd: IT"
+                  />
+                  {existingSetNamed(newSetName) && (
+                    <p className={fieldStyles.hint}>
+                      Đã có bộ “{existingSetNamed(newSetName)}”, sẽ dùng bộ đó thay vì tạo bộ trùng tên.
+                    </p>
+                  )}
+                </>
+              )}
               <p className={fieldStyles.hint}>
-                Từ đã có trong thư viện cũng được thêm vào bộ này mà không bị nhân đôi. Cột <code>set</code> trong
-                file (nếu có) được dùng thêm.
+                Bộ có sẵn chỉ nhận từ cùng ngôn ngữ. Từ đã có trong thư viện cũng được thêm vào bộ này mà không bị
+                nhân đôi. Cột <code>set</code> trong file (nếu có) được dùng thêm.
               </p>
             </div>
             <div>

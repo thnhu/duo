@@ -9,7 +9,7 @@ import { guessMapping, resolveColumns, saveMapping, listSavedMappings } from './
 import { planGroups } from './plan';
 import { commitImport, getLatestUndoableBatch, undoImport } from './commit';
 import { readTable } from './readFile';
-import { listWordSets } from '../wordsets';
+import { createWordSet, listWordSets } from '../wordsets';
 import { templateCsv, templateTable, templateXlsx } from './template';
 
 const context: BuildContext = {
@@ -355,6 +355,25 @@ describe('word sets in import', () => {
     expect(await setNamesOf('swallow')).toEqual(['IT', 'Phim']);
     expect(await setNamesOf('chew')).toEqual(['IT']);
     expect((await listWordSets('en')).map((s) => s.name)).toEqual(['IT', 'Phim']);
+  });
+
+  it('puts words in a chosen existing set by id, only those of its language', async () => {
+    const field = await createWordSet('en', 'IT field');
+    if (!field.ok) throw new Error('setup');
+    const table = await readTable(bytes('text,lang\nserver,en\nApfel,de'), 'words.csv');
+    const { mapping } = guessMapping(table.rows[0], []);
+    const built = buildRows(table.rows, resolveColumns(table.rows[0], mapping), context);
+    const groups = planGroups(built.rows, await conceptRepository.listActive());
+    await commitImport(groups, {
+      fileName: 'w.csv',
+      mode: 'breadth',
+      duplicateAction: 'merge',
+      targetSetId: field.set.id,
+    });
+    expect(await setNamesOf('server')).toEqual(['IT field']);
+    expect(await setNamesOf('Apfel')).toEqual([]);
+    // no second "IT field" was created
+    expect((await listWordSets('en')).map((x) => x.name)).toEqual(['IT field']);
   });
 
   it('adds a word that already exists to the set without duplicating it, even when skipping duplicates', async () => {

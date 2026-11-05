@@ -6,7 +6,6 @@ import { BackupError, exportBackup, restoreBackup } from '../../backup/json';
 import { dateStamp, downloadBlob, getLastBackupAt, setLastBackupAt } from '../../backup/download';
 import { exportXlsx } from '../../backup/table';
 import { conceptRepository, exampleRepository } from '../../db/repositories';
-import { AiCard } from './AiCard';
 import { StudyCard } from './StudyCard';
 import { SyncCard } from './SyncCard';
 import styles from './SettingsPage.module.css';
@@ -75,7 +74,6 @@ export function SettingsPage() {
 
       <StudyCard />
 
-      <AiCard />
 
       <SyncCard />
 

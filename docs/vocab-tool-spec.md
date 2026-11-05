@@ -1,7 +1,7 @@
 # SPEC: Công cụ học từ vựng Anh – Đức (Breadth & Depth)
 
 > Tài liệu này dành cho Claude Code đọc để triển khai. Product Owner (PO): người dùng, dùng một mình.
-> Phiên bản **v6** (chi tiết Bản 2, xem mục 12). Trước đó **v5**: (1) thêm **tìm kiếm**; (2) làm rõ cách học **cụm từ trong câu ví dụ** bằng cách **tô sáng** cụm cần học; (3) thêm **AI gợi ý nhãn TMRND** (Tone, Mode, Register, Nuance, Dialect). Tool vẫn **không đọc PDF**: PO dùng công cụ ngoài rồi nhập bằng file CSV hoặc XLSX. AI trong tool **chỉ** dùng để gợi ý nhãn TMRND. Xem mục 12 để biết thay đổi so với v4.
+> Phiên bản **v7** (bỏ AI gợi ý nhãn, xem mục 12). **Tool không đọc PDF và không dùng AI**: PO dùng công cụ ngoài rồi nhập bằng file CSV hoặc XLSX, và gắn nhãn TMRND (Tone, Mode, Register, Nuance, Dialect) bằng tay. Xem mục 12 để biết thay đổi so với các bản trước.
 > Quy ước: **[CHỐT]** = đã thống nhất. **[ĐỀ XUẤT]** = đề xuất, có thể chỉnh. **[MỞ]** = chưa quyết định, cần hỏi PO trước khi làm.
 
 ---
@@ -87,8 +87,8 @@ Nếu sau này trả lời sai/chậm trở lại, có thể hạ về `loaded` 
 4. **Dùng một người [CHỐT].** Một tài khoản, nhiều thiết bị.
 5. **Chạy trên điện thoại và máy tính [CHỐT].** Giao diện ưu tiên mobile.
 6. **Xuất xlsx [CHỐT].**
-7. **Quyền riêng tư [ĐỀ XUẤT].** File nhập được đọc ngay trên thiết bị, không tải lên máy chủ nào. Dữ liệu rời thiết bị chỉ gồm: (a) đồng bộ lên tài khoản của chính PO (mục 6.3), (b) **từ đơn lẻ** gửi tới dịch vụ tra cứu từ điển (mục 6.5), (c) **câu/cụm ví dụ** mà PO chủ động nhờ AI gợi ý nhãn TMRND (mục 6.6). Khóa API của AI chỉ lưu cục bộ trên từng thiết bị, không đồng bộ.
-8. **Mọi dữ liệu do tra cứu tự động hoặc AI tạo ra đều chỉ là gợi ý** (`unverified` hoặc `suggested`) cho đến khi PO duyệt. **Gợi ý của AI không bao giờ tự trở thành đáp án chấm điểm.**
+7. **Quyền riêng tư [ĐỀ XUẤT].** File nhập được đọc ngay trên thiết bị, không tải lên máy chủ nào. Dữ liệu rời thiết bị chỉ gồm: (a) đồng bộ lên tài khoản của chính PO (mục 6.3), (b) **từ đơn lẻ** gửi tới dịch vụ tra cứu từ điển (mục 6.5). Không có dịch vụ AI nào nhận dữ liệu của PO.
+8. **Mọi dữ liệu do tra cứu tự động tạo ra đều chỉ là gợi ý** (`unverified`) cho đến khi PO duyệt. **Nhãn TMRND chỉ thành đáp án chấm điểm khi PO tự gắn (`verified`).**
 9. **Ngoài phạm vi [CHỐT]:** đọc PDF, OCR, quét trang bằng AI. PO dùng công cụ ngoài để chuyển sách thành danh sách từ. Nếu sau này muốn thêm, làm bằng một module nguồn từ mới (mục 7), không đụng lõi. **AI trong tool chỉ phục vụ gợi ý nhãn TMRND** (mục 6.6).
 
 ---
@@ -110,7 +110,7 @@ Nếu sau này trả lời sai/chậm trở lại, có thể hạ về `loaded` 
 | A6 | Tự ẩn các concept đã `acquired` khỏi danh sách ứng viên ở bước duyệt (PO vẫn tự bỏ thủ công những từ chưa được tool ghi nhận) | ĐỀ XUẤT |
 | A7 | **Chỉ lưu dữ liệu đã nhập**, không lưu file gốc | ĐỀ XUẤT |
 | A8 | **Module tra cứu tự động**: bổ sung nghĩa, loại từ, giống/số nhiều, dạng chia động từ, ví dụ; kết quả luôn `unverified` (mục 6.5) | CHỐT |
-| A9 | **AI gợi ý nhãn TMRND** cho example (mục 6.6); PO chấp nhận hoặc sửa từng nhãn | CHỐT |
+| A9 | ~~AI gợi ý nhãn TMRND~~ **ĐÃ BỎ (v7).** PO gắn nhãn tay ở màn sửa example (M10a) | BỎ |
 
 Ghi chú:
 - PO chuẩn bị file danh sách từ bằng công cụ khác. Tool này không quan tâm file đó được tạo thế nào, chỉ cần đúng định dạng ở mục 6.4.
@@ -217,7 +217,7 @@ Học concept qua các **example** có thuộc tính ngữ cảnh và qua **liê
 | Nhập/xuất XLSX và CSV | SheetJS (`xlsx`) đọc được cả hai định dạng; có thể thêm thư viện CSV riêng nếu cần |
 | Đồng bộ | Firebase gói Spark: Authentication (email hoặc Google) + Firestore (mục 6.3) |
 | Tra cứu từ điển | Free Dictionary API (tiếng Anh), Wiktionary qua Wikimedia REST API (tiếng Đức) (mục 6.5) |
-| AI gợi ý nhãn TMRND | Gemini API gói miễn phí (mặc định đề xuất), nằm sau giao diện `AiProvider` thay được (mục 6.6) |
+| AI gợi ý nhãn TMRND | **Đã bỏ (v7)**, xem mục 6.6 |
 | Tìm kiếm cục bộ | Thư viện tìm kiếm chạy trong trình duyệt (ví dụ MiniSearch hoặc FlexSearch) hoặc truy vấn Dexie; kiểm tra giấy phép (mục 6.7) |
 | Phát âm | Web Speech API (`speechSynthesis`, voice `de-DE`) |
 | Hosting | Web tĩnh miễn phí (ví dụ GitHub Pages hoặc Firebase Hosting) |
@@ -275,21 +275,13 @@ Claude Code có thể đề xuất thay thế nếu có lý do kỹ thuật rõ 
 - **Tiếng Đức:** Wiktionary qua REST API của Wikimedia (miễn phí, có điều khoản và giới hạn tần suất riêng, cần tuân thủ). Mục từ tiếng Đức chứa giống danh từ và dạng chia động từ nhưng ở dạng wikitext, **cần tự phân tích (parse)**. Kiểm tra CORS và giới hạn tần suất khi triển khai.
 - Chỉ gửi **từ đơn lẻ** tới dịch vụ tra cứu, không gửi nội dung nào khác. Tra cứu hàng loạt phải **giãn nhịp** để tuân thủ giới hạn tần suất và chạy nền.
 - Giao diện `LookupProvider`, mỗi ngôn ngữ một nhà cung cấp, thay được. Mọi kết quả là `unverified`.
-- AI **không** dùng để tra cứu nghĩa; AI chỉ dùng để gợi ý nhãn TMRND (mục 6.6). Nếu nguồn từ điển có sẵn nhãn (ví dụ thẻ informal, slang, dated), module tra cứu hiển thị nhãn đó làm **bằng chứng tham khảo** cho PO và có thể đưa vào lệnh gửi AI.
+- Không có AI trong tool. Nếu nguồn từ điển có sẵn nhãn (ví dụ thẻ informal, slang, dated), module tra cứu hiển thị nhãn đó làm **bằng chứng tham khảo** cho PO tự gắn nhãn.
 
-### 6.6 AI gợi ý nhãn TMRND **[CHỐT chức năng, ĐỀ XUẤT cách làm]**
-- **Mục đích:** khi PO nhập một example, AI **gợi ý** giá trị cho 5 thuộc tính Tone, Mode, Register, Nuance, Dialect, kèm **lý do ngắn**; PO chấp nhận hoặc sửa từng nhãn.
-- **Đầu vào:** văn bản example, cụm tô sáng, ngôn ngữ, và (nếu có) nhãn tham khảo từ từ điển (mục 6.5). **Chỉ gửi những example PO chủ động yêu cầu** (bấm gợi ý, hoặc chọn chạy hàng loạt), không tự gửi nền.
-- **Đầu ra bắt buộc có cấu trúc (JSON):** mỗi thuộc tính chỉ nhận giá trị **thuộc bộ mặc định PVO** (ràng buộc bằng danh sách giá trị cho phép), kèm `reason` và (nếu có) `confidence`. Nếu không đủ căn cứ thì trả `Neutral` kèm lý do thay vì đoán. AI **không tạo giá trị mới** ngoài bộ; nếu thấy cần (ví dụ slang) thì đề xuất ghi vào Note.
-- **Trạng thái:** gợi ý lưu ở `suggestedAttributes`, `attributesStatus = suggested`. Chỉ khi PO chấp nhận mới ghi vào `attributes` và đặt `attributesStatus = verified`. **Bài S1 chỉ chấm theo nhãn đã `verified`**, nên gợi ý chưa duyệt không thành đáp án.
-- **Nơi dùng:** (a) khi tạo hoặc sửa example, bấm **Gợi ý TMRND**; (b) hàng loạt cho các example còn trống nhãn, chạy nền và giãn nhịp; (c) trong Hộp chờ duyệt.
-- **Nhà cung cấp đề xuất: Gemini API, gói miễn phí** (đã kiểm tra năm 2026, kiểm lại khi triển khai): nhóm Flash/Flash-Lite có gói miễn phí không cần thẻ; hạn mức hiển thị theo từng dự án trong Google AI Studio; các model Pro hầu như không còn trong gói miễn phí từ khoảng tháng 4/2026; **nội dung gửi qua gói miễn phí có thể được Google dùng để cải thiện sản phẩm**; chỉ dành cho quốc gia đủ điều kiện (PO tự thử lấy khóa tại Google AI Studio). Chọn model cụ thể khi triển khai, không hard-code.
-- **Thiết kế:**
-  - Giao diện `AiProvider` (văn bản vào, JSON ra) thay được; ở thời điểm triển khai có thể cân nhắc phương án chạy ngay trên thiết bị nếu khả thi và miễn phí.
-  - Khóa API do PO nhập, lưu cục bộ (`LocalSecrets`), không commit, không đồng bộ.
-  - Xử lý êm lỗi hết hạn mức và lỗi mạng: báo, giữ nguyên trạng thái, thử lại sau, không tự thử dồn dập; hiển thị số lần gọi trong ngày.
-  - **Có thể tắt hẳn AI** mà app vẫn đủ chức năng (PO gắn nhãn tay).
-- **Kiểm chứng chất lượng:** trước khi bật hàng loạt, chạy một spike với khoảng 20–30 example thật do PO chọn, so gợi ý với nhận định của PO. Ngưỡng đồng ý chấp nhận được do PO quyết (**[MỞ]**).
+### 6.6 AI gợi ý nhãn TMRND **[ĐÃ BỎ, v7]**
+- PO đã triển khai thử (M10b, Gemini gói miễn phí) và quyết định **bỏ** vì lời gọi không phản hồi sau hơn 1 phút; PO gắn nhãn TMRND bằng tay ở màn sửa example (M10a).
+- Toàn bộ mã `src/ai/`, màn `/labels` và mục AI trong Cài đặt đã bị xóa. Khóa API còn trên thiết bị được xóa khi mở app.
+- Dữ liệu cũ vẫn được giữ để không mất (nguyên tắc nâng cấp): `Example.suggestedAttributes`, `attributesStatus = suggested` và `Settings.aiProviderConfig` còn trong mô hình nhưng không còn code nào ghi hoặc hiển thị chúng; `suggested` không bao giờ là đáp án chấm điểm.
+- Muốn thêm lại sau này: cần quyết định mới của PO và nhà cung cấp phản hồi ổn định; ghi vào mục 9.2.
 
 ### 6.7 Tìm kiếm cục bộ **[ĐỀ XUẤT]**
 - Chỉ mục tìm kiếm là **dữ liệu dẫn xuất** (dựng lại từ IndexedDB), **không đồng bộ**; dựng lại khi mở app trên thiết bị mới hoặc sau khi nhập file lớn, cập nhật tăng dần khi thêm/sửa/xóa.
@@ -318,7 +310,6 @@ Lõi nhỏ cộng các module độc lập, mỗi chức năng thêm/bớt/đổ
 - **Nguồn từ = module** (`file-import` cho CSV/XLSX, `quick-add`...), cùng giao diện trả về danh sách từ ứng viên. Muốn thêm nguồn mới (ví dụ đọc PDF sau này) chỉ cần viết thêm một module nguồn.
 - **`LookupProvider`**: tra cứu theo ngôn ngữ (mục 6.5).
 - **`SyncAdapter`**: đồng bộ dữ liệu (mục 6.3).
-- **`AiProvider`**: gợi ý nhãn TMRND, văn bản vào – JSON ra (mục 6.6).
 - **`SearchService`**: tìm kiếm cục bộ (mục 6.7).
 - **Ngôn ngữ = gói cấu hình** (Anh, Đức). Thêm ngôn ngữ mới không đụng lõi.
 - **Thuộc tính ngữ cảnh = cấu hình/dữ liệu** (tone, mode, register, nuance, dialect và tập giá trị). Thêm thuộc tính hoặc giá trị không cần sửa code.
@@ -358,7 +349,7 @@ Example {                              // câu/cụm/đoạn thể hiện cách 
     tone, mode, register, nuance, dialect
   },
   attributesStatus: "empty" | "suggested" | "verified",
-  suggestedAttributes?: {              // gợi ý của AI, chưa thành đáp án
+  suggestedAttributes?: {              // LEGACY (đã bỏ AI, v7): giữ để không mất dữ liệu, không ghi mới
     tone?, mode?, register?, nuance?, dialect?,   // mỗi mục: { value, reason, confidence? }
     provider, suggestedAt
   },
@@ -399,11 +390,11 @@ Settings {
   attributeValueSets,                  // bộ mặc định PVO
   linkTypes,
   enabledModules,
-  aiProviderConfig,                    // model, bật/tắt AI; KHÔNG chứa khóa API
+  aiProviderConfig,                    // LEGACY (đã bỏ AI, v7), không còn dùng
   schemaVersion
 }
 
-LocalSecrets {                         // chỉ lưu cục bộ, KHÔNG đồng bộ
+LocalSecrets {                         // LEGACY (đã bỏ AI, v7)
   aiApiKey
 }
 
@@ -425,7 +416,7 @@ Ghi chú:
 | Vấn đề | Quyết định |
 |---|---|
 | Đọc PDF / quét trang | **Bỏ khỏi tool.** PO dùng công cụ ngoài, nhập vào tool bằng CSV/XLSX |
-| AI | **Chỉ dùng để gợi ý nhãn TMRND** (mục 6.6); không dùng cho việc nào khác |
+| AI | **Bỏ khỏi tool (v7)**: PO gắn nhãn TMRND bằng tay |
 | Tìm kiếm | **Cần** (mục F, 6.7) |
 | Học cụm trong câu ví dụ | **Tô sáng cụm cần học**; phần còn lại là ngữ cảnh (C7) |
 | Thuật ngữ | **TMRND** = Tone, Mode, Register, Nuance, Dialect |
@@ -438,13 +429,13 @@ Ghi chú:
 | "Nạp vào tiếng Việt" | Là gõ nhầm, ý đúng là **"nạp vào tiếng Đức"** |
 
 ### 9.2 Còn mở
-1. **Chấp nhận gửi câu/cụm ví dụ tới AI miễn phí:** theo điều khoản gói miễn phí của Gemini, nội dung có thể được Google dùng để cải thiện sản phẩm. PO có chấp nhận cho các example PO tự yêu cầu không? Nếu không: thử AI chạy trên thiết bị (nếu khả thi) hoặc gắn nhãn tay. PO cũng cần xác nhận lấy được khóa API miễn phí tại Google AI Studio.
+1. ~~Gửi câu ví dụ tới AI~~ **Không còn áp dụng (v7: đã bỏ AI).**
 2. **Quy tắc tô sáng (C7):** "một example một cụm tô sáng, muốn thêm cụm thì tạo example mới" có ổn không, hay PO muốn một câu mang nhiều cụm cùng lúc?
 3. **Định dạng file nhập:** công cụ ngoài của PO xuất ra những cột nào? Cần vài dòng đầu của file thật để chốt bộ cột ở mục 6.4.
 4. **Liên kết trong file nhập:** có cần nhập liên kết concept/example từ file không? **[ĐỀ XUẤT]** bản đầu chưa nhập liên kết từ file.
 5. **Thuật toán spaced repetition** (đơn vị là example): kiểu SM-2 đơn giản hay mới hơn?
 6. **Bộ từ điển (Dictionary):** đang **mặc định mỗi ngôn ngữ một bộ tự tạo** (C6). PO xác nhận hoặc yêu cầu nhiều bộ ngay từ MVP.
-7. **Ngưỡng chấp nhận chất lượng gợi ý AI** sau spike (mục 6.6).
+7. ~~Ngưỡng chấp nhận chất lượng gợi ý AI~~ **Không còn áp dụng (v7).**
 8. **Chi tiết kỹ thuật cần kiểm khi triển khai (không cần PO quyết):** CORS và hạn mức khi gọi Free Dictionary API, Wikimedia API, Gemini API từ trình duyệt; cách phân tích mục từ tiếng Đức của Wiktionary; thư viện tìm kiếm.
 
 ---
@@ -481,9 +472,9 @@ Mỗi phiên làm việc với Claude Code chỉ nên giao **một cột mốc**
 | **M9b** Bài tiếng Anh Rộng | Các module `en.*` ở mục 5.2, phân loại danh từ/động từ theo `pos`, chỉ dùng concept `verified` cho bài nghĩa/từ | Chơi được từng kiểu bài, chấm đúng, ghi thời gian vào ReviewLog; ôn tập và chớp nhoáng trộn được bài Anh; bài điền chỉ che cụm tô sáng |
 | **M9c** Cài đặt học | Màn Cài đặt chỉnh ngưỡng thụ đắc (`acquisitionCriteria`) và số câu mỗi phiên; chốt giá trị mặc định `minDistinctContexts` (từ chỉ có 1 example tối thiểu hiện không thể `acquired`) | Đổi ngưỡng thì trạng thái thụ đắc tính theo ngưỡng mới |
 | **M10a** Sửa example | Màn sửa example: tô sáng lại cụm, chọn 5 nhãn TMRND bằng tay, ghi chú, nút "Học thêm cụm khác trong câu này" (J10) | Gắn nhãn tay được; nhãn đã duyệt lưu `verified`; nhãn chưa duyệt không dùng làm đáp án |
-| **M10b** AI gợi ý TMRND | Nội dung ở dòng M10 bên dưới | Như M10 bên dưới |
+| **M10b** ~~AI gợi ý TMRND~~ | **ĐÃ LÀM RỒI BỎ (v7)**: mã AI đã xóa, PO gắn nhãn tay | Không còn áp dụng |
 
-- **M10 AI gợi ý TMRND** (mục 6.6): `AiProvider`, màn hình nhập khóa API, nút Gợi ý TMRND, chạy hàng loạt giãn nhịp, **spike 20–30 example thật** để PO đánh giá chất lượng trước khi bật hàng loạt. Xong khi: PO bấm gợi ý, thấy 5 nhãn kèm lý do, chấp nhận hoặc sửa; nhãn chưa duyệt không xuất hiện làm đáp án bài.
+- **M10 AI gợi ý TMRND:** đã bỏ ở v7 (mục 6.6). Bản 2 kết thúc ở M10a.
 
 ### Bản 3: Tiếng Anh, chế độ Sâu
 - Example kèm thuộc tính (bộ mặc định PVO), đủ loại ConceptLink và ExampleLink, kiểm tra không tạo vòng.
@@ -501,14 +492,14 @@ Mỗi phiên làm việc với Claude Code chỉ nên giao **một cột mốc**
 - **Miễn phí là ràng buộc cứng.** Trước khi thêm bất kỳ dịch vụ/API nào, phải xác nhận có gói miễn phí vĩnh viễn và không tự động tính tiền khi vượt hạn mức. Mọi dịch vụ ngoài phải thất bại êm.
 - **Giá, hạn mức, điều khoản của dịch vụ thay đổi theo thời gian;** luôn kiểm tra lại trang chính thức trước khi dựa vào con số nào.
 - **Không sao chép mã nguồn PVO/HUST PVO.** Chỉ dùng mô hình khái niệm từ tài liệu công khai.
-- **Không đọc PDF, không OCR trong tool.** Dữ liệu vào bằng CSV/XLSX hoặc ghi nhanh. **AI chỉ dùng để gợi ý nhãn TMRND** (mục 6.6).
+- **Không đọc PDF, không OCR trong tool.** Dữ liệu vào bằng CSV/XLSX hoặc ghi nhanh. **Tool không dùng AI** (v7); nhãn TMRND do PO gắn tay.
 - **Thuộc tính ngữ cảnh gắn vào Example**, không gắn vào Concept. Tone = mức trang trọng, Register = lĩnh vực.
 - **Lịch ôn tính theo example.** Mỗi concept phải có ít nhất một example (kể cả example tối thiểu).
 - **Nhập file phải an toàn và lặp lại được:** xem trước trước khi ghi, báo lỗi theo dòng, phát hiện trùng, nhập lại cùng file không được tạo bản sao. Đặc biệt kiểm tra mã hóa và ký tự đặc biệt tiếng Đức.
 - **Dữ liệu người dùng không được mất khi nâng cấp:** mọi thay đổi cấu trúc phải đi kèm migration; xóa dùng xóa mềm để đồng bộ đúng.
 - **Không hard-code** ngôn ngữ, thuộc tính và tập giá trị, loại liên kết, tiêu chí thụ đắc, danh sách kiểu bài, tên cột nhập.
-- **Nhãn do tra cứu hoặc AI tạo ra chỉ là gợi ý** (`unverified`/`suggested`); PO phải chấp nhận thì mới thành dữ liệu chính thức. **Bài chấm điểm chỉ dùng nhãn đã `verified`.** AI chỉ được chọn giá trị trong bộ mặc định PVO.
-- **Chỉ gửi ra ngoài:** từ đơn lẻ tới dịch vụ tra cứu, và example mà PO chủ động nhờ AI gợi ý. Không lưu file gốc đã nhập. Khóa API AI chỉ lưu cục bộ, không đồng bộ, không commit.
+- **Dữ liệu tra cứu chỉ là gợi ý** (`unverified`); PO phải duyệt thì mới thành dữ liệu chính thức. **Bài chấm điểm chỉ dùng nhãn TMRND đã `verified`** (PO tự gắn).
+- **Chỉ gửi ra ngoài:** từ đơn lẻ tới dịch vụ tra cứu, và đồng bộ lên tài khoản của PO. Không lưu file gốc đã nhập.
 - **Chặn vòng tròn** khi tạo ConceptLink.
 - **Cụm tô sáng là mục tiêu học**, phần còn lại của câu chỉ là ngữ cảnh: không kiểm tra phần ngoài tô sáng. Lưu vị trí tô sáng bền vững khi sửa câu.
 - **Tìm kiếm chạy cục bộ, offline;** chỉ mục không đồng bộ, dựng lại khi cần.
@@ -519,7 +510,10 @@ Mỗi phiên làm việc với Claude Code chỉ nên giao **một cột mốc**
 
 ## 12. Lịch sử thay đổi
 
-**v6 (bản này):**
+**v7 (bản này):**
+- **Bỏ AI gợi ý nhãn TMRND** (A9, mục 6.6, M10b) theo quyết định của PO sau khi thử: Gemini không phản hồi sau hơn 1 phút. Xóa mã `src/ai/`, màn `/labels`, mục AI ở Cài đặt, `AiProvider`; PO gắn nhãn tay (M10a). Giữ các trường dữ liệu cũ để không mất dữ liệu. Không đồng bộ khóa API (tính năng đồng bộ khóa làm dở đã hủy).
+
+**v6:**
 - Chi tiết Bản 2: chia thành M9a, M9b, M9c, M10a, M10b (mục 10); kiểu bài tiếng Anh Rộng và quy tắc chấm tiếng Anh (mục 5.2).
 - Ghi nhận trạng thái triển khai: M0–M7b đã xong (đồng bộ Firebase đã chạy thật); M8 bỏ qua theo quyết định của PO.
 

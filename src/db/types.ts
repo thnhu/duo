@@ -113,6 +113,9 @@ export interface ExampleAttributes {
   dialect: Dialect;
 }
 
+// 'suggested' and `suggestedAttributes` / `aiProviderConfig` are legacy: the AI
+// suggestion feature (M10b) was removed on 2026-11-05, but the fields stay so
+// data already saved or synced is never lost (principle 9). Nothing writes them.
 export type AttributesStatus = 'empty' | 'suggested' | 'verified';
 
 export interface SuggestedAttributeValue<T> {

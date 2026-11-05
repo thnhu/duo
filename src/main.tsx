@@ -23,7 +23,6 @@ import { InboxPage } from './features/inbox/InboxPage'
 import { LibraryPage } from './features/library/LibraryPage'
 import { ConceptDetailPage } from './features/library/ConceptDetailPage'
 import { ExampleEditPage } from './features/example/ExampleEditPage'
-import { LabelsPage } from './features/labels/LabelsPage'
 import { ImportPage } from './features/import/ImportPage'
 import { SettingsPage } from './features/settings/SettingsPage'
 import { LearnPage } from './features/learn/LearnPage'
@@ -31,6 +30,12 @@ import { SessionPage } from './features/learn/SessionPage'
 import { SearchPage } from './features/search/SearchPage'
 
 async function bootstrap() {
+  // The AI suggestion feature was removed; drop the API key it left on this device.
+  try {
+    for (const key of ['duo.ai.apiKey', 'duo.ai.usage']) localStorage.removeItem(key)
+  } catch {
+    // storage unavailable: nothing to clean
+  }
   await initDb()
   // Background sync; does nothing until PO sets it up in Settings.
   void syncManager.start()
@@ -51,7 +56,6 @@ async function bootstrap() {
             <Route path="library" element={<LibraryPage />} />
             <Route path="library/:conceptId" element={<ConceptDetailPage />} />
             <Route path="example/:exampleId" element={<ExampleEditPage />} />
-            <Route path="labels" element={<LabelsPage />} />
           </Route>
         </Routes>
       </HashRouter>

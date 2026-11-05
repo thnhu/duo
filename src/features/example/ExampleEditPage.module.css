@@ -70,12 +70,3 @@
   background: var(--color-warning-bg);
   color: var(--color-warning);
 }
-
-.suggestion {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  border-radius: var(--radius-sm);
-  background: var(--color-primary-100);
-}

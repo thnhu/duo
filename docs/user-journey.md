@@ -18,7 +18,7 @@
 | Tiêu chí thụ đắc | Trả lời **đúng và nhanh**, trong **nhiều example** khác nhau, qua **nhiều ngày** |
 | Ràng buộc | Hoàn toàn miễn phí, dùng được khi không có mạng (local-first), tự đồng bộ giữa thiết bị |
 
-**Việc nằm ngoài tool [ĐÃ CHỐT]:** đọc PDF, OCR, AI quét trang. Tool nhận file CSV/XLSX hoặc từ/câu gõ tay. **AI trong tool chỉ gợi ý nhãn TMRND.**
+**Việc nằm ngoài tool [ĐÃ CHỐT]:** đọc PDF, OCR, AI quét trang. Tool nhận file CSV/XLSX hoặc từ/câu gõ tay. **Tool không dùng AI (v7); nhãn TMRND do PO gắn tay.**
 
 ---
 
@@ -37,7 +37,7 @@ flowchart TD
         Q["Ghi nhanh từ hoặc câu, tô sáng cụm cần học"] --> E
         E --> F["Concept ở trạng thái loaded"]
         F --> G["Tra cứu tự động, PO duyệt thành verified"]
-        F --> AI["AI gợi ý TMRND, PO chấp nhận hoặc sửa"]
+        F --> AI["PO gắn nhãn TMRND bằng tay"]
     end
 
     subgraph DUNG["Dùng lặp lại - Acquire"]
@@ -70,7 +70,7 @@ stateDiagram-v2
     acquired --> loaded: trả lời sai hoặc chậm trở lại (đề xuất)
 ```
 
-Song song với trạng thái học, mỗi từ/example mang **trạng thái kiểm chứng**: `unverified` (do tra cứu tự động hoặc ghi nhanh) → `verified` (PO đã duyệt). Nhãn TMRND của example có trạng thái riêng: `empty` → `suggested` (AI hoặc tra cứu gợi ý) → `verified` (PO chấp nhận).
+Song song với trạng thái học, mỗi từ/example mang **trạng thái kiểm chứng**: `unverified` (do tra cứu tự động hoặc ghi nhanh) → `verified` (PO đã duyệt). Nhãn TMRND của example có trạng thái riêng: `empty` → `verified` (PO tự gắn; trạng thái `suggested` là di sản của AI đã bỏ).
 
 ### 2.2 Một ngày học điển hình (minh họa)
 
@@ -196,7 +196,7 @@ flowchart TD
 | 2c | **Cách 3:** lưu câu mà chưa tô sáng | Câu vào **Hộp chờ duyệt** ở dạng "câu chưa gắn concept", tô sáng sau (J10) |
 | 3 | Quay lại xem phim | Mục vừa lưu nằm trong Hộp chờ duyệt với trạng thái `unverified` |
 
-- **Sau đó (khi rảnh):** PO mở Hộp chờ duyệt; tool tra cứu tự động bổ sung nghĩa (J3); PO có thể bấm **Gợi ý TMRND** (J10); rồi duyệt.
+- **Sau đó (khi rảnh):** PO mở Hộp chờ duyệt; tool tra cứu tự động bổ sung nghĩa (J3); PO có thể gắn nhãn TMRND tay (J10); rồi duyệt.
 - **Mục tiêu thao tác:** từ lúc mở app đến lúc lưu xong không quá khoảng 2 thao tác với Cách 1. **[ĐỀ XUẤT UI]**
 - **Ngoại lệ:** gõ trùng từ đã có → báo "đã có", không tạo bản sao; PO có thể thêm example mới cho từ đó.
 - **Spec:** A5, A8, C4, C7. **Mốc:** M2.
@@ -279,7 +279,7 @@ flowchart TD
 | 3 | Đặt thuộc tính cho từng example (ví dụ *Hi* → Tone: Informal; *Greetings* → Tone: Formal) | Chỉ cho chọn giá trị trong **bộ mặc định PVO**; nhãn như "slang" ghi vào Note |
 | 4 | Liên kết example với concept (loại liên kết: Idiom, Nominal, Agent, Patient, Action, Described by, Describing, Other phrase) | Lưu liên kết; mặc định là không liên kết |
 | 5 | Liên kết concept với concept (Association, Type of) | **Chặn tạo vòng tròn**; xem được ở **cây/bảng concept** |
-| 6 | Bấm **Gợi ý TMRND** | AI đề xuất 5 nhãn (chỉ chọn trong bộ giá trị PVO) kèm lý do ngắn, hiện cạnh ô chọn; PO **chấp nhận hoặc sửa từng nhãn**; chỉ khi chấp nhận mới thành `verified` |
+| 6 | ~~Bấm Gợi ý TMRND~~ (đã bỏ ở v7) | PO tự chọn 5 nhãn ở ô chọn; lưu tay thì thành `verified` |
 
 **Phần B: làm bài**
 
@@ -290,7 +290,7 @@ flowchart TD
 
 - **Collocation và idiom** được biểu diễn bằng loại liên kết example – concept (*Idiom*, *Other phrase*). [ĐÃ CHỐT]
 - **Ngoại lệ:** nhóm có ít hơn hai lựa chọn thì không tạo được bài S2 → tool nhắc PO thêm example/concept liên kết.
-- **Ngoại lệ (AI):** hết hạn mức hoặc mất mạng → báo, giữ nguyên, PO gắn nhãn tay hoặc thử lại sau; AI không cho ra giá trị ngoài bộ PVO (nếu thấy cần, như slang, chỉ đề xuất ghi vào Note).
+- **Ghi chú:** nhãn không có trong bộ PVO (như slang) thì ghi vào Note.
 - **Spec:** mục 1.3, mục 5.2 (Sâu), mục 8, E5. **Mốc:** Bản 3.
 
 ---
@@ -354,7 +354,7 @@ flowchart TD
     B --> C{"Cụm đã có concept?"}
     C -- Chưa --> D["Tạo concept mới từ cụm"]
     C -- Rồi --> E["Gắn vào concept đã có, tìm bằng ô tìm kiếm"]
-    D --> F["Chọn nhãn TMRND hoặc bấm Gợi ý TMRND"]
+    D --> F["Chọn nhãn TMRND bằng tay"]
     E --> F
     F --> G["PO chấp nhận hoặc sửa từng nhãn"]
     G --> H["Lưu: example có lịch ôn riêng, bài chỉ kiểm tra phần tô sáng"]
@@ -365,7 +365,7 @@ flowchart TD
 | 1 | Nhập hoặc dán câu | Hiện câu, sẵn sàng tô sáng |
 | 2 | **Kéo chọn (tô sáng)** cụm muốn học | Cụm hiện nổi bật; phần còn lại hiện nhạt hơn như **ngữ cảnh** |
 | 3 | Chọn tạo concept mới từ cụm, hoặc gắn vào concept đã có | Ô tìm kiếm tự gợi ý nếu cụm đã tồn tại, để tránh tạo trùng |
-| 4 | Chọn nhãn TMRND bằng tay, hoặc bấm **Gợi ý TMRND** | AI đề xuất 5 nhãn kèm lý do ngắn; PO chấp nhận hoặc sửa từng nhãn; ghi "slang" vào Note nếu cần |
+| 4 | Chọn nhãn TMRND bằng tay | PO tự chọn 5 nhãn; ghi "slang" vào Note nếu cần; lưu tay = `verified` |
 | 5 | (Tùy chọn) Liên kết example với concept bằng loại liên kết (Idiom, Other phrase...) | Lưu liên kết |
 | 6 | Lưu | Example có **lịch ôn riêng**; các bài tập chỉ kiểm tra phần tô sáng |
 | 7 | (Tùy chọn) Bấm **Học thêm cụm khác trong câu này** | Tạo một example mới với cùng câu, tô sáng cụm khác |
@@ -373,8 +373,8 @@ flowchart TD
 - **Ngoại lệ:**
   - Không tô sáng gì → lưu thành "câu chưa gắn concept", chưa có lịch ôn cho đến khi tô sáng.
   - Tô sáng **cả câu** → cho phép; concept là cả câu (dùng cho câu cố định hoặc idiom).
-  - AI hết hạn mức hoặc không có mạng → PO gắn nhãn tay; mọi chức năng khác vẫn dùng được.
-- **Spec:** C7, A9, F3, mục 6.6. **Mốc:** M2 (tô sáng), M10 (AI gợi ý).
+  - Không có AI: mọi nhãn do PO gắn tay.
+- **Spec:** C7, F3. **Mốc:** M2 (tô sáng), M10a (gắn nhãn tay).
 
 ---
 
@@ -407,19 +407,19 @@ flowchart TD
 | J3 Tra cứu tự động | A8 | M3b | 1 |
 | J4 Tiếng Đức Rộng | B, 5.1, C5, D1, D2 | M4, M5 | 1 |
 | J5 Tiếng Anh Rộng | 5.2 (Rộng) | M9a, M9b | 2 |
-| J6 Tiếng Anh Sâu | 1.3, 5.2 (Sâu), 8, E5, A9 | M10, Bản 3 | 2 và 3 |
+| J6 Tiếng Anh Sâu | 1.3, 5.2 (Sâu), 8, E5 | Bản 3 | 3 |
 | J7 Ôn tập hằng ngày | D3, D4 | M6 | 1 |
 | J8 Xem tiến độ | E5, mục 2 | M5, Bản 3 | 1 và 3 |
 | J9 Đồng bộ và sao lưu | E2–E4 | M7, M7b | 1 |
-| J10 Tô sáng cụm và gắn TMRND | C7, A9, F3, 6.6 | M2, M10a, M10b | 1 và 2 |
+| J10 Tô sáng cụm và gắn TMRND | C7, F3 | M2, M10a | 1 và 2 |
 | J11 Tìm kiếm | F1–F5, 6.7 | M2b | 1 |
 
 ---
 
 ## 5. Những điều tool KHÔNG làm
 
-- Không đọc PDF, không OCR, không dùng AI quét trang. AI chỉ **gợi ý nhãn TMRND**, không tự quyết đáp án. [ĐÃ CHỐT]
-- Không đồng bộ khóa hay dữ liệu nào ra ngoài tài khoản của PO, ngoài **từ đơn lẻ** gửi đi tra cứu và **câu/cụm ví dụ PO chủ động nhờ AI gợi ý nhãn**. Khóa API của AI chỉ lưu cục bộ trên từng thiết bị. [ĐỀ XUẤT]
+- Không đọc PDF, không OCR, không dùng AI (kể cả gợi ý nhãn TMRND, đã bỏ ở v7). [ĐÃ CHỐT]
+- Không gửi dữ liệu nào ra ngoài tài khoản của PO, ngoài **từ đơn lẻ** gửi đi tra cứu. [ĐỀ XUẤT]
 - Không hiển thị đồ thị liên kết trực quan ở các bản đầu (chỉ cây/bảng thụt lề). [ĐÃ CHỐT]
 - Không có chế độ Sâu tiếng Đức ở các bản đầu. [ĐÃ CHỐT]
 - Không nhập liên kết concept/example từ file ở bản đầu (PO tạo liên kết trong tool). [ĐỀ XUẤT]
@@ -434,7 +434,7 @@ flowchart TD
 | Ghi nhanh | Bị đứt mạch xem phim | Tối thiểu thao tác, ô nhập sẵn sàng, duyệt sau |
 | Ôn tập | Nhàm vì lặp lại một kiểu | Xáo kiểu bài, đổi example, phản xạ chớp nhoáng |
 | Duyệt tra cứu | Tin nhầm dữ liệu tự động | Luôn `unverified` đến khi PO duyệt, hiện nguồn |
-| Gợi ý TMRND | Tin nhầm nhãn của AI, nhãn sai làm sai bài S1 | Gợi ý chỉ là đề xuất, PO chấp nhận từng nhãn, bài chỉ chấm theo nhãn đã `verified`, AI chỉ chọn trong bộ giá trị PVO |
+| Gắn nhãn TMRND | Nhãn sai làm sai bài S1 | PO tự gắn; bài chỉ chấm theo nhãn đã `verified` |
 | Tô sáng | Học nhầm cả câu thay vì cụm | Chỉ cụm tô sáng được kiểm tra, phần còn lại là ngữ cảnh |
 | Tìm kiếm | Không tìm ra vì khác dấu (ä/a, ß/ss) | Chuẩn hóa khi tìm |
 | Học khi mất mạng | Sợ mất dữ liệu | Local-first, đồng bộ nền, sao lưu JSON |
@@ -459,11 +459,8 @@ Các điểm dưới đây là chỗ hành trình dựa vào **giả định c�
 | G10 | Bài che cụm (điền): chỉ cụm tô sáng bị che và kiểm tra; phần còn lại của câu luôn hiện làm ngữ cảnh | J5, J10 |
 | G11 | Nghe chép tiếng Đức khi có tô sáng: mặc định chép cụm tô sáng, có tùy chọn chép cả câu | J4 |
 | G12 | Tìm kiếm không phân biệt hoa/thường, bỏ dấu tiếng Việt khi tìm nghĩa, ä=ae, ö=oe, ü=ue, ß=ss; chạy offline | J11 |
-| G13 | AI chỉ chạy khi PO bấm yêu cầu (hoặc chọn chạy hàng loạt), không tự gửi nền | J6, J10 |
+| G13 | ~~AI chỉ chạy khi PO bấm yêu cầu~~ **Không còn áp dụng (v7: đã bỏ AI)** | J6, J10 |
 | G14 | Câu chưa tô sáng vẫn lưu được vào Hộp chờ duyệt và chưa có lịch ôn cho đến khi tô sáng | J2, J10 |
-
-### Cần PO quyết (chặn tính năng AI)
-- **Chấp nhận gửi câu/cụm ví dụ tới AI miễn phí:** theo điều khoản gói miễn phí của Gemini, nội dung có thể được Google dùng để cải thiện sản phẩm. PO tự xác nhận cũng lấy được khóa API miễn phí. Nếu không chấp nhận, PO gắn nhãn tay hoặc thử AI chạy trên thiết bị khi khả thi.
 
 ### Còn mở từ spec (không cần quyết trong buổi này)
 1. **Định dạng file nhập:** cần vài dòng đầu của file thật từ công cụ ngoài để chốt bộ cột (spec mục 9.2, câu 1).

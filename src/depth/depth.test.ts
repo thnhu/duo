@@ -6,7 +6,7 @@ import { deleteConceptCascade } from '../features/library/actions';
 import { saveExampleEdits } from '../features/example/actions';
 import type { Example, ExampleAttributes } from '../db/types';
 import {
-  addExpression,
+  addExpression as addExpressionRaw,
   createDepthConcept,
   groupExpressions,
   linkExample,
@@ -20,6 +20,14 @@ import {
 } from './index';
 
 const DICT = 'dict-en';
+
+// Expressions are ordered by createdAt; two created in the same millisecond
+// would tie (random ids then decide), which made these tests flaky on CI.
+const addExpression: typeof addExpressionRaw = async (concept, text) => {
+  const example = await addExpressionRaw(concept, text);
+  await new Promise((resolve) => setTimeout(resolve, 3));
+  return example;
+};
 const attrs = (patch: Partial<ExampleAttributes>): ExampleAttributes => ({
   tone: 'Neutral',
   mode: 'Neutral',

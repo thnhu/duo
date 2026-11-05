@@ -3,7 +3,7 @@ import type { Concept, Example, Lang, ReviewLog } from '../db/types';
 import { listDue } from '../scheduling/store';
 import { exerciseModules } from './index';
 import { loadLibrary } from './library';
-import { shuffle, type SessionItem } from './session';
+import { acceptsExample, shuffle, type SessionItem } from './session';
 import { inSelectedSets } from '../wordsets';
 import type { ExerciseLibrary, ExerciseModule } from './types';
 
@@ -40,6 +40,7 @@ export function pickItem(
       (m) =>
         m.languages.includes(concept.lang) &&
         (concept.mode ?? 'breadth') === m.mode &&
+        acceptsExample(m, example) &&
         m.isEligible(concept, example, library),
     );
     if (usable.length === 0) continue;
@@ -92,10 +93,17 @@ export async function loadReviewItems(request: ReviewRequest): Promise<SessionIt
     kind === 'review'
       ? entries.sort((a, b) => a.overdue - b.overdue).slice(0, Math.max(0, count))
       : shuffle(entries, rng).slice(0, Math.max(0, count));
-  return shuffle(
-    chosen.map((e) => e.item),
-    rng,
-  );
+  // A passage is asked once per session even when several of its words are due.
+  const seenPassages = new Set<string>();
+  const items = chosen
+    .map((e) => e.item)
+    .filter((item) => {
+      if (!item.module.passage || !item.example.passageId) return true;
+      if (seenPassages.has(item.example.passageId)) return false;
+      seenPassages.add(item.example.passageId);
+      return true;
+    });
+  return shuffle(items, rng);
 }
 
 // How many words can be reviewed right now (Today screen, J7): counted

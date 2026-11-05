@@ -12,6 +12,7 @@ import type {
   ReviewLog,
   ScheduleState,
   Settings,
+  Passage,
   WordSet,
 } from './types';
 
@@ -62,4 +63,7 @@ export const reviewLogRepository = {
 };
 export const wordSetRepository = new Repository<WordSet, string>(
   db.wordSets as unknown as Table<WordSet, string>,
+);
+export const passageRepository = new Repository<Passage, string>(
+  db.passages as unknown as Table<Passage, string>,
 );

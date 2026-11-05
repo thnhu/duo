@@ -21,6 +21,12 @@ export interface SessionItem extends Pair {
   module: ExerciseModule;
 }
 
+// Passage gaps are only for the passage drill, and the passage drill only
+// takes passage gaps: a gap is not a standalone sentence for the other drills.
+export function acceptsExample(module: ExerciseModule, example: Example): boolean {
+  return Boolean(module.passage) === (example.passageId !== undefined);
+}
+
 export function defaultOptions(module: ExerciseModule): Record<string, string> {
   return Object.fromEntries((module.options ?? []).map((o) => [o.id, o.default]));
 }
@@ -58,12 +64,17 @@ export async function loadPairs(
     if (concept.status === 'acquired') continue;
     if (filter.lesson && concept.source.lesson !== filter.lesson) continue;
     if (!inSelectedSets(concept, filter.setIds)) continue;
-    const usable = (byConcept.get(concept.id) ?? []).filter((e) => module.isEligible(concept, e, library));
+    const usable = (byConcept.get(concept.id) ?? []).filter(
+      (e) => acceptsExample(module, e) && module.isEligible(concept, e, library),
+    );
     if (usable.length === 0) continue;
     // Real sentences make better drills than the auto-created minimal one.
     const real = usable.filter((e) => !e.isMinimal);
     const choices = real.length > 0 ? real : usable;
-    pairs.push({ concept, example: choices[Math.floor(rng() * choices.length)] });
+    const pair = { concept, example: choices[Math.floor(rng() * choices.length)] };
+    // One question per passage, however many of its words are due.
+    if (module.passage && pairs.some((p) => p.example.passageId === pair.example.passageId)) continue;
+    pairs.push(pair);
   }
   return pairs;
 }
@@ -112,6 +123,20 @@ export async function recordAnswer(
     responseTimeMs,
     timestamp: now(),
   };
+  if (exercise.parts && exercise.parts.length > 0) {
+    // A passage: every gap is its own answer on its own example, and the time
+    // is shared out so a long passage is not judged "slow" per word.
+    const each = Math.round(responseTimeMs / exercise.parts.length);
+    let statusChange: StatusChange | undefined;
+    for (const part of exercise.parts) {
+      const right = result.perField[part.field] === true;
+      await reviewLogRepository.add({ ...log, id: createId(), conceptId: part.conceptId, exampleId: part.exampleId, correct: right, responseTimeMs: each });
+      await recordSchedule(part.exampleId, right, log.timestamp);
+      const change = (await refreshAcquisition(part.conceptId)) ?? undefined;
+      if (change && (part.conceptId === exercise.conceptId || !statusChange)) statusChange = change;
+    }
+    return { exercise, answer, result, responseTimeMs, statusChange };
+  }
   await reviewLogRepository.add(log);
   // The example's own schedule moves with every answer (spec D4).
   await recordSchedule(exercise.exampleId, result.correct, log.timestamp);

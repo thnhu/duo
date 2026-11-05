@@ -106,7 +106,7 @@ export function LibraryPage() {
         : (sets.find((s) => s.id === activeFilter.id)?.name ?? '');
   const subCards: Array<{ key: ConceptKind; label: string; hint: string }> = [
     { key: 'concept', label: `Concept ${deckName}`, hint: 'Các ý; bấm một ý để xem example của nó' },
-    { key: 'word', label: `Word ${deckName}`, hint: 'Các từ và cụm từ đứng riêng' },
+    { key: 'word', label: `Word ${deckName}`, hint: 'Các word đứng riêng (từ hoặc cụm)' },
   ];
   const cards: Array<{ key: string; label: string; n: number }> = counts
     ? [
@@ -144,7 +144,7 @@ export function LibraryPage() {
                 onClick={() => setParams({ deck: card.key })}
               >
                 <span className={styles.deckName}>{card.label}</span>
-                <span className={styles.deckCount}>{card.n} từ</span>
+                <span className={styles.deckCount}>{card.n} concept</span>
               </button>
             ))}
           </div>
@@ -179,6 +179,10 @@ export function LibraryPage() {
 
       <Link to="/import" className={styles.banner}>
         <Card tinted>Nhập từ file CSV/XLSX →</Card>
+      </Link>
+
+      <Link to="/passages" className={styles.banner}>
+        <Card tinted>Đoạn văn (học theo ngữ cảnh, điền vào chỗ trống) →</Card>
       </Link>
 
       <Link to="/links" className={styles.banner}>

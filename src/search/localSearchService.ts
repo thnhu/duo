@@ -1,6 +1,7 @@
 import type { DuoDB } from '../db/schema';
 import { db as defaultDb } from '../db/schema';
-import type { AcquisitionStatus, Concept, ConceptSource, Example, Lang, Verification } from '../db/types';
+import type { AcquisitionStatus, Concept, ConceptKind, ConceptSource, Example, Lang, Verification } from '../db/types';
+import { conceptKind } from '../wordsets';
 import { normalizeWithMap, tokenize, type NormalizedText } from '../core/normalize';
 import type {
   SearchField,
@@ -33,6 +34,7 @@ interface IndexedField {
 
 interface IndexedDoc {
   kind: 'concept' | 'example';
+  conceptKind?: ConceptKind;
   id: string;
   conceptId?: string;
   lang: Lang;
@@ -177,7 +179,7 @@ export class LocalSearchService implements SearchService {
       expressionsByConcept.set(conceptId, bucket);
     };
     for (const e of activeExamples.values()) {
-      if (e.targetConceptId && !e.isMinimal) addExpression(e.targetConceptId, e);
+      if (e.targetConceptId && !e.isMinimal && !e.passageId) addExpression(e.targetConceptId, e);
     }
     for (const link of exampleLinks) {
       const e = activeExamples.get(link.exampleId);
@@ -206,6 +208,7 @@ export class LocalSearchService implements SearchService {
       }
       docs.push({
         kind: 'concept',
+        conceptKind: conceptKind(c),
         id: c.id,
         conceptId: c.id,
         lang: c.lang,
@@ -329,6 +332,7 @@ export class LocalSearchService implements SearchService {
       status: doc.status,
       verification: doc.verification,
       ...(doc.expressions ? { isDepth: true, expressions: doc.expressions } : {}),
+      ...(doc.conceptKind ? { conceptKind: doc.conceptKind } : {}),
       updatedAt: doc.updatedAt,
     };
 

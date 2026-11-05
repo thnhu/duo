@@ -28,6 +28,16 @@ export interface Exercise {
   fields: FieldSpec[];
   // Accepted answers per field key; the first is shown when PO is wrong.
   expected: Record<string, string[]>;
+  // A question that asks several examples at once (a passage with many gaps):
+  // one entry per gap field, so each gap is logged, scheduled and counted
+  // towards acquisition on its own example. Absent = the single example above.
+  parts?: ExercisePart[];
+}
+
+export interface ExercisePart {
+  field: string;
+  conceptId: string;
+  exampleId: string;
 }
 
 export type Answer = Record<string, string>;
@@ -101,6 +111,9 @@ export interface ExerciseModule extends RegistrableModule {
   input?: InputConfig;
   // Shown when no word has the data this drill needs.
   unavailableHint?: string;
+  // True for drills built on a passage's gap examples (and only those); every
+  // other drill ignores passage gaps, which are not standalone sentences.
+  passage?: boolean;
   // Can this concept (with this example) be drilled? A noun without a
   // gender, for example, can't be used for the gender drill.
   isEligible(concept: Concept, example: Example, library?: ExerciseLibrary): boolean;

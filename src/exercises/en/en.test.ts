@@ -52,7 +52,7 @@ describe('en.cloze', () => {
     expect(ex.prompt).toBe('She ＿＿＿＿＿ the pill.');
     expect(ex.expected).toEqual({ answer: ['swallowed'] });
     // The sentence uses another form, so the base word is given as a hint.
-    expect(ex.detail).toContain('Từ gốc: swallow');
+    expect(ex.detail).toContain('Word gốc: swallow');
     expect(ex.detail).toContain('nuốt');
   });
 
@@ -176,7 +176,7 @@ describe('English drills in the runner', () => {
 
   it('is registered for English only, and declares an English answer box', () => {
     expect(modulesForLanguage('en').map((m) => m.id).sort()).toEqual([
-      'en.cloze', 'en.deep-label', 'en.deep-situation', 'en.dictation', 'en.meaning-to-word', 'en.word-to-meaning',
+      'en.cloze', 'en.deep-label', 'en.deep-situation', 'en.dictation', 'en.meaning-to-word', 'en.passage-cloze', 'en.word-to-meaning',
     ]);
     for (const module of modulesForLanguage('en')) {
       expect(module.input, module.id).toEqual({ lang: 'en' });

@@ -93,7 +93,7 @@ export async function addExpression(concept: Concept, text: string): Promise<Exa
 export function expressionsIn(conceptId: string, examples: Example[], links: ExampleLink[]): Example[] {
   const linked = new Set(links.filter((l) => l.conceptId === conceptId && l.deletedAt === undefined).map((l) => l.exampleId));
   return examples
-    .filter((e) => e.deletedAt === undefined && !e.isMinimal && (e.targetConceptId === conceptId || linked.has(e.id)))
+    .filter((e) => e.deletedAt === undefined && !e.isMinimal && !e.passageId && (e.targetConceptId === conceptId || linked.has(e.id)))
     .sort((a, b) => a.createdAt - b.createdAt);
 }
 
@@ -153,7 +153,7 @@ export async function listExpressions(conceptId: string): Promise<Example[]> {
   const linkedIds = links.filter((l) => l.deletedAt === undefined).map((l) => l.exampleId);
   const linked = (await db.examples.bulkGet(linkedIds)).filter((e): e is Example => e !== undefined);
   const byId = new Map<string, Example>();
-  for (const e of [...home, ...linked]) if (e.deletedAt === undefined) byId.set(e.id, e);
+  for (const e of [...home, ...linked]) if (e.deletedAt === undefined && !e.passageId) byId.set(e.id, e);
   return [...byId.values()].sort((a, b) => a.createdAt - b.createdAt);
 }
 

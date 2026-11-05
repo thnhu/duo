@@ -17,6 +17,7 @@ export const BACKUP_TABLES = [
   ['exampleLinks', 'id'],
   ['conceptLinks', 'id'],
   ['wordSets', 'id'],
+  ['passages', 'id'],
   ['scheduleStates', 'exampleId'],
   ['reviewLogs', 'id'],
   ['importMappings', 'id'],

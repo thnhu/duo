@@ -21,6 +21,9 @@ import { TodayPage } from './features/today/TodayPage'
 import { QuickAddPage } from './features/quick-add/QuickAddPage'
 import { AddChoicePage } from './features/quick-add/AddChoicePage'
 import { AddConceptPage } from './features/quick-add/AddConceptPage'
+import { AddPassagePage } from './features/quick-add/AddPassagePage'
+import { PassagesPage } from './features/passages/PassagesPage'
+import { EditPassagePage } from './features/passages/EditPassagePage'
 import { AddExamplePage } from './features/quick-add/AddExamplePage'
 import { InboxPage } from './features/inbox/InboxPage'
 import { LibraryPage } from './features/library/LibraryPage'
@@ -58,6 +61,9 @@ async function bootstrap() {
             <Route index element={<TodayPage />} />
             <Route path="add" element={<AddChoicePage />} />
             <Route path="add/word" element={<QuickAddPage />} />
+            <Route path="add/passage" element={<AddPassagePage />} />
+            <Route path="passages" element={<PassagesPage />} />
+            <Route path="passages/:passageId" element={<EditPassagePage />} />
             <Route path="add/concept" element={<AddConceptPage />} />
             <Route path="add/example" element={<AddExamplePage />} />
             <Route path="quick-add" element={<Navigate to="/add" replace />} />

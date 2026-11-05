@@ -130,7 +130,7 @@ export function SearchPage() {
           className={`${fieldStyles.input} ${styles.searchInput}`}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="Từ, nghĩa, câu ví dụ, ghi chú…"
+          placeholder="Concept, nghĩa, câu ví dụ, ghi chú…"
           aria-label="Tìm kiếm"
           enterKeyHint="search"
           autoFocus
@@ -273,7 +273,7 @@ export function SearchPage() {
                 </span>
                 <span className={styles.badges}>
                   <span className={styles.badge}>
-                    {hit.kind === 'concept' ? (hit.isDepth ? 'Ý (Sâu)' : 'Từ') : hit.conceptId ? 'Ví dụ' : 'Chờ duyệt'}
+                    {hit.kind === 'concept' ? (hit.isDepth ? 'Concept (Sâu)' : hit.conceptKind === 'concept' ? 'Concept' : 'Word') : hit.conceptId ? 'Ví dụ' : 'Chờ duyệt'}
                   </span>
                   <span className={styles.badge}>{hit.lang === 'en' ? 'Anh' : 'Đức'}</span>
                 </span>

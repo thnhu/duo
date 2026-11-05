@@ -173,9 +173,9 @@ function Session({ config }: { config: SessionConfig }) {
       <section className={styles.page}>
         <p>
           {kind === 'drill'
-            ? 'Chưa có từ nào dùng được cho bài này.'
+            ? 'Chưa có concept nào dùng được cho bài này.'
             : kind === 'flash'
-              ? 'Chưa có từ nào để luyện phản xạ.'
+              ? 'Chưa có concept nào để luyện phản xạ.'
               : 'Hôm nay không có gì cần ôn.'}
         </p>
         <Button onClick={() => navigate(kind === 'drill' ? '/learn' : '/')}>Quay lại</Button>
@@ -241,7 +241,7 @@ function Session({ config }: { config: SessionConfig }) {
               </Button>
             </div>
           ) : null}
-          <p className={exercise.speak ? styles.instruction : styles.prompt}>{exercise.prompt}</p>
+          <p className={exercise.speak ? styles.instruction : exercise.parts ? styles.passagePrompt : styles.prompt}>{exercise.prompt}</p>
           {exercise.detail && <p className={styles.detail}>{exercise.detail}</p>}
         </Card>
 
@@ -356,7 +356,7 @@ function Summary({
 
       {summary.newlyAcquired.length > 0 && (
         <Card tinted className={styles.summary}>
-          <h2>{summary.newlyAcquired.length} từ mới thụ đắc 🎉</h2>
+          <h2>{summary.newlyAcquired.length} concept mới thụ đắc 🎉</h2>
           <ul className={styles.weak}>
             {summary.newlyAcquired.map((w, i) => (
               <li key={i}>
@@ -369,7 +369,7 @@ function Summary({
 
       {summary.weak.length > 0 && (
         <Card className={styles.summary}>
-          <h2>Từ cần ôn thêm</h2>
+          <h2>Concept cần ôn thêm</h2>
           <ul className={styles.weak}>
             {summary.weak.map((w, i) => (
               <li key={i}>

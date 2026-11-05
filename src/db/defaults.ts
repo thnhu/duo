@@ -2,7 +2,7 @@ import type { AcquisitionCriteria, AttributeValueSets, LinkTypeSets, Settings } 
 
 export const SETTINGS_ID = 'default';
 
-export const CURRENT_SCHEMA_VERSION = 6;
+export const CURRENT_SCHEMA_VERSION = 7;
 
 // Spec section 2 — proposed defaults, meant to be tuned after real use.
 export const defaultAcquisitionCriteria: AcquisitionCriteria = {

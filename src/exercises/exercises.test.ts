@@ -140,14 +140,15 @@ describe('grading', () => {
 });
 
 describe('exercise modules', () => {
-  it('registers the four German drills in the registry', () => {
+  it('registers the German drills (four word drills + the passage gap-fill) in the registry', () => {
     expect(modulesForLanguage('de').map((m) => m.id).sort()).toEqual([
       'de.dictation',
       'de.irregular-verb-forms',
       'de.noun-gender-plural',
+      'de.passage-cloze',
       'de.verb-conjugation',
     ]);
-    expect(modulesForLanguage('de')).toHaveLength(4);
+    expect(modulesForLanguage('de')).toHaveLength(5);
     // English drills (M9b) are registered too, in their own language only.
     expect(modulesForLanguage('en').length).toBeGreaterThan(0);
   });

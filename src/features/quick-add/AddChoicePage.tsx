@@ -12,10 +12,10 @@ export function AddChoicePage() {
       <h1>Bạn muốn thêm gì?</h1>
 
       <Link to="/add/word" className={styles.choice}>
-        <span className={styles.title}>Thêm từ</span>
-        <span className={styles.what}>Một từ hoặc cụm từ đứng riêng, kèm nghĩa. Không cần câu.</span>
+        <span className={styles.title}>Thêm word</span>
+        <span className={styles.what}>Một word (từ hoặc cụm đứng riêng), kèm nghĩa. Không cần câu.</span>
         <span className={styles.eg}>Hợp với danh từ: máy bay, cửa sổ, window, der Apfel</span>
-        <span className={styles.go}>Gõ từ và nghĩa, xong →</span>
+        <span className={styles.go}>Gõ word và nghĩa, xong →</span>
       </Link>
 
       <Link to="/add/example" className={styles.choice}>
@@ -27,14 +27,21 @@ export function AddChoicePage() {
 
       <Link to="/add/concept" className={styles.choice}>
         <span className={styles.title}>Thêm concept</span>
-        <span className={styles.what}>Một ý để gom các cách nói lại, chưa cần có từ cụ thể.</span>
+        <span className={styles.what}>Một ý để gom các cách nói lại, chưa cần có word cụ thể.</span>
         <span className={styles.eg}>Ví dụ: "số lượng nhiều", "chào hỏi"</span>
         <span className={styles.go}>Gõ tên ý, thêm cách nói sau →</span>
       </Link>
 
+      <Link to="/add/passage" className={styles.choice}>
+        <span className={styles.title}>Thêm đoạn văn</span>
+        <span className={styles.what}>Một đoạn văn ngắn, đục lỗ những word cần học rồi điền lại khi ôn.</span>
+        <span className={styles.eg}>Ví dụ: "He brushes his teeth, shaves, and takes a shower…"</span>
+        <span className={styles.go}>Học theo ngữ cảnh cả đoạn →</span>
+      </Link>
+
       <p className={styles.note}>
-        Từ và concept đều nằm trong deck. Example mang nhãn Tone/Mode/Register/Nuance/Dialect và là đơn vị được
-        ôn tập; từ thêm riêng tự có một example tối thiểu (chính nó) để ôn được.
+        Word và concept đều nằm trong deck. Example mang nhãn Tone/Mode/Register/Nuance/Dialect và là đơn vị được
+        ôn tập; word thêm riêng tự có một example tối thiểu (chính nó) để ôn được.
       </p>
     </section>
   );

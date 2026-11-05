@@ -45,6 +45,8 @@ export interface SearchSnippet {
 }
 
 export interface SearchHit {
+  // For concept hits: shown as Word or Concept in the result row.
+  conceptKind?: import('../db/types').ConceptKind;
   kind: SearchKind;
   id: string;
   // Concept to open for this hit (the concept itself, or the example's

@@ -7,6 +7,7 @@ import type {
   ExampleLink,
   ImportBatch,
   ImportMapping,
+  Passage,
   ReviewLog,
   ScheduleState,
   Settings,
@@ -27,6 +28,7 @@ export class DuoDB extends Dexie {
   settings!: EntityTable<Settings, 'id'>;
   syncMeta!: EntityTable<SyncMetaRow, 'key'>;
   wordSets!: EntityTable<WordSet, 'id'>;
+  passages!: EntityTable<Passage, 'id'>;
 
   constructor(name = 'duo') {
     super(name);
@@ -97,6 +99,18 @@ export class DuoDB extends Dexie {
           .toCollection()
           .modify((row: { schemaVersion?: number }) => {
             row.schemaVersion = 6;
+          });
+      });
+    // v7: adds passages (texts studied as gap-fills). Gaps are examples with
+    // an optional `passageId`; existing rows are untouched.
+    this.version(7)
+      .stores({ passages: 'id, lang, updatedAt, deletedAt' })
+      .upgrade(async (tx) => {
+        await tx
+          .table('settings')
+          .toCollection()
+          .modify((row: { schemaVersion?: number }) => {
+            row.schemaVersion = 7;
           });
       });
   }

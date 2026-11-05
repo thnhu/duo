@@ -442,6 +442,25 @@ flowchart TD
 
 ---
 
+### J14. Học theo đoạn văn (đục lỗ)
+
+- **Mục tiêu:** học word trong ngữ cảnh cả một đoạn văn (ví dụ các hoạt động hằng ngày), không chỉ một câu.
+- **Bắt đầu:** PO có một đoạn văn tiếng Anh hoặc tiếng Đức.
+
+| # | PO làm | Hệ thống phản hồi |
+|---|---|---|
+| 1 | Bấm **(+) → Thêm đoạn văn**, dán đoạn văn (tiêu đề không bắt buộc) | Hiện ô đoạn văn |
+| 2 | Bôi đen một word, bấm **Đục lỗ chỗ đã chọn**; lặp lại cho các word khác | Xem trước đoạn văn với các lỗ đánh số (1), (2)…; mỗi lỗ có nút Bỏ |
+| 3 | Chọn deck cho các word mới (mặc định General), bấm **Lưu đoạn văn** | Mỗi lỗ tự tạo word (hoặc gắn word đã có); chuyển sang màn **Đoạn văn** |
+| 4 | Vào **Học → Điền vào đoạn văn** | Cả đoạn hiện với các chỗ trống đánh số, mỗi chỗ một ô nhập, không gợi ý |
+| 5 | Điền các chỗ trống, bấm Kiểm tra | Chấm từng lỗ (không phân biệt hoa/thường), hiện đáp án lỗ sai; ghi log và lịch ôn cho từng lỗ |
+
+- **Sửa đoạn đã lưu:** ở màn Đoạn văn bấm **Sửa**, sửa chữ hoặc tiêu đề; các lỗ đi theo chữ (không phải đục lại), có thể đục thêm hoặc bỏ lỗ; lỗ giữ lại vẫn giữ lịch ôn.
+- **Ngoại lệ:** word đã thụ đắc hiện sẵn trong đoạn, không hỏi lại; nếu chỗ sửa cắt qua mép một lỗ thì lỗ đó bị bỏ (có báo) và bạn đục lại.
+- **Spec:** Bản 6. **Mốc:** Bản 6.
+
+---
+
 ## 4. Ma trận: hành trình ↔ chức năng ↔ cột mốc
 
 | Hành trình | Chức năng spec | Cột mốc | Bản |
@@ -460,6 +479,7 @@ flowchart TD
 | J11 Tìm kiếm | F1–F5, 6.7 | M2b | 1 |
 | J12 Gom từ theo deck | C6, Bản 4, Bản 5 | M13a, M13b, Bản 5 | 4 và 5 |
 | J13 Liên kết concept và tìm qua mạng liên kết | 1.4, R1–R7 | M11c, M12a–d | 3 và 3b |
+| J14 Học theo đoạn văn (đục lỗ) | Bản 6 | Bản 6 | 6 |
 
 ---
 

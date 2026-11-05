@@ -26,6 +26,20 @@ export interface WordSet {
   deletedAt?: number;
 }
 
+// A passage (a short text) that is studied as a gap-fill: the PO marks the
+// words to learn, the drill hides them and asks for them back. Each gap is an
+// Example (text = this passage, highlight = the gap, passageId = this row) so
+// schedule, review log and acquisition keep working per example.
+export interface Passage {
+  id: string;
+  dictionaryId: string;
+  lang: Lang;
+  title?: string;
+  text: string;
+  updatedAt: number;
+  deletedAt?: number;
+}
+
 export interface ConceptGrammar {
   gender?: string;
   plural?: string;
@@ -165,6 +179,8 @@ export interface Example {
   text: string;
   targetConceptId?: string;
   highlight?: ExampleHighlight;
+  // Set when this example is one gap of a passage (see Passage).
+  passageId?: string;
   attributes: ExampleAttributes;
   attributesStatus: AttributesStatus;
   suggestedAttributes?: SuggestedAttributes;

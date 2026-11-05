@@ -73,12 +73,12 @@ export function ReviewStep({
         <p className={styles.sectionTitle}>Kết quả kiểm tra</p>
         <ul className={styles.summary}>
           <li>
-            {groups.length} từ (từ {built.rows.length} dòng hợp lệ)
+            {groups.length} concept (từ {built.rows.length} dòng hợp lệ)
           </li>
           {built.errors.length > 0 && <li className={styles.errorText}>{built.errors.length} dòng lỗi — sẽ bị bỏ qua</li>}
           {built.warnings.length > 0 && <li>{built.warnings.length} cảnh báo</li>}
           {built.blankRows > 0 && <li>{built.blankRows} dòng trống bị bỏ qua</li>}
-          {acquiredCount > 0 && <li>{acquiredCount} từ đã thụ đắc được ẩn</li>}
+          {acquiredCount > 0 && <li>{acquiredCount} concept đã thụ đắc được ẩn</li>}
         </ul>
         {(built.errors.length > 0 || built.warnings.length > 0) && (
           <Button variant="ghost" onClick={() => setShowErrors((v) => !v)}>
@@ -124,7 +124,7 @@ export function ReviewStep({
           )}
           {hasDuplicates && (
             <div>
-              <label className={fieldStyles.label}>Từ đã có trong thư viện</label>
+              <label className={fieldStyles.label}>Concept đã có trong thư viện</label>
               <select
                 className={fieldStyles.input}
                 value={duplicateAction}
@@ -142,7 +142,7 @@ export function ReviewStep({
       {acquiredCount > 0 && (
         <label className={styles.check}>
           <input type="checkbox" checked={showAcquired} onChange={(e) => setShowAcquired(e.target.checked)} />
-          Hiện cả {acquiredCount} từ đã thụ đắc
+          Hiện cả {acquiredCount} concept đã thụ đắc
         </label>
       )}
 
@@ -188,7 +188,7 @@ export function ReviewStep({
           Quay lại
         </Button>
         <Button disabled={busy || includedCount === 0} onClick={onCommit}>
-          {busy ? 'Đang lưu…' : `Nạp ${includedCount} từ`}
+          {busy ? 'Đang lưu…' : `Nạp ${includedCount} concept`}
         </Button>
       </ButtonRow>
     </>
@@ -210,7 +210,7 @@ function ManualHighlight({
     <div className={styles.manual}>
       <textarea ref={ref} className={fieldStyles.textarea} defaultValue={example.text} readOnly rows={2} />
       <p className={fieldStyles.hint}>
-        Không thấy từ trong câu. Bôi đen cụm cần học rồi bấm nút, hoặc bỏ qua để câu vào Hộp chờ duyệt.
+        Không thấy cụm cần học trong câu. Bôi đen cụm cần học rồi bấm nút, hoặc bỏ qua để câu vào Hộp chờ duyệt.
       </p>
       <Button
         variant="secondary"

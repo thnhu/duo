@@ -39,7 +39,7 @@ export function ConceptSetsCard({ concept, onChanged }: { concept: Concept; onCh
     }
     await addConceptToSet(concept.id, result.set.id);
     setDraft('');
-    toast.show(`Đã tạo deck "${result.set.name}" và thêm từ này vào.`);
+    toast.show(`Đã tạo deck "${result.set.name}" và thêm concept này vào.`);
     onChanged();
   }
 
@@ -55,14 +55,14 @@ export function ConceptSetsCard({ concept, onChanged }: { concept: Concept; onCh
       ))}
       <div>
         <label className={fieldStyles.label} htmlFor="concept-new-set">
-          Tạo deck mới và thêm từ này vào
+          Tạo deck mới và thêm concept này vào
         </label>
         <input
           id="concept-new-set"
           className={fieldStyles.input}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="vd: IT, Từ phim"
+          placeholder="vd: IT, Phim"
         />
         {error && <p className={fieldStyles.error}>{error}</p>}
       </div>
@@ -72,7 +72,7 @@ export function ConceptSetsCard({ concept, onChanged }: { concept: Concept; onCh
         </Button>
       </ButtonRow>
       <p className={styles.hint}>
-        Một từ có thể nằm trong nhiều deck mà không phải nhập lại. Không chọn deck nào = nằm trong deck General. <Link to="/sets">Quản lý deck</Link>
+        Một concept có thể nằm trong nhiều deck mà không phải nhập lại. Không chọn deck nào = nằm trong deck General. <Link to="/sets">Quản lý deck</Link>
       </p>
     </Card>
   );

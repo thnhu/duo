@@ -262,7 +262,7 @@ export function ImportPage() {
             <Card className={styles.card}>
               <p>
                 Lần nhập gần nhất: <strong>{latestBatch.fileName}</strong> (
-                {latestBatch.createdConceptIds.length} từ mới).
+                {latestBatch.createdConceptIds.length} concept mới).
               </p>
               <Button variant="destructive" disabled={busy} onClick={() => void handleUndo(latestBatch.id)}>
                 Hoàn tác lần nhập này
@@ -436,7 +436,7 @@ export function ImportPage() {
                 </>
               )}
               <p className={fieldStyles.hint}>
-                Deck có sẵn chỉ nhận từ cùng ngôn ngữ. Từ đã có trong thư viện cũng được thêm vào deck này mà không bị
+                Deck có sẵn chỉ nhận concept cùng ngôn ngữ. Concept đã có trong thư viện cũng được thêm vào deck này mà không bị
                 nhân đôi. Cột <code>deck</code> trong file (nếu có) được dùng thêm.
               </p>
             </div>
@@ -486,11 +486,11 @@ export function ImportPage() {
               <>
                 <p className={styles.sectionTitle}>Đã nhập xong</p>
                 <ul className={styles.summary}>
-                  <li>{result.createdConcepts} từ mới</li>
-                  {result.addedToSets > 0 && <li>{result.addedToSets} từ đã có được thêm vào deck</li>}
-                  {result.mergedConcepts > 0 && <li>{result.mergedConcepts} từ đã có được gộp thêm</li>}
-                  {result.updatedConcepts > 0 && <li>{result.updatedConcepts} từ đã có được cập nhật</li>}
-                  <li>{result.skippedDuplicates} từ trùng/không đổi (bỏ qua)</li>
+                  <li>{result.createdConcepts} concept mới</li>
+                  {result.addedToSets > 0 && <li>{result.addedToSets} concept đã có được thêm vào deck</li>}
+                  {result.mergedConcepts > 0 && <li>{result.mergedConcepts} concept đã có được gộp thêm</li>}
+                  {result.updatedConcepts > 0 && <li>{result.updatedConcepts} concept đã có được cập nhật</li>}
+                  <li>{result.skippedDuplicates} concept trùng/không đổi (bỏ qua)</li>
                   <li>{result.examplesAdded} ví dụ được thêm</li>
                   {result.inboxExamples > 0 && (
                     <li>

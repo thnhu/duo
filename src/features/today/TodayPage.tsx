@@ -86,14 +86,14 @@ export function TodayPage() {
         ) : due > 0 ? (
           <>
             <p>
-              <strong>{due}</strong> từ đến hạn ôn hôm nay.
+              <strong>{due}</strong> concept đến hạn ôn hôm nay.
             </p>
             <Button onClick={() => start('review')}>Ôn tập</Button>
           </>
         ) : (
           <p>
             {setIds && setIds.length > 0
-              ? 'Hôm nay không có từ nào trong các deck đã chọn cần ôn.'
+              ? 'Hôm nay không có concept nào trong các deck đã chọn cần ôn.'
               : 'Hôm nay không có gì cần ôn. Học bài mới hoặc luyện phản xạ chớp nhoáng nhé.'}
           </p>
         )}

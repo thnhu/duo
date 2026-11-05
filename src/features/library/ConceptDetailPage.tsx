@@ -59,7 +59,7 @@ export function ConceptDetailPage() {
   async function handleSave() {
     if (!concept) return;
     if (!text.trim()) {
-      toast.show('Hãy nhập từ hoặc cụm từ trước khi lưu.', { kind: 'error' });
+      toast.show('Hãy nhập tên concept trước khi lưu.', { kind: 'error' });
       return;
     }
     await conceptRepository.update(concept.id, {
@@ -126,7 +126,7 @@ export function ConceptDetailPage() {
       <div className={styles.form}>
         <div>
           <label className={fieldStyles.label} htmlFor="concept-text">
-            Từ / cụm từ
+            Concept (text)
           </label>
           <input
             id="concept-text"
@@ -217,7 +217,7 @@ export function ConceptDetailPage() {
               disabled={!isSingleWord(concept.text) || queue.status === 'running'}
               onClick={() => lookupQueue.enqueue([concept.id])}
             >
-              {queue.status === 'running' ? 'Đang tra cứu…' : 'Tra cứu từ này'}
+              {queue.status === 'running' ? 'Đang tra cứu…' : 'Tra cứu concept này'}
             </Button>
             {concept.verification === 'unverified' && (
               <Button variant="ghost" onClick={() => void markVerified(concept.id).then(() => load(concept.id))}>
@@ -226,7 +226,7 @@ export function ConceptDetailPage() {
             )}
           </ButtonRow>
           {!isSingleWord(concept.text) && (
-            <p className={styles.note}>Chỉ tra cứu được từ đơn (không gửi cụm nhiều từ ra ngoài).</p>
+            <p className={styles.note}>Chỉ tra cứu được word đơn (không gửi cụm nhiều word ra ngoài).</p>
           )}
           {queue.status === 'paused' && queue.error && (
             <p className={styles.note}>{queue.error.message}</p>
@@ -310,7 +310,7 @@ function AcquisitionCard({ concept }: { concept: Concept }) {
     <Card tinted className={styles.lookupCard}>
       <p>
         <strong>{concept.status === 'acquired' ? 'Đã thụ đắc' : 'Tiến độ thụ đắc'}</strong>
-        {view.answers === 0 && ' — chưa làm bài nào với từ này.'}
+        {view.answers === 0 && ' — chưa làm bài nào với concept này.'}
       </p>
       {view.answers > 0 && (
         <ul className={styles.note}>

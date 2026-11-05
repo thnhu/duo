@@ -104,7 +104,7 @@ export function buildRows(
 
     const text = cell('text');
     if (!text) {
-      result.errors.push({ rowNumber, message: 'Thiếu cột text (từ/cụm từ).' });
+      result.errors.push({ rowNumber, message: 'Thiếu cột text (word/cụm).' });
       continue;
     }
 
@@ -178,7 +178,7 @@ export function buildRows(
       }
       if (start === -1) {
         example.needsHighlight = true;
-        warnings.push('Không tìm thấy từ trong câu ví dụ — cần tô sáng tay.');
+        warnings.push('Không tìm thấy cụm cần học trong câu ví dụ — cần tô sáng tay.');
       } else {
         example.highlight = { start, end: start + length };
       }

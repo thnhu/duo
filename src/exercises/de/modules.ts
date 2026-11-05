@@ -18,7 +18,7 @@ import {
 const GERMAN_SPEECH = { tag: 'de-DE', label: 'tiếng Đức' };
 const GERMAN_INPUT = { lang: 'de', specialKeys: ['ä', 'ö', 'ü', 'ß'] };
 const GERMAN_DATA_HINT =
-  'Chưa có từ đủ dữ liệu cho bài này. Nhập từ file có các cột giống/số nhiều/dạng động từ, hoặc dùng Tra cứu tự động ở Thư viện.';
+  'Chưa có concept đủ dữ liệu cho bài này. Nhập từ file có các cột giống/số nhiều/dạng động từ, hoặc dùng Tra cứu tự động ở Thư viện.';
 
 // Article choices live here (German-specific), not in the screens.
 const ARTICLES = ['der', 'die', 'das'];

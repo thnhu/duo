@@ -34,7 +34,7 @@ export function DeckSelect({ id, lang, value, onChange }: DeckSelectProps) {
   if (sets.length === 0) {
     return (
       <p className={fieldStyles.hint}>
-        Deck: {GENERAL_DECK_NAME}. Muốn gom theo mục đích (IT, từ phim…)? <Link to="/sets">Tạo deck</Link>.
+        Deck: {GENERAL_DECK_NAME}. Muốn gom theo mục đích (IT, phim…)? <Link to="/sets">Tạo deck</Link>.
       </p>
     );
   }

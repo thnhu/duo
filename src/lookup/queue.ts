@@ -116,7 +116,7 @@ export class LookupQueue {
     const signal = this.abort!.signal;
     while (this.pending.length > 0 && !signal.aborted) {
       if (!this.deps.isOnline()) {
-        this.pause({ kind: 'network', message: 'Đang offline — tra cứu tạm dừng, các từ vẫn giữ nguyên.' });
+        this.pause({ kind: 'network', message: 'Đang offline — tra cứu tạm dừng, các concept vẫn giữ nguyên.' });
         return;
       }
 

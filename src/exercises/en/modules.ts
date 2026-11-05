@@ -71,7 +71,7 @@ export const englishCloze: ExerciseModule = {
     const { start, end } = example.highlight!;
     const hints: string[] = [];
     // The sentence may use another form (swallowed / swallow): say which word.
-    if (normalize(phrase) !== normalize(concept.text)) hints.push(`Từ gốc: ${concept.text}`);
+    if (normalize(phrase) !== normalize(concept.text)) hints.push(`Word gốc: ${concept.text}`);
     if (hasVerifiedMeaning(concept)) hints.push(concept.meanings.join('; '));
     return {
       ...base(concept, example),
@@ -90,7 +90,7 @@ export const englishCloze: ExerciseModule = {
 
 export const englishMeaningToWord: ExerciseModule = {
   id: 'en.meaning-to-word',
-  label: 'Nghĩa → từ',
+  label: 'Nghĩa → word',
   description: 'Cho nghĩa tiếng Việt, gõ danh từ tiếng Anh.',
   languages: ['en'],
   mode: 'breadth',
@@ -107,7 +107,7 @@ export const englishMeaningToWord: ExerciseModule = {
     return {
       ...base(concept, example),
       moduleId: 'en.meaning-to-word',
-      title: 'Nghĩa → từ',
+      title: 'Nghĩa → word',
       prompt: concept.meanings.slice(0, 3).join('; '),
       // Several words can share a meaning, so give the length and first letter.
       detail: `${text.length} chữ cái, bắt đầu bằng "${text[0]}"`,
@@ -142,13 +142,13 @@ export function distractorMeanings(
 
 export const englishWordToMeaning: ExerciseModule = {
   id: 'en.word-to-meaning',
-  label: 'Từ/cụm → nghĩa',
-  description: 'Cho động từ hoặc cụm từ tiếng Anh, chọn nghĩa đúng.',
+  label: 'Word/cụm → nghĩa',
+  description: 'Cho động từ hoặc cụm tiếng Anh, chọn nghĩa đúng.',
   languages: ['en'],
   mode: 'breadth',
   input: INPUT,
   unavailableHint:
-    'Cần động từ hoặc cụm từ đã duyệt (verified) có nghĩa, và ít nhất 3 từ tiếng Anh đã duyệt khác để làm đáp án nhiễu.',
+    'Cần động từ hoặc cụm đã duyệt (verified) có nghĩa, và ít nhất 3 concept tiếng Anh đã duyệt khác để làm đáp án nhiễu.',
   isEligible: (concept, example, library) =>
     isEnglishWord(concept, example) &&
     hasVerifiedMeaning(concept) &&
@@ -161,7 +161,7 @@ export const englishWordToMeaning: ExerciseModule = {
     return {
       ...base(concept, example),
       moduleId: 'en.word-to-meaning',
-      title: 'Từ/cụm → nghĩa',
+      title: 'Word/cụm → nghĩa',
       prompt: concept.text,
       // A real sentence gives the context (spec 5.2: "sau đó ghép vào ngữ cảnh").
       detail: example.isMinimal ? undefined : example.text,
@@ -182,7 +182,7 @@ export const englishDictation: ExerciseModule = {
   mode: 'breadth',
   input: INPUT,
   speech: SPEECH,
-  unavailableHint: 'Cần từ tiếng Anh có ví dụ.',
+  unavailableHint: 'Cần concept tiếng Anh có ví dụ.',
   options: [
     {
       id: 'scope',

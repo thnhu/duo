@@ -38,7 +38,7 @@ export function LookupBar({ concepts }: LookupBarProps) {
             />
           </div>
           <p>
-            {running ? 'Đang tra cứu' : 'Tra cứu tạm dừng'}: {state.done}/{state.total} từ
+            {running ? 'Đang tra cứu' : 'Tra cứu tạm dừng'}: {state.done}/{state.total} concept
             {state.found > 0 && ` · ${state.found} có gợi ý`}
             {state.notFound > 0 && ` · ${state.notFound} không thấy`}
           </p>
@@ -67,7 +67,7 @@ export function LookupBar({ concepts }: LookupBarProps) {
             <div className={styles.summaryRow}>
               <p>
                 Tra cứu xong: {state.found} có gợi ý, {state.notFound} không tìm thấy
-                {state.skipped > 0 && `, ${state.skipped} bỏ qua (cụm nhiều từ)`}.
+                {state.skipped > 0 && `, ${state.skipped} bỏ qua (cụm nhiều word)`}.
               </p>
               <Button variant="ghost" onClick={() => lookupQueue.clear()}>
                 Đóng
@@ -75,15 +75,15 @@ export function LookupBar({ concepts }: LookupBarProps) {
             </div>
           )}
           {pendingReview > 0 && (
-            <p>{pendingReview} từ có gợi ý đang chờ bạn duyệt — mở từ để xem và duyệt.</p>
+            <p>{pendingReview} concept có gợi ý đang chờ bạn duyệt — mở concept để xem và duyệt.</p>
           )}
           {missing.length > 0 && (
             <>
               <Button onClick={() => lookupQueue.enqueue(missing.map((c) => c.id))}>
-                Tra cứu tự động {missing.length} từ
+                Tra cứu tự động {missing.length} concept
               </Button>
               <p className={styles.hint}>
-                Chỉ gửi từng từ đơn lẻ tới từ điển, chạy nền và giãn nhịp. Kết quả chỉ là gợi ý cho đến khi bạn duyệt.
+                Chỉ gửi từng word đơn lẻ tới từ điển, chạy nền và giãn nhịp. Kết quả chỉ là gợi ý cho đến khi bạn duyệt.
               </p>
             </>
           )}

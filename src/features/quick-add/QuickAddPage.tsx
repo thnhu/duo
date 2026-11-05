@@ -62,7 +62,7 @@ export function QuickAddPage() {
     setWordPos('');
     const inDeck = setId ? ' Đã thêm vào deck đã chọn.' : '';
     if (outcome === 'created') {
-      toast.show(`Đã thêm từ "${concept.text}".${inDeck}`);
+      toast.show(`Đã thêm word "${concept.text}".${inDeck}`);
     } else {
       toast.show(`"${concept.text}" đã có trong thư viện.${inDeck}`, {
         kind: 'info',
@@ -75,12 +75,12 @@ export function QuickAddPage() {
   return (
     <section className={styles.page}>
       <div className={styles.header}>
-        <h1>Thêm từ</h1>
+        <h1>Thêm word</h1>
         <LangToggle value={lang} onChange={setLang} />
       </div>
 
       <p className={fieldStyles.hint}>
-        Từ hoặc cụm từ đứng riêng, kèm nghĩa; không cần đặt vào câu (hợp với danh từ như "máy bay", "cửa sổ"). Muốn
+        Word là từ hoặc cụm đứng riêng, kèm nghĩa; không cần đặt vào câu (hợp với danh từ như "máy bay", "cửa sổ"). Muốn
         thêm câu có tô sáng và nhãn, dùng <Link to="/add/example">Thêm example</Link>; muốn thêm một ý có nhiều cách
         nói, dùng <Link to="/add/concept">Thêm concept</Link>.
       </p>
@@ -101,7 +101,7 @@ export function QuickAddPage() {
       >
         <div>
           <label className={fieldStyles.label} htmlFor="quick-word">
-            Từ hoặc cụm từ (*)
+            Word (từ hoặc cụm) (*)
           </label>
           <input
             id="quick-word"
@@ -138,7 +138,7 @@ export function QuickAddPage() {
         </div>
         <ButtonRow>
           <Button type="submit" disabled={!wordText.trim()}>
-            Lưu từ
+            Lưu word
           </Button>
         </ButtonRow>
       </form>

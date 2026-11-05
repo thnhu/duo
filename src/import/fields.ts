@@ -32,7 +32,7 @@ export interface ImportField {
 }
 
 export const importFields: ImportField[] = [
-  { id: 'text', label: 'Từ / cụm từ (text)', required: true, aliases: ['text', 'word', 'term', 'vocabulary', 'concept', 'wort', 'từ', 'từ vựng', 'cụm từ'] },
+  { id: 'text', label: 'Word / cụm (text)', required: true, aliases: ['text', 'word', 'term', 'vocabulary', 'concept', 'wort', 'từ', 'từ vựng', 'cụm từ'] },
   { id: 'lang', label: 'Ngôn ngữ (lang)', aliases: ['lang', 'language', 'ngôn ngữ', 'sprache'] },
   { id: 'pos', label: 'Loại từ (pos)', aliases: ['pos', 'part of speech', 'wortart', 'loại từ', 'từ loại'] },
   { id: 'meaning', label: 'Nghĩa (meaning)', aliases: ['meaning', 'meanings', 'definition', 'translation', 'bedeutung', 'nghĩa', 'dịch'] },

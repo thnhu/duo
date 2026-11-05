@@ -69,10 +69,10 @@ export function StudyCard() {
     // Every word is judged again against the new thresholds.
     const result = await recomputeAcquisition(parsed.criteria);
     const changes: string[] = [];
-    if (result.promoted > 0) changes.push(`${result.promoted} từ trở thành đã thụ đắc`);
-    if (result.demoted > 0) changes.push(`${result.demoted} từ quay lại đang học`);
+    if (result.promoted > 0) changes.push(`${result.promoted} concept trở thành đã thụ đắc`);
+    if (result.demoted > 0) changes.push(`${result.demoted} concept quay lại đang học`);
     setNotice(null);
-    toast.show(`Đã lưu.${changes.length > 0 ? ` ${changes.join(', ')}.` : ' Không có từ nào đổi trạng thái.'}`);
+    toast.show(`Đã lưu.${changes.length > 0 ? ` ${changes.join(', ')}.` : ' Không có concept nào đổi trạng thái.'}`);
   }
 
   function handleReset() {
@@ -97,10 +97,10 @@ export function StudyCard() {
         />
       </div>
 
-      <h3>Khi nào một từ được coi là đã thụ đắc</h3>
+      <h3>Khi nào một concept được coi là đã thụ đắc</h3>
       <p className={styles.note}>
-        Một câu trả lời chỉ tính khi đúng và nhanh hơn thời gian tối đa. Từ đạt cả ba điều kiện bên dưới
-        thì thành "đã thụ đắc". Lưu xong, mọi từ được tính lại theo ngưỡng mới.
+        Một câu trả lời chỉ tính khi đúng và nhanh hơn thời gian tối đa. Concept đạt cả ba điều kiện bên dưới
+        thì thành "đã thụ đắc". Lưu xong, mọi concept được tính lại theo ngưỡng mới.
       </p>
       {THRESHOLD_KEYS.map((key) => (
         <div key={key}>

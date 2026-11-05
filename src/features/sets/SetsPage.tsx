@@ -64,7 +64,7 @@ export function SetsPage() {
   async function handleDelete(set: WordSet) {
     await deleteWordSet(set.id);
     setConfirming(null);
-    toast.show(`Đã xóa deck "${set.name}". Các từ vẫn còn trong thư viện.`, { kind: 'info' });
+    toast.show(`Đã xóa deck "${set.name}". Các concept vẫn còn trong thư viện.`, { kind: 'info' });
     await load();
   }
 
@@ -78,7 +78,7 @@ export function SetsPage() {
         <LangToggle value={lang} onChange={setLang} />
       </div>
       <p className={styles.hint}>
-        Deck gom các từ theo mục đích (ví dụ IT, từ phim). Một từ có thể nằm trong nhiều deck. Từ không thuộc deck nào tự nằm trong deck General (có sẵn cho mỗi ngôn ngữ, không xóa được).
+        Deck gom các concept theo mục đích (ví dụ IT, phim). Một concept có thể nằm trong nhiều deck. Concept không thuộc deck nào tự nằm trong deck General (có sẵn cho mỗi ngôn ngữ, không xóa được).
       </p>
 
       {error && (
@@ -134,7 +134,7 @@ export function SetsPage() {
             <>
               <div className={styles.setHead}>
                 <h2>{set.name}</h2>
-                <span className={styles.count}>{counts?.bySet.get(set.id) ?? 0} từ</span>
+                <span className={styles.count}>{counts?.bySet.get(set.id) ?? 0} concept</span>
               </div>
               <ButtonRow>
                 <Button variant="secondary" onClick={() => setEditing({ id: set.id, name: set.name })}>
@@ -152,7 +152,7 @@ export function SetsPage() {
                 >
                   Xóa deck "{set.name}"?{' '}
                   {(counts?.bySet.get(set.id) ?? 0) > 0
-                    ? `${counts?.bySet.get(set.id)} từ trong deck vẫn còn trong thư viện, chỉ bỏ nhãn deck.`
+                    ? `${counts?.bySet.get(set.id)} concept trong deck vẫn còn trong thư viện, chỉ bỏ nhãn deck.`
                     : 'Deck đang trống.'}
                 </InlineConfirm>
               )}

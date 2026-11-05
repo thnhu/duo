@@ -47,7 +47,7 @@ export function SettingsPage() {
       setLastBackupAt(backup.exportedAt);
       setLastBackup(backup.exportedAt);
       const count = backup.tables.concepts.length;
-      return `Đã xuất bản sao lưu đầy đủ (${count} từ). Hãy cất file ở nơi an toàn.`;
+      return `Đã xuất bản sao lưu đầy đủ (${count} concept). Hãy cất file ở nơi an toàn.`;
     });
 
   const handleExportXlsx = () =>
@@ -58,7 +58,7 @@ export function SettingsPage() {
         wordSetRepository.listActive(),
       ]);
       downloadBlob(await exportXlsx(concepts, examples, sets), `duo-words-${dateStamp()}.xlsx`);
-      return `Đã xuất ${concepts.length} từ ra file xlsx (cùng cột với file mẫu nhập). File này để đọc/lưu trữ; sao lưu đầy đủ là file JSON.`;
+      return `Đã xuất ${concepts.length} concept ra file xlsx (cùng cột với file mẫu nhập). File này để đọc/lưu trữ; sao lưu đầy đủ là file JSON.`;
     });
 
   const handleImportJson = (file: File) =>
@@ -96,7 +96,7 @@ export function SettingsPage() {
           Xuất sao lưu JSON (đầy đủ)
         </Button>
         <Button variant="secondary" disabled={busy} onClick={() => void handleExportXlsx()}>
-          Xuất danh sách từ (xlsx)
+          Xuất danh sách concept (xlsx)
         </Button>
       </Card>
 
@@ -121,7 +121,7 @@ export function SettingsPage() {
           Nhập sao lưu JSON
         </Button>
         <p className={styles.note}>
-          Muốn nạp danh sách từ từ file xlsx/csv? Dùng <Link to="/import">Nhập từ file</Link>.
+          Muốn nạp danh sách concept từ file xlsx/csv? Dùng <Link to="/import">Nhập từ file</Link>.
         </p>
       </Card>
 

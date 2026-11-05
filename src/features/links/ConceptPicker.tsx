@@ -60,7 +60,7 @@ export function ConceptPicker({ id, label, concepts, selected, onSelect, onAdd }
         className={fieldStyles.input}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Gõ từ hoặc mô tả để tìm…"
+        placeholder="Gõ tên hoặc mô tả để tìm…"
         autoComplete="off"
       />
       {hits.length > 0 && (

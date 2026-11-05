@@ -178,7 +178,7 @@ export function LearnPage() {
               value={lesson}
               onChange={(e) => setLesson(e.target.value)}
             >
-              <option value="">Tất cả từ đã nạp</option>
+              <option value="">Tất cả concept đã nạp</option>
               {lessons.map((l) => (
                 <option key={l} value={l}>
                   {l}
@@ -206,7 +206,7 @@ export function LearnPage() {
                 <h2>{module.label}</h2>
                 <p className={styles.description}>{module.description}</p>
                 <p className={styles.available}>
-                  {n === undefined ? 'Đang kiểm tra…' : `${n} từ dùng được`}
+                  {n === undefined ? 'Đang kiểm tra…' : `${n} concept dùng được`}
                 </p>
               </div>
 
@@ -241,7 +241,7 @@ export function LearnPage() {
               )}
               {n === 0 && !noVoice && (
                 <p className={styles.hint}>
-                  {module.unavailableHint ?? 'Chưa có từ đủ dữ liệu cho bài này.'}
+                  {module.unavailableHint ?? 'Chưa có concept đủ dữ liệu cho bài này.'}
                 </p>
               )}
 

@@ -1,4 +1,5 @@
 import { createId } from '../core/id';
+import { normalizeWithMap } from '../core/normalize';
 import { defaultLinkTypes } from '../db/defaults';
 import { db } from '../db/schema';
 import { conceptLinkRepository } from '../db/repositories';
@@ -229,4 +230,79 @@ export async function listGroupedExamples(conceptId: string): Promise<GroupedExa
         examples: examples.sort((a, b) => a.createdAt - b.createdAt),
       })),
   };
+}
+
+// ---- Link editor (M12b, rules R1-R4) -------------------------------------
+
+export type PairState =
+  | { state: 'none' }
+  | { state: 'same'; link: ConceptLink } // child -> parent already linked
+  | { state: 'reversed'; link: ConceptLink }; // parent -> child is linked instead
+
+// How the two chosen concepts are linked right now, read as child -> parent.
+export async function describePair(childId: string, parentId: string): Promise<PairState> {
+  const graph = await loadGraph();
+  const same = graph.links.find((l) => l.childId === childId && l.parentId === parentId);
+  if (same) return { state: 'same', link: same };
+  const reversed = graph.links.find((l) => l.childId === parentId && l.parentId === childId);
+  if (reversed) return { state: 'reversed', link: reversed };
+  return { state: 'none' };
+}
+
+export type SaveLinkResult =
+  | { ok: true; action: 'created' | 'changed' | 'removed' | 'unchanged' }
+  | { ok: false; reason: 'self' | 'cycle' | 'missing' | 'other-dictionary' }
+  // The pair is linked the other way round: the caller asks before reversing.
+  | { ok: false; reason: 'reversed'; link: ConceptLink };
+
+// The Save button of the editor. "No link" (type undefined) removes the link.
+export async function saveConceptLink(
+  childId: string,
+  parentId: string,
+  type: ConceptLinkType | undefined,
+): Promise<SaveLinkResult> {
+  const pair = await describePair(childId, parentId);
+  if (type === undefined) {
+    if (pair.state !== 'same') return { ok: true, action: 'unchanged' };
+    await unlinkConcepts(pair.link.id);
+    return { ok: true, action: 'removed' };
+  }
+  if (pair.state === 'reversed') return { ok: false, reason: 'reversed', link: pair.link };
+  if (pair.state === 'same' && pair.link.type === type) return { ok: true, action: 'unchanged' };
+  const result = await linkConcepts(childId, parentId, type);
+  if (!result.ok) return result;
+  return { ok: true, action: pair.state === 'same' ? 'changed' : 'created' };
+}
+
+// Confirmed "change the direction": drop the old link and write the new one.
+// When the new direction is refused (a longer loop), the old link comes back.
+export async function reverseConceptLink(
+  oldLink: ConceptLink,
+  type: ConceptLinkType,
+): Promise<SaveLinkResult> {
+  await conceptLinkRepository.softDelete(oldLink.id);
+  const result = await linkConcepts(oldLink.parentId, oldLink.childId, type);
+  if (!result.ok) {
+    await conceptLinkRepository.update(oldLink.id, { deletedAt: undefined });
+    return result;
+  }
+  return { ok: true, action: 'changed' };
+}
+
+// Picker search: matches the word or any meaning/description, ignoring case
+// and diacritics (spec F4). Text matches come first.
+export function filterConcepts(concepts: Concept[], query: string, limit = 8): Concept[] {
+  const q = normalizeWithMap(query.trim()).text;
+  if (!q) return [];
+  const scored: Array<{ concept: Concept; score: number }> = [];
+  for (const concept of concepts) {
+    const text = normalizeWithMap(concept.text).text;
+    if (text.startsWith(q)) scored.push({ concept, score: 0 });
+    else if (text.includes(q)) scored.push({ concept, score: 1 });
+    else if (concept.meanings.some((m) => normalizeWithMap(m).text.includes(q))) scored.push({ concept, score: 2 });
+  }
+  return scored
+    .sort((a, b) => a.score - b.score || a.concept.text.localeCompare(b.concept.text))
+    .slice(0, limit)
+    .map((s) => s.concept);
 }

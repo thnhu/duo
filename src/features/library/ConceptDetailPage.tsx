@@ -148,6 +148,7 @@ export function ConceptDetailPage() {
 
       <ButtonRow>
         <LinkButton to={`/tree/${concept.id}`}>Xem cây (concept cha, con)</LinkButton>
+        <LinkButton to={`/links/${concept.id}`}>Liên kết cha/con</LinkButton>
       </ButtonRow>
 
       <GrammarSummary concept={concept} />

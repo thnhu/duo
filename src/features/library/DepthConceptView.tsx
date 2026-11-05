@@ -116,6 +116,7 @@ export function DepthConceptView({ concept, onChanged }: { concept: Concept; onC
         </div>
         <ButtonRow>
         <LinkButton to={`/tree/${concept.id}`}>Xem cây (concept cha, con)</LinkButton>
+        <LinkButton to={`/links/${concept.id}`}>Liên kết cha/con</LinkButton>
       </ButtonRow>
         <ButtonRow>
           <Button onClick={() => void handleSave()}>Lưu</Button>

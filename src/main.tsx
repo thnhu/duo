@@ -23,6 +23,7 @@ import { InboxPage } from './features/inbox/InboxPage'
 import { LibraryPage } from './features/library/LibraryPage'
 import { ConceptDetailPage } from './features/library/ConceptDetailPage'
 import { NewDepthConceptPage } from './features/library/NewDepthConceptPage'
+import { LinkEditorPage } from './features/links/LinkEditorPage';
 import { TreePage } from './features/tree/TreePage'
 import { ExampleEditPage } from './features/example/ExampleEditPage'
 import { ImportPage } from './features/import/ImportPage'
@@ -58,6 +59,8 @@ async function bootstrap() {
             <Route path="library" element={<LibraryPage />} />
             <Route path="library/:conceptId" element={<ConceptDetailPage />} />
             <Route path="depth/new" element={<NewDepthConceptPage />} />
+            <Route path="links" element={<LinkEditorPage />} />
+            <Route path="links/:conceptId" element={<LinkEditorPage />} />
             <Route path="tree" element={<TreePage />} />
             <Route path="tree/:conceptId" element={<TreePage />} />
             <Route path="example/:exampleId" element={<ExampleEditPage />} />

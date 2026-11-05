@@ -5,11 +5,16 @@ import { createDepthConcept, addExpression as addExpressionRaw, linkExample } fr
 import { deleteConceptCascade } from '../features/library/actions';
 import {
   buildTree,
+  describePair,
+  filterConcepts,
   linkConcepts,
   listAncestors,
   listGroupedExamples,
   listNeighbours,
+  reverseConceptLink,
+  saveConceptLink,
   unlinkConcepts,
+  type PairState,
   type TreeNode,
 } from './index';
 
@@ -146,5 +151,54 @@ describe('tree view', () => {
       ['idiom', ['hit the road']],
       ['otherPhrase', ['how do you do']],
     ]);
+  });
+});
+
+describe('link editor (M12b)', () => {
+  it('saves, changes type and removes with "No link"', async () => {
+    const color = await make('color');
+    const blue = await make('blue');
+    expect(await saveConceptLink(blue.id, color.id, 'typeOf')).toEqual({ ok: true, action: 'created' });
+    expect(await saveConceptLink(blue.id, color.id, 'typeOf')).toEqual({ ok: true, action: 'unchanged' });
+    expect(await saveConceptLink(blue.id, color.id, 'association')).toEqual({ ok: true, action: 'changed' });
+    expect((await describePair(blue.id, color.id)).state).toBe('same');
+    expect(await saveConceptLink(blue.id, color.id, undefined)).toEqual({ ok: true, action: 'removed' });
+    expect((await describePair(blue.id, color.id)).state).toBe('none');
+    expect(await saveConceptLink(blue.id, color.id, undefined)).toEqual({ ok: true, action: 'unchanged' });
+  });
+
+  it('asks before reversing a linked pair and reverses on confirm', async () => {
+    const color = await make('color');
+    const blue = await make('blue');
+    await linkConcepts(blue.id, color.id, 'typeOf');
+    const r = await saveConceptLink(color.id, blue.id, 'typeOf');
+    expect(r.ok === false && r.reason).toBe('reversed');
+    if (r.ok || r.reason !== 'reversed') return;
+    expect(await reverseConceptLink(r.link, 'association')).toEqual({ ok: true, action: 'changed' });
+    expect((await listNeighbours(color.id)).parents.map((p) => p.concept.text)).toEqual(['blue']);
+    expect((await listNeighbours(blue.id)).parents).toEqual([]);
+  });
+
+  it('keeps the old link when the reversed direction would make a longer loop', async () => {
+    const a = await make('a');
+    const b = await make('b');
+    const c = await make('c');
+    await linkConcepts(b.id, a.id); // b -> a
+    await linkConcepts(c.id, b.id); // c -> b -> a
+    await linkConcepts(c.id, a.id); // c -> a as well
+    // reversing c -> a into a -> c closes a -> c -> b -> a
+    const old = (await describePair(c.id, a.id)) as Extract<PairState, { state: 'same' }>;
+    const r = await reverseConceptLink(old.link, 'typeOf');
+    expect(r.ok === false && r.reason).toBe('cycle');
+    expect((await describePair(c.id, a.id)).state).toBe('same');
+  });
+
+  it('filters by word or description, ignoring diacritics', async () => {
+    const q = await createDepthConcept(DICT, 'large quantity', 'số lượng nhiều');
+    const other = await make('bunch');
+    const hits = filterConcepts([q, other], 'so luong');
+    expect(hits.map((c) => c.text)).toEqual(['large quantity']);
+    expect(filterConcepts([q, other], 'bun').map((c) => c.text)).toEqual(['bunch']);
+    expect(filterConcepts([q, other], '  ')).toEqual([]);
   });
 });

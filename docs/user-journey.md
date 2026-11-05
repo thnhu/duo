@@ -1,6 +1,6 @@
 # USER JOURNEY: Công cụ học từ vựng Anh – Đức
 
-> Đi kèm `vocab-tool-spec.md` (v5). Viết tắt **TMRND** = Tone, Mode, Register, Nuance, Dialect. Mục đích: để Product Owner (PO) và người xây dựng cùng hiểu **PO sẽ dùng tool như thế nào, từng bước**, trước khi viết code.
+> Đi kèm `vocab-tool-spec.md` (v9). Viết tắt **TMRND** = Tone, Mode, Register, Nuance, Dialect. Mục đích: để Product Owner (PO) và người xây dựng cùng hiểu **PO sẽ dùng tool như thế nào, từng bước**, trước khi viết code.
 > Quy ước: **[ĐÃ CHỐT]** = lấy từ spec đã thống nhất. **[ĐỀ XUẤT UI]** = gợi ý giao diện/hành vi, spec chưa quy định. **[GIẢ ĐỊNH]** = hệ thống giả định, cần PO xác nhận (mục 7).
 > Mọi sơ đồ dùng Mermaid; nếu trình xem không hiển thị sơ đồ, đọc phần bảng đi kèm.
 
@@ -291,7 +291,8 @@ flowchart TD
 - **Collocation và idiom** được biểu diễn bằng loại liên kết example – concept (*Idiom*, *Other phrase*). [ĐÃ CHỐT]
 - **Ngoại lệ:** nhóm có ít hơn hai lựa chọn thì không tạo được bài S2 → tool nhắc PO thêm example/concept liên kết.
 - **Ghi chú:** nhãn không có trong bộ PVO (như slang) thì ghi vào Note.
-- **Spec:** mục 1.3, mục 5.2 (Sâu), mục 8, E5. **Mốc:** Bản 3.
+- **Cách thao tác nối liên kết (v9, M12b–M12d):** (a) concept–concept: ở màn Concept chọn con, chọn cha, chọn Relation rồi Save, câu `con → cha` luôn hiện rõ; chọn "No link" để xóa; nối ngược cặp đã có thì app hỏi đổi chiều; vòng tròn bị chặn. (b) example–concept: ngay trong màn example, một danh sách "Liên kết" (chọn concept bằng ô tìm kiếm, chọn loại, bấm Link). (c) Xem: màn Tree với cha ở trên, concept ở giữa, con ở dưới và hàng đếm theo 8 loại liên kết, bấm loại để xem ví dụ.
+- **Spec:** mục 1.3, mục 5.2 (Sâu), mục 8, E5, Bản 3b. **Mốc:** Bản 3, M12.
 
 ---
 

@@ -1,7 +1,7 @@
 # SPEC: Công cụ học từ vựng Anh – Đức (Breadth & Depth)
 
 > Tài liệu này dành cho Claude Code đọc để triển khai. Product Owner (PO): người dùng, dùng một mình.
-> Phiên bản **v8** (làm rõ Concept/Example và triết lý tri-fold, kế hoạch Bản 3, xem mục 12). Trước đó **v7** (bỏ AI gợi ý nhãn). **Tool không đọc PDF và không dùng AI**: PO dùng công cụ ngoài rồi nhập bằng file CSV hoặc XLSX, và gắn nhãn TMRND (Tone, Mode, Register, Nuance, Dialect) bằng tay. Xem mục 12 để biết thay đổi so với các bản trước.
+> Phiên bản **v9** (quy luật UI quan hệ rút từ HUST PVO và kế hoạch M12, xem mục 12). Trước đó **v8** (làm rõ Concept/Example, tri-fold, kế hoạch Bản 3) và **v7** (bỏ AI gợi ý nhãn). **Tool không đọc PDF và không dùng AI**: PO dùng công cụ ngoài rồi nhập bằng file CSV hoặc XLSX, và gắn nhãn TMRND (Tone, Mode, Register, Nuance, Dialect) bằng tay. Xem mục 12 để biết thay đổi so với các bản trước.
 > Quy ước: **[CHỐT]** = đã thống nhất. **[ĐỀ XUẤT]** = đề xuất, có thể chỉnh. **[MỞ]** = chưa quyết định, cần hỏi PO trước khi làm.
 
 ---
@@ -510,6 +510,34 @@ Mục tiêu: **quản lý và tra cứu kho từ** theo tri-fold (mục 1.4); b�
 - Chưa nhập liên kết từ file (PO giữ đề xuất). S3 (nhớ liên kết) làm sau.
 - Bài S1/S2 chỉ ghi log và lịch ôn theo example, **chưa** ảnh hưởng trạng thái `acquired` của concept (chờ dữ liệu dùng thật).
 
+### Bản 3b: Làm lại UI quan hệ theo quy luật HUST PVO (v9, PO đã đồng ý)
+Lý do: UI quan hệ concept/example hiện khó định hướng (PO phản hồi 2026-11-05). PO yêu cầu đọc toàn bộ ảnh trong `docs/reference/hustpvo` (40 ảnh) và rút quy luật. Dưới đây là quy luật quan sát được; chỉ mượn **mô hình khái niệm và cách tổ chức màn hình**, không sao chép mã nguồn hay đồ họa.
+
+**Quy luật rút ra (R1–R8):**
+- **R1. Liên kết concept luôn đọc là "con → cha" và thấy cả hai đầu.** Màn Concept của HUST PVO có ba cột: ô "Search child" + danh sách (trái); dòng `blue → color`, ô Relation (*No link / Association / Type of*) và nút Save (giữa); ô "Search parent" + danh sách (phải). Tên ở đầu cột giữa đổi theo lựa chọn. Thứ tự con → cha → loại quan hệ giống hệt file nhập (cột *Child, Parent, Relation*).
+- **R2. Mặc định "No link"; chọn "No link" chính là xóa liên kết.** Chọn một cặp đã nối thì ô Relation hiện loại hiện tại; Save chỉ sáng khi có thay đổi.
+- **R3. Chọn concept bằng ô tìm kiếm, mỗi danh sách hiện mô tả của concept đang chọn (để tránh nhầm từ đồng hình); gõ từ chưa có thì hiện "No match concept. Add?" để tạo ngay tại chỗ.**
+- **R4. Nối ngược một cặp đã có thì hỏi đổi chiều, không chỉ báo lỗi.** Hộp thoại: *"color" is currently linked to "blue" as a parent. Change the direction accordingly?* (Cancel / Change). Chỉ khi thật sự tạo vòng dài hơn mới báo "Circular link". Import dùng cùng các thông báo, kèm "Row is duplicated".
+- **R5. Liên kết example–concept tạo ngay trong màn example và chỉ có MỘT danh sách.** Màn example: ô văn bản (có nút tô sáng), ô Relation (8 loại) + nút Link, chip "Selected concept" + ô tìm kiếm + mô tả, vùng **Linked Concepts** (mọi concept đã nối, dạng chip), năm ô TMRND + Notes, và "Re-use parameters" + "Save & Reset" (giữ Relation/nhãn cho example kế tiếp để nhập nhanh). PVO **không** phân biệt "concept chủ" với "liên kết thêm".
+- **R6. Màn Tree dùng hai trục.** Trục ngang là phân cấp `Children → [concept] → Parent` (thẻ cha ghi loại quan hệ rồi tên). Trục dọc là ví dụ: một hàng **8 ô đếm theo loại liên kết** (*Idiom 0 · … · Other phrase 1*); bấm một ô thì danh sách ví dụ loại đó hiện ra, cụm được tô vàng, có nút sửa. Chế độ Full thêm cột điều hướng dạng đề cương có số đếm (*Parents (n) · Children (n) · Example (n) ▸ loại (n)*) và khung "Selected example" kèm chip nhãn và chip Linked Concepts.
+- **R7. Hai kiểu tìm kiếm.** *Search Example*: từ khóa, 5 bộ lọc TMRND, lọc theo Linked concepts, "Only search undecided examples", nhớ tham số lần trước. *Search Concept Association*: chọn tối đa 10 concept rồi tìm các concept nối với chúng, kèm đồ thị (nút đỏ = đã chọn, xám = liên quan). Đây là mục đích cốt lõi của PVO: nhớ lại từ qua mạng liên kết.
+- **R8. Quy ước chung.** Dấu `(*)` cho trường bắt buộc; hộp thoại xác nhận nêu hậu quả bằng số; thao tác theo concept qua menu (Add example / View tree / Edit / Delete); toast vàng cảnh báo, xanh thành công.
+
+**Quyết định của PO (2026-11-05):**
+1. **Gộp ở giao diện thành MỘT danh sách "Liên kết"** cho example–concept (như *Linked Concepts*). Dữ liệu giữ nguyên để không đụng lịch ôn, Hộp chờ duyệt, tìm kiếm: `targetConceptId` là liên kết đầu tiên (concept chủ), các liên kết sau lưu bằng `ExampleLink`. Người dùng không phải biết hai cơ chế; chỉ cần có thể đổi liên kết nào là "chủ" (ghi chú nhỏ, không phải khái niệm chính).
+2. **Thứ tự làm:** căn chỉnh nút (toàn app) → màn liên kết concept → màn Tree → liên kết trong màn example. Tìm theo liên kết (R7) và đồ thị làm sau.
+3. **Bố cục điện thoại:** cha ở trên, concept ở giữa, con ở dưới; hàng đếm loại liên kết ngay dưới concept, bấm một loại để xem ví dụ.
+
+**Căn chỉnh nút và khoảng cách (PO yêu cầu thêm).** Đo thực tế trên Chrome 420 px: trong cùng một hàng, nút *Lưu* cao 50 px, nút viền *Xóa* cao 50 px nhưng nút *Thêm cách diễn đạt* cao 48 px; nút `ghost` có padding ngang 12 px còn nút khác 24 px nên chữ lệch khỏi mép nội dung; nút chính không viền còn nút phụ viền 1,5 px nên hai nút cạnh nhau lệch kích thước; liên kết chữ (`<a>` như "Sửa / gắn nhãn", "Xem cây") không cùng khuôn với nút; mỗi màn tự viết hàng `.actions` riêng (có nơi `flex-wrap`, nơi không). Hướng sửa: mọi biến thể nút dùng cùng một khuôn (chiều cao cố định, viền 1,5 px trong suốt cho nút không viền, padding cố định theo cỡ), nút chữ/ghost căn thẳng mép bằng lề âm hoặc dùng chung khuôn; một thành phần hàng nút dùng chung (`gap`, `wrap`, căn lề thống nhất) và một `LinkButton` cho liên kết router có cùng kích thước; sau đó chụp lại mọi màn để kiểm.
+
+| Mốc | Nội dung | Xong khi |
+|---|---|---|
+| **M12a** Căn chỉnh nút và khoảng cách | Sửa `ui/Button` (một khuôn cho mọi biến thể, chiều cao cố định), thêm `ButtonRow` và `LinkButton`; thay các hàng `.actions` và liên kết chữ dạng nút ở mọi màn; kiểm tra lại các màn Hôm nay, Học, Thư viện, concept (Rộng và Sâu), example, Tree, Cài đặt, Nhập file ở 420 px | Trong ảnh chụp, mọi nút cùng hàng bằng chiều cao, chữ ghost thẳng mép nội dung, không còn khoảng cách lệch giữa các màn |
+| **M12b** Màn liên kết concept (R1–R4) | Màn Concept dạng "con → cha": ô tìm con, dòng `con → cha`, Relation (No link / Association / Type of), Save; tìm có mô tả; "Thêm?" tạo concept tại chỗ; chọn "No link" để xóa; nối ngược cặp đã có thì hỏi đổi chiều, vòng dài hơn báo "Vòng tròn"; menu thao tác theo concept (Thêm ví dụ, Xem cây, Sửa, Xóa) | Tạo, đổi loại, xóa, đổi chiều một liên kết chỉ trong một màn; C→A vẫn bị chặn |
+| **M12c** Màn Tree theo R6 | Cha ở trên, concept giữa, con dưới; hàng đếm 8 loại liên kết; bấm loại để xem ví dụ (cụm tô vàng, nút sửa); điều hướng nhanh sang concept cha/con | Từ concept thấy cha, con, và số ví dụ từng loại; bấm loại hiện đúng ví dụ |
+| **M12d** Liên kết trong màn example (R5) | Một danh sách "Liên kết" (chip kèm loại), chọn concept bằng tìm kiếm có mô tả + tạo tại chỗ, Relation + nút Link, đánh dấu liên kết chủ; "Giữ tham số" + "Lưu và nhập tiếp" để nhập hàng loạt | Một example nối nhiều concept bằng một thao tác thống nhất; dữ liệu cũ (`targetConceptId`, `ExampleLink`) hiện đúng trong danh sách |
+| Để sau | Search Concept Association + đồ thị (R7), lọc ví dụ theo concept liên kết, nhập liên kết từ file (bảng *Child/Parent/Relation* như PVO), chế độ Full của Tree | PO quyết sau khi dùng M12a–d |
+
 ### Về sau
 Đồ thị trực quan, mở rộng chiều sâu cho tiếng Đức, nhiều bộ từ điển, ghi âm từ Wiktionary, các module nguồn từ mới nếu cần.
 
@@ -538,7 +566,10 @@ Mục tiêu: **quản lý và tra cứu kho từ** theo tri-fold (mục 1.4); b�
 
 ## 12. Lịch sử thay đổi
 
-**v8 (bản này):**
+**v9 (bản này):**
+- Thêm mục "Bản 3b" (mục 10): quy luật R1–R8 rút từ toàn bộ 40 ảnh `docs/reference/hustpvo`, ba quyết định của PO (gộp thành một danh sách liên kết ở giao diện, thứ tự làm, bố cục điện thoại) và kế hoạch M12a–M12d, trong đó M12a là căn chỉnh nút/khoảng cách toàn app.
+
+**v8:**
 - Làm rõ Concept (một ý) khác word/phrase (hình thức) và Example (cách diễn đạt mang nhãn TMRND); ghi triết lý tri-fold (mục 1.4); phân biệt ba kiểu liên kết example/concept; cha–con chỉ cho concept–concept, chiều con → cha.
 - Viết lại kế hoạch Bản 3 thành M11a–M11e (mục 10), ưu tiên quản lý kho trước bài tập.
 

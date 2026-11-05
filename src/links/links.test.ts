@@ -141,9 +141,10 @@ describe('tree view', () => {
     await linkExample(idiom.id, hello.id, 'idiom');
     const grouped = await listGroupedExamples(hello.id);
     expect(grouped.home.map((e) => e.id)).toEqual([own.id]);
+    // Group order is fixed (PVO order of link types), whatever order they were added in.
     expect(grouped.linked.map((g) => [g.type, g.examples.map((e) => e.text)])).toEqual([
-      ['otherPhrase', ['how do you do']],
       ['idiom', ['hit the road']],
+      ['otherPhrase', ['how do you do']],
     ]);
   });
 });

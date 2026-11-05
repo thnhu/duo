@@ -1,4 +1,5 @@
 import { createId } from '../core/id';
+import { defaultLinkTypes } from '../db/defaults';
 import { db } from '../db/schema';
 import { conceptLinkRepository } from '../db/repositories';
 import type { Concept, ConceptLink, ConceptLinkType, Example, ExampleLinkType } from '../db/types';
@@ -216,11 +217,16 @@ export async function listGroupedExamples(conceptId: string): Promise<GroupedExa
     if (!live(e) || homeList.some((h) => h.id === e.id)) return;
     byType.set(l.type, [...(byType.get(l.type) ?? []), e]);
   });
+  // Fixed group order (the PVO order of the link types), never the order
+  // rows happen to come out of the database.
+  const order = defaultLinkTypes.exampleConcept;
   return {
     home: homeList,
-    linked: [...byType.entries()].map(([type, examples]) => ({
-      type,
-      examples: examples.sort((a, b) => a.createdAt - b.createdAt),
-    })),
+    linked: [...byType.entries()]
+      .sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]))
+      .map(([type, examples]) => ({
+        type,
+        examples: examples.sort((a, b) => a.createdAt - b.createdAt),
+      })),
   };
 }

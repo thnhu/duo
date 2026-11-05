@@ -74,6 +74,51 @@ export function remapGaps<T extends Selection>(oldText: string, newText: string,
   return out;
 }
 
+// What the gap view draws: the passage cut into gaps (shown marked), words
+// (tappable to make a gap) and everything else (spaces, punctuation).
+export interface TextSegment {
+  start: number;
+  end: number;
+  kind: 'gap' | 'word' | 'plain';
+  // 1-based number of the gap, for kind 'gap'.
+  gap?: number;
+}
+
+const WORD = /[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu;
+
+// Pure. Gaps are cut out first (so a phrase gap stays one piece), then the
+// text between them is split into words and the rest.
+export function segmentText<T extends Selection>(text: string, gaps: T[]): TextSegment[] {
+  const out: TextSegment[] = [];
+  const addBetween = (from: number, to: number) => {
+    let cursor = from;
+    for (const m of text.slice(from, to).matchAll(WORD)) {
+      const start = from + m.index!;
+      if (start > cursor) out.push({ start: cursor, end: start, kind: 'plain' });
+      out.push({ start, end: start + m[0].length, kind: 'word' });
+      cursor = start + m[0].length;
+    }
+    if (cursor < to) out.push({ start: cursor, end: to, kind: 'plain' });
+  };
+  let cursor = 0;
+  gaps.forEach((gap, i) => {
+    if (gap.start > cursor) addBetween(cursor, gap.start);
+    out.push({ start: gap.start, end: gap.end, kind: 'gap', gap: i + 1 });
+    cursor = gap.end;
+  });
+  if (cursor < text.length) addBetween(cursor, text.length);
+  return out;
+}
+
+// Pure. A tap or a selection on [start, end): if it touches existing gaps they
+// are removed (tap a marked word again to un-mark it), otherwise a new gap is
+// added. Gaps keep their example ids.
+export function toggleGap<T extends Selection>(text: string, gaps: T[], start: number, end: number): Array<T | Selection> {
+  const touched = gaps.filter((g) => g.start < end && start < g.end);
+  if (touched.length > 0) return gaps.filter((g) => !touched.includes(g));
+  return cleanGaps(text, [...gaps, { start, end }] as Array<T | Selection>);
+}
+
 // Trims the passage and moves the gaps with the trim (the editor keeps the
 // raw text so positions stay exact while typing).
 function prepare<T extends Selection>(rawText: string, rawGaps: T[]): { body: string; gaps: T[] } {

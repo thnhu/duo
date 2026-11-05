@@ -7,7 +7,7 @@ import { englishPassage } from '../exercises/passage';
 import { loadLibrary } from '../exercises/library';
 import { loadReviewItems } from '../exercises/review';
 import { loadPairs, recordAnswer } from '../exercises/session';
-import { cleanGaps, createPassage, deletePassage, listGaps, listPassages, loadPassageForEdit, remapGaps, updatePassage } from './index';
+import { cleanGaps, createPassage, deletePassage, listGaps, listPassages, loadPassageForEdit, remapGaps, segmentText, toggleGap, updatePassage } from './index';
 
 const DICT = 'dict-en';
 const TEXT = 'He brushes his teeth, shaves, and takes a shower. He dries himself off with a towel.';
@@ -172,5 +172,32 @@ describe('editing a passage', () => {
 
     expect(await updatePassage(created.passage.id, { text: text, gaps: [] })).toEqual({ ok: false, reason: 'no-gaps' });
     expect(await updatePassage('missing', { text, gaps: kept })).toEqual({ ok: false, reason: 'missing' });
+  });
+});
+
+describe('gap view helpers', () => {
+  const T = 'He brushes his teeth, shaves.';
+  it('segmentText cuts the passage into gaps, words and plain text', () => {
+    const gaps = [{ start: 3, end: 10 }]; // brushes
+    const segs = segmentText(T, gaps);
+    expect(segs.map((x) => `${x.kind}:${T.slice(x.start, x.end)}`)).toEqual([
+      'word:He', 'plain: ', 'gap:brushes', 'plain: ', 'word:his', 'plain: ', 'word:teeth', 'plain:, ', 'word:shaves', 'plain:.',
+    ]);
+    expect(segs.find((x) => x.kind === 'gap')?.gap).toBe(1);
+    // Every character is in exactly one segment, in order.
+    expect(segs.map((x) => T.slice(x.start, x.end)).join('')).toBe(T);
+  });
+
+  it('toggleGap adds a gap on a word and removes it when tapped again; keeps example ids', () => {
+    const added = toggleGap(T, [], 3, 10);
+    expect(added).toEqual([{ start: 3, end: 10 }]);
+    const withId = [{ start: 3, end: 10, exampleId: 'e1' }];
+    expect(toggleGap(T, withId, 3, 10)).toEqual([]);
+    // A second word is added next to the first, which keeps its id.
+    const both = toggleGap(T, withId, 21, 27);
+    expect(both).toHaveLength(2);
+    expect(both[0]).toMatchObject({ exampleId: 'e1' });
+    // A phrase selection touching a gap removes that gap instead of overlapping it.
+    expect(toggleGap(T, withId, 0, 14)).toEqual([]);
   });
 });

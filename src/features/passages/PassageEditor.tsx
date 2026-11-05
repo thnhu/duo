@@ -1,9 +1,9 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '../../ui/Button';
 import { ButtonRow } from '../../ui/ButtonRow';
 import fieldStyles from '../../ui/field.module.css';
-import { cleanGaps, remapGaps, type PassageGap } from '../../passages';
-import { normalizeSelection, textForSelection } from '../quick-add/highlight';
+import { cleanGaps, remapGaps, segmentText, toggleGap, type PassageGap } from '../../passages';
+import { normalizeSelection } from '../quick-add/highlight';
 import styles from '../quick-add/AddPassageForm.module.css';
 
 export interface PassageDraft {
@@ -15,44 +15,72 @@ export interface PassageDraft {
 interface PassageEditorProps {
   draft: PassageDraft;
   onChange: (draft: PassageDraft) => void;
-  // Shown under the gap buttons when there is no hint of its own.
+  // Shown under the passage when there is no hint of its own.
   note?: string;
 }
 
-// Title, text and gaps of one passage, shared by "Thêm đoạn văn" and "Sửa
-// đoạn văn". Editing the text keeps the gaps: they move with the words around
-// them (see remapGaps), so a long passage never has to be typed again.
-export function PassageEditor({ draft, onChange, note }: PassageEditorProps) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [hint, setHint] = useState('');
-  const { text, gaps } = draft;
+// Offset in the passage of a point of the browser selection: every segment of
+// the gap view is one element with `data-start` holding one text node.
+function offsetOf(node: Node | null, offset: number): number | null {
+  const el = (node instanceof Element ? node : node?.parentElement)?.closest<HTMLElement>('[data-start]');
+  if (!el || el.dataset.start === undefined) return null;
+  return Number(el.dataset.start) + (node instanceof Element ? 0 : offset);
+}
 
-  function addGap() {
-    const el = textareaRef.current;
-    if (!el) return;
-    const picked = normalizeSelection(text, { start: el.selectionStart, end: el.selectionEnd });
-    if (!picked) {
-      setHint('Hãy bôi đen một word hoặc cụm trong đoạn văn trước.');
-      return;
+// Title and passage of one passage, shared by "Thêm đoạn văn" and "Sửa đoạn
+// văn". Two modes on the same passage: "Đục lỗ" shows it as text where a tap on
+// a word makes (or removes) a gap and a selection makes a phrase gap; "Sửa
+// chữ" turns it into a box to type in. Editing the text keeps the gaps: they
+// move with the words around them (remapGaps), so nothing is ever retyped.
+export function PassageEditor({ draft, onChange, note }: PassageEditorProps) {
+  const { text, gaps } = draft;
+  const [mode, setMode] = useState<'gap' | 'text'>(text.trim() ? 'gap' : 'text');
+  const [hint, setHint] = useState('');
+  const [picked, setPicked] = useState<{ start: number; end: number } | null>(null);
+  const viewRef = useRef<HTMLDivElement>(null);
+
+  // A phrase selected on the passage (drag on a computer, long-press on a
+  // phone) waits behind a button; a plain tap makes a one-word gap.
+  useEffect(() => {
+    if (mode !== 'gap') return;
+    function onSelection() {
+      const sel = window.getSelection();
+      const view = viewRef.current;
+      if (!sel || !view || sel.isCollapsed || !sel.anchorNode || !sel.focusNode) {
+        setPicked(null);
+        return;
+      }
+      if (!view.contains(sel.anchorNode) || !view.contains(sel.focusNode)) return;
+      const a = offsetOf(sel.anchorNode, sel.anchorOffset);
+      const b = offsetOf(sel.focusNode, sel.focusOffset);
+      if (a === null || b === null) return;
+      const norm = normalizeSelection(text, { start: Math.min(a, b), end: Math.max(a, b) });
+      setPicked(norm);
     }
-    const next = cleanGaps(text, [...gaps, picked]);
-    if (next.length === gaps.length) {
-      setHint('Chỗ này trùng với một lỗ đã có.');
+    document.addEventListener('selectionchange', onSelection);
+    return () => document.removeEventListener('selectionchange', onSelection);
+  }, [mode, text]);
+
+  function tap(start: number, end: number) {
+    if (!window.getSelection()?.isCollapsed) return; // a selection is in progress
+    setHint('');
+    onChange({ ...draft, gaps: toggleGap(text, gaps, start, end) as PassageGap[] });
+  }
+
+  function addPicked() {
+    if (!picked) return;
+    const touched = gaps.some((g) => g.start < picked.end && picked.start < g.end);
+    window.getSelection()?.removeAllRanges();
+    setPicked(null);
+    if (touched) {
+      setHint('Cụm này chạm vào một lỗ đã có. Chạm lỗ đó để bỏ trước.');
       return;
     }
     setHint('');
-    onChange({ ...draft, gaps: next });
+    onChange({ ...draft, gaps: cleanGaps(text, [...gaps, picked]) });
   }
 
-  // The text between gaps, so the preview shows each gap in place.
-  const segments: Array<{ text: string; gap?: number }> = [];
-  let cursor = 0;
-  gaps.forEach((gap, i) => {
-    segments.push({ text: text.slice(cursor, gap.start) });
-    segments.push({ text: textForSelection(text, gap), gap: i + 1 });
-    cursor = gap.end;
-  });
-  segments.push({ text: text.slice(cursor) });
+  const segments = segmentText(text, gaps);
 
   return (
     <>
@@ -69,70 +97,131 @@ export function PassageEditor({ draft, onChange, note }: PassageEditorProps) {
         />
       </div>
 
-      <div>
-        <label className={fieldStyles.label} htmlFor="passage-text">
-          Đoạn văn (*)
-        </label>
-        <textarea
-          id="passage-text"
-          ref={textareaRef}
-          className={`${fieldStyles.textarea} ${styles.passageBox}`}
-          value={text}
-          onChange={(e) => {
-            // Gaps follow the edit; one the edit cuts across is dropped.
-            const next = remapGaps(text, e.target.value, gaps);
-            setHint(
-              next.length < gaps.length
-                ? `Đã bỏ ${gaps.length - next.length} lỗ vì phần chữ đó bị sửa. Bôi đen và đục lại nếu cần.`
-                : '',
-            );
-            onChange({ ...draft, text: e.target.value, gaps: next });
+      <div className={styles.modes} role="group" aria-label="Chế độ đoạn văn">
+        <button
+          type="button"
+          className={[styles.modeBtn, mode === 'gap' && styles.modeOn].filter(Boolean).join(' ')}
+          aria-pressed={mode === 'gap'}
+          disabled={!text.trim()}
+          onClick={() => setMode('gap')}
+        >
+          Đục lỗ
+        </button>
+        <button
+          type="button"
+          className={[styles.modeBtn, mode === 'text' && styles.modeOn].filter(Boolean).join(' ')}
+          aria-pressed={mode === 'text'}
+          onClick={() => {
+            setPicked(null);
+            setMode('text');
           }}
-          placeholder="vd: He brushes his teeth, shaves, and takes a shower."
-        />
+        >
+          Sửa chữ
+        </button>
       </div>
 
-      <ButtonRow>
-        <Button variant="secondary" disabled={!text.trim()} onClick={addGap}>
-          Đục lỗ chỗ đã chọn
-        </Button>
-        {gaps.length > 0 && (
-          <Button variant="ghost" onClick={() => onChange({ ...draft, gaps: [] })}>
-            Bỏ hết lỗ
-          </Button>
-        )}
-      </ButtonRow>
-      <p className={fieldStyles.hint}>
-        {hint || note || (gaps.length === 0 ? 'Chưa có lỗ nào.' : `${gaps.length} lỗ. Sửa chữ thì các lỗ đi theo.`)}
-      </p>
-
-      {gaps.length > 0 && (
-        <>
-          <p className={styles.preview}>
-            {segments.map((seg, i) =>
-              seg.gap ? (
-                <span key={i} className={styles.gap}>
-                  ({seg.gap}) {seg.text}
-                </span>
-              ) : (
-                <span key={i}>{seg.text}</span>
-              ),
-            )}
+      {mode === 'text' ? (
+        <div>
+          <label className={fieldStyles.label} htmlFor="passage-text">
+            Đoạn văn (*)
+          </label>
+          <textarea
+            id="passage-text"
+            className={`${fieldStyles.textarea} ${styles.passageBox}`}
+            value={text}
+            onChange={(e) => {
+              // Gaps follow the edit; one the edit cuts across is dropped.
+              const next = remapGaps(text, e.target.value, gaps);
+              setHint(
+                next.length < gaps.length
+                  ? `Đã bỏ ${gaps.length - next.length} lỗ vì phần chữ đó bị sửa. Chuyển sang "Đục lỗ" để đục lại.`
+                  : '',
+              );
+              onChange({ ...draft, text: e.target.value, gaps: next });
+            }}
+            placeholder="vd: He brushes his teeth, shaves, and takes a shower."
+          />
+          <p className={fieldStyles.hint}>
+            {hint || 'Dán hoặc gõ đoạn văn. Sửa chữ thì các lỗ đã đục đi theo. Xong thì bấm "Đục lỗ".'}
           </p>
-          <ul className={styles.list}>
-            {gaps.map((gap, i) => (
-              <li key={`${gap.start}-${gap.end}`} className={styles.item}>
-                <span>
-                  ({i + 1}) {textForSelection(text, gap)}
+        </div>
+      ) : (
+        <div>
+          <div ref={viewRef} className={styles.view} aria-label="Đoạn văn: chạm một word để đục lỗ">
+            {segments.map((seg) => {
+              const piece = text.slice(seg.start, seg.end);
+              if (seg.kind === 'plain') {
+                return (
+                  <span key={seg.start} data-start={seg.start}>
+                    {piece}
+                  </span>
+                );
+              }
+              if (seg.kind === 'gap') {
+                return (
+                  <span
+                    key={seg.start}
+                    data-start={seg.start}
+                    className={styles.gapTap}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Lỗ ${seg.gap}: ${piece}. Chạm để bỏ`}
+                    onClick={() => tap(seg.start, seg.end)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        tap(seg.start, seg.end);
+                      }
+                    }}
+                  >
+                    <sup className={styles.gapNo}>{seg.gap}</sup>
+                    {piece}
+                  </span>
+                );
+              }
+              return (
+                <span
+                  key={seg.start}
+                  data-start={seg.start}
+                  className={styles.word}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => tap(seg.start, seg.end)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      tap(seg.start, seg.end);
+                    }
+                  }}
+                >
+                  {piece}
                 </span>
-                <Button variant="ghost" onClick={() => onChange({ ...draft, gaps: gaps.filter((_, index) => index !== i) })}>
-                  Bỏ
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </>
+              );
+            })}
+          </div>
+
+          <ButtonRow>
+            {picked && (
+              <Button variant="secondary" onClick={addPicked}>
+                Đục lỗ cụm đã chọn
+              </Button>
+            )}
+            {gaps.length > 0 && (
+              <Button variant="ghost" onClick={() => onChange({ ...draft, gaps: [] })}>
+                Bỏ hết lỗ
+              </Button>
+            )}
+          </ButtonRow>
+          <p className={fieldStyles.hint}>
+            {hint ||
+              note ||
+              (gaps.length === 0
+                ? 'Chạm một word để đục lỗ. Muốn đục cả cụm, bôi đen cụm rồi bấm "Đục lỗ cụm đã chọn".'
+                : `${gaps.length} lỗ. Chạm một lỗ để bỏ, chạm word khác để đục thêm.`)}
+          </p>
+        </div>
       )}
+      {mode === 'text' && note && <p className={fieldStyles.hint}>{note}</p>}
     </>
   );
 }

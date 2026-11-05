@@ -56,8 +56,8 @@ export function AddPassagePage() {
         />
       </div>
       <p className={fieldStyles.hint}>
-        Dán một đoạn văn ngắn, bôi đen những word cần học rồi bấm "Đục lỗ". Khi ôn, đoạn văn hiện ra với các chỗ
-        trống và bạn điền lại. <Link to="/add">Chọn loại khác</Link>
+        Dán một đoạn văn ngắn rồi chuyển sang "Đục lỗ": chạm một word để đục lỗ, chạm lại để bỏ. Khi ôn, đoạn văn
+        hiện ra với các chỗ trống và bạn điền lại. <Link to="/add">Chọn loại khác</Link>
       </p>
 
       <PassageEditor draft={draft} onChange={(next) => { setDraft(next); setError(''); }} note={error} />

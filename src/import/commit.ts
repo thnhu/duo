@@ -3,6 +3,7 @@ import { createDefaultAttributes } from '../db/defaults';
 import { dictionaryIdForLang } from '../db/queries';
 import { db } from '../db/schema';
 import type { Concept, Example, ImportBatch, Lang, StudyMode } from '../db/types';
+import { createWordSet, listWordSets } from '../wordsets';
 import type { ExampleDraft } from './build';
 import type { DuplicateAction, ImportGroup } from './plan';
 
@@ -10,6 +11,9 @@ export interface CommitOptions {
   fileName: string;
   mode: StudyMode;
   duplicateAction: DuplicateAction;
+  // Put every imported word in this set (created when missing, one per
+  // language). Added to any sets named in the file's `set` column.
+  targetSetName?: string;
 }
 
 export interface CommitResult {
@@ -21,6 +25,8 @@ export interface CommitResult {
   examplesAdded: number;
   // Sentences that went to the Hộp chờ duyệt for highlighting later.
   inboxExamples: number;
+  // Existing words that gained a word set label.
+  addedToSets: number;
 }
 
 function lower(s: string): string {
@@ -66,6 +72,7 @@ export async function commitImport(
     skippedDuplicates: 0,
     examplesAdded: 0,
     inboxExamples: 0,
+    addedToSets: 0,
   };
 
   const selected = groups.filter((g) => g.included);
@@ -75,6 +82,28 @@ export async function commitImport(
       dictionaryIds.set(group.lang, await dictionaryIdForLang(group.lang));
     }
   }
+
+  // Word sets named in the file or chosen as target: found by name (ignoring
+  // case) or created, once per language, before the single write below.
+  const setIds = new Map<string, string>(); // `${lang}|${lowercased name}` -> set id
+  const setKey = (lang: Lang, name: string) => `${lang}|${lower(name)}`;
+  for (const group of selected) {
+    const names = [...group.setNames, ...(options.targetSetName?.trim() ? [options.targetSetName.trim()] : [])];
+    for (const name of names) {
+      const key = setKey(group.lang, name);
+      if (setIds.has(key)) continue;
+      const found = (await listWordSets(group.lang)).find((s) => lower(s.name) === lower(name));
+      if (found) setIds.set(key, found.id);
+      else {
+        const created = await createWordSet(group.lang, name);
+        if (created.ok) setIds.set(key, created.set.id);
+      }
+    }
+  }
+  const groupSetIds = (group: ImportGroup): string[] => {
+    const names = [...group.setNames, ...(options.targetSetName?.trim() ? [options.targetSetName.trim()] : [])];
+    return [...new Set(names.map((n) => setIds.get(setKey(group.lang, n))).filter((id): id is string => !!id))];
+  };
 
   const batch: ImportBatch = {
     id: createId(),
@@ -115,6 +144,7 @@ export async function commitImport(
           grammar: group.grammar,
           // Spec 5.1/5.2: German has Rộng only for now.
           mode: group.lang === 'de' ? 'breadth' : options.mode,
+          setIds: groupSetIds(group).length > 0 ? groupSetIds(group) : undefined,
           verification: 'unverified',
           source: {
             type: 'import',
@@ -156,14 +186,29 @@ export async function commitImport(
         }
       } else {
         const existing = group.existing;
+        // A word that already exists can still join a set: that is how one
+        // word ends up in several sets without a second copy.
+        const wantedSets = groupSetIds(group);
+        const nextSets = [...new Set([...(existing.setIds ?? []), ...wantedSets])];
+        const setsChanged = nextSets.length !== (existing.setIds ?? []).length;
         if (options.duplicateAction === 'skip') {
-          result.skippedDuplicates++;
+          if (setsChanged) {
+            batch.updatedConcepts.push({ id: existing.id, before: { setIds: existing.setIds } });
+            await db.concepts.update(existing.id, { setIds: nextSets, updatedAt: now });
+            result.addedToSets++;
+          } else {
+            result.skippedDuplicates++;
+          }
           continue;
         }
 
         // merge: only fill what is empty / add meanings. update: the
         // file's non-empty values win.
         const patch: Partial<Concept> = {};
+        if (setsChanged) {
+          patch.setIds = nextSets;
+          result.addedToSets++;
+        }
         const overwrite = options.duplicateAction === 'update';
         if (group.pos && (overwrite || !existing.pos) && group.pos !== existing.pos) {
           patch.pos = group.pos;

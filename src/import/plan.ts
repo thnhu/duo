@@ -14,6 +14,8 @@ export interface ImportGroup {
   pos?: string;
   meanings: string[];
   lesson?: string;
+  // Word set names from the file's `set` column (merged over the rows).
+  setNames: string[];
   grammar?: ConceptGrammar;
   examples: ExampleDraft[];
   rowNumbers: number[];
@@ -55,6 +57,7 @@ export function planGroups(rows: ImportRow[], existingConcepts: Concept[]): Impo
         text: row.text,
         pos: row.pos,
         meanings: [],
+        setNames: [],
         examples: [],
         rowNumbers: [],
         included: true,
@@ -65,6 +68,9 @@ export function planGroups(rows: ImportRow[], existingConcepts: Concept[]): Impo
     group.rowNumbers.push(row.rowNumber);
     group.pos ??= row.pos;
     group.lesson ??= row.lesson;
+    for (const name of row.setNames) {
+      if (!group.setNames.some((n) => sameText(n, name))) group.setNames.push(name);
+    }
     for (const meaning of row.meanings) {
       if (!group.meanings.some((m) => sameText(m, meaning))) group.meanings.push(meaning);
     }

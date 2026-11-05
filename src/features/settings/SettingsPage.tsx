@@ -5,7 +5,7 @@ import { Card } from '../../ui/Card';
 import { BackupError, exportBackup, restoreBackup } from '../../backup/json';
 import { dateStamp, downloadBlob, getLastBackupAt, setLastBackupAt } from '../../backup/download';
 import { exportXlsx } from '../../backup/table';
-import { conceptRepository, exampleRepository } from '../../db/repositories';
+import { conceptRepository, exampleRepository, wordSetRepository } from '../../db/repositories';
 import { StudyCard } from './StudyCard';
 import { DepthCard } from './DepthCard';
 import { SyncCard } from './SyncCard';
@@ -49,11 +49,12 @@ export function SettingsPage() {
 
   const handleExportXlsx = () =>
     run(async () => {
-      const [concepts, examples] = await Promise.all([
+      const [concepts, examples, sets] = await Promise.all([
         conceptRepository.listActive(),
         exampleRepository.listActive(),
+        wordSetRepository.listActive(),
       ]);
-      downloadBlob(await exportXlsx(concepts, examples), `duo-words-${dateStamp()}.xlsx`);
+      downloadBlob(await exportXlsx(concepts, examples, sets), `duo-words-${dateStamp()}.xlsx`);
       return `Đã xuất ${concepts.length} từ ra file xlsx (cùng cột với file mẫu nhập). File này để đọc/lưu trữ; sao lưu đầy đủ là file JSON.`;
     });
 

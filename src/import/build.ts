@@ -40,6 +40,8 @@ export interface ImportRow {
   pos?: string;
   meanings: string[];
   lesson?: string;
+  // Word sets named in the file (`set` column, several separated by ;).
+  setNames: string[];
   grammar?: ConceptGrammar;
   example: ExampleDraft;
 }
@@ -194,6 +196,10 @@ export function buildRows(
         .map((m) => m.trim())
         .filter(Boolean),
       lesson: cell('lesson') || undefined,
+      setNames: cell('set')
+        .split(MEANING_SEPARATOR)
+        .map((n) => n.trim())
+        .filter((n, i, all) => n && all.findIndex((x) => x.toLowerCase() === n.toLowerCase()) === i),
       grammar: Object.keys(grammar).length > 0 ? grammar : undefined,
       example,
     });

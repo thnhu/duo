@@ -9,6 +9,7 @@ import { guessMapping, resolveColumns, saveMapping, listSavedMappings } from './
 import { planGroups } from './plan';
 import { commitImport, getLatestUndoableBatch, undoImport } from './commit';
 import { readTable } from './readFile';
+import { listWordSets } from '../wordsets';
 import { templateCsv, templateTable, templateXlsx } from './template';
 
 const context: BuildContext = {
@@ -27,11 +28,16 @@ beforeEach(async () => {
   await db.examples.clear();
   await db.importBatches.clear();
   await db.importMappings.clear();
+  await db.wordSets.clear();
   await db.dictionaries.clear();
   await ensureDefaultDictionaries();
 });
 
-async function importCsv(csv: string, duplicateAction: 'skip' | 'merge' | 'update' = 'merge') {
+async function importCsv(
+  csv: string,
+  duplicateAction: 'skip' | 'merge' | 'update' = 'merge',
+  targetSetName?: string,
+) {
   const table = await readTable(bytes(csv), 'words.csv');
   const headers = table.rows[0];
   const { mapping } = guessMapping(headers, []);
@@ -41,6 +47,7 @@ async function importCsv(csv: string, duplicateAction: 'skip' | 'merge' | 'updat
     fileName: 'words.csv',
     mode: 'breadth',
     duplicateAction,
+    targetSetName,
   });
   return { built, groups, result };
 }
@@ -324,6 +331,52 @@ describe('undo', () => {
     expect(await db.concepts.count()).toBe(2);
 
     expect((await getLatestUndoableBatch())!.id).toBe(first!.id);
+  });
+});
+
+describe('word sets in import', () => {
+  const setNamesOf = async (text: string) => {
+    const concept = (await conceptRepository.listActive()).find((c) => c.text === text)!;
+    const sets = await listWordSets(concept.lang);
+    return (concept.setIds ?? []).map((id) => sets.find((s) => s.id === id)?.name).sort();
+  };
+
+  it('puts every imported word in the target set, creating it once', async () => {
+    const { result } = await importCsv('text,lang\nswallow,en\nchew,en\nApfel,de', 'merge', 'Phim');
+    expect(result.createdConcepts).toBe(3);
+    expect(await setNamesOf('swallow')).toEqual(['Phim']);
+    expect(await setNamesOf('Apfel')).toEqual(['Phim']);
+    expect((await listWordSets('en')).map((s) => s.name)).toEqual(['Phim']);
+    expect((await listWordSets('de')).map((s) => s.name)).toEqual(['Phim']); // one per language
+  });
+
+  it('reads the set column (several sets with ;) and reuses sets by name, ignoring case', async () => {
+    await importCsv('text,lang,set\nswallow,en,IT;Phim\nchew,en,it');
+    expect(await setNamesOf('swallow')).toEqual(['IT', 'Phim']);
+    expect(await setNamesOf('chew')).toEqual(['IT']);
+    expect((await listWordSets('en')).map((s) => s.name)).toEqual(['IT', 'Phim']);
+  });
+
+  it('adds a word that already exists to the set without duplicating it, even when skipping duplicates', async () => {
+    await importCsv('text,lang\nball,en');
+    const again = await importCsv('text,lang\nball,en', 'skip', 'Phim');
+    expect(again.result.addedToSets).toBe(1);
+    expect(again.result.skippedDuplicates).toBe(0);
+    expect((await conceptRepository.listActive()).filter((c) => c.text === 'ball')).toHaveLength(1);
+    expect(await setNamesOf('ball')).toEqual(['Phim']);
+    // importing the same file again changes nothing
+    const third = await importCsv('text,lang\nball,en', 'skip', 'Phim');
+    expect(third.result.addedToSets).toBe(0);
+    expect(third.result.skippedDuplicates).toBe(1);
+  });
+
+  it('undo restores the sets of a word the import only added to a set', async () => {
+    await importCsv('text,lang\nball,en', 'merge', 'IT');
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    const second = await importCsv('text,lang\nball,en', 'merge', 'Phim');
+    expect(await setNamesOf('ball')).toEqual(['IT', 'Phim']);
+    expect(await undoImport(second.result.batchId!)).toBe(true);
+    expect(await setNamesOf('ball')).toEqual(['IT']);
   });
 });
 

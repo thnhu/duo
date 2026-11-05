@@ -14,6 +14,8 @@ export interface SearchFilters {
   // TMRND — applies to examples only (spec: attributes live on Example).
   attributes?: Partial<ExampleAttributes>;
   lesson?: string;
+  // Only concepts (and their examples) in this word set (M13).
+  setId?: string;
   sourceType?: ConceptSource['type'];
   // "câu chưa gắn concept" only.
   unlinkedOnly?: boolean;
@@ -73,6 +75,8 @@ export interface SearchResponse {
 
 export interface SearchFacets {
   lessons: string[];
+  // Word sets that can be filtered on.
+  sets: Array<{ id: string; name: string; lang: Lang }>;
 }
 
 export interface SearchService extends RegistrableModule {

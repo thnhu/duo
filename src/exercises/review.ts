@@ -4,6 +4,7 @@ import { listDue } from '../scheduling/store';
 import { exerciseModules } from './index';
 import { loadLibrary } from './library';
 import { shuffle, type SessionItem } from './session';
+import { inSelectedSets } from '../wordsets';
 import type { ExerciseLibrary, ExerciseModule } from './types';
 
 // Building review and flash sessions (spec D3/D4). Unlike a plain drill,
@@ -16,6 +17,8 @@ export interface ReviewRequest {
   kind: ReviewKind;
   count: number;
   lang?: Lang;
+  // Only words in one of these word sets (M13); empty/undefined = all.
+  setIds?: string[];
   now?: number;
   rng?: () => number;
 }
@@ -59,7 +62,7 @@ async function latestLogs(): Promise<Map<string, ReviewLog>> {
 // review: words that have an example due now (most overdue first).
 // flash: any word that can be drilled, due or not, for quick-fire practice.
 export async function loadReviewItems(request: ReviewRequest): Promise<SessionItem[]> {
-  const { kind, count, lang, now = Date.now(), rng = Math.random } = request;
+  const { kind, count, lang, setIds, now = Date.now(), rng = Math.random } = request;
   const [library, logs, due] = await Promise.all([loadLibrary(), latestLogs(), listDue(now)]);
   const { concepts, examples } = { concepts: library.concepts, examples: library.examples! };
   const dueAt = new Map(due.map((s) => [s.exampleId, s.due]));
@@ -75,6 +78,7 @@ export async function loadReviewItems(request: ReviewRequest): Promise<SessionIt
   const entries: Array<{ item: SessionItem; overdue: number }> = [];
   for (const concept of concepts) {
     if (lang && concept.lang !== lang) continue;
+    if (!inSelectedSets(concept, setIds)) continue;
     const all = byConcept.get(concept.id) ?? [];
     const dueExamples = all.filter((e) => dueAt.has(e.id));
     if (kind === 'review' && dueExamples.length === 0) continue;
@@ -96,6 +100,6 @@ export async function loadReviewItems(request: ReviewRequest): Promise<SessionIt
 
 // How many words can be reviewed right now (Today screen, J7): counted
 // through the same selection as the session, so the number is never a lie.
-export async function countDueWords(now: number = Date.now()): Promise<number> {
-  return (await loadReviewItems({ kind: 'review', count: Infinity, now })).length;
+export async function countDueWords(now: number = Date.now(), setIds?: string[]): Promise<number> {
+  return (await loadReviewItems({ kind: 'review', count: Infinity, now, setIds })).length;
 }

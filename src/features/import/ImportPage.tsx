@@ -32,6 +32,7 @@ import { readTable, type ReadOptions, type TableData } from '../../import/readFi
 import { templateCsv, templateXlsx } from '../../import/template';
 import type { Delimiter, TextEncodingChoice } from '../../import/csv';
 import { useLastLanguage } from '../quick-add/useLastLanguage';
+import { listWordSets } from '../../wordsets';
 import { ReviewStep } from './ReviewStep';
 import styles from './ImportPage.module.css';
 
@@ -62,6 +63,8 @@ export function ImportPage() {
   const [built, setBuilt] = useState<BuildResult | null>(null);
   const [groups, setGroups] = useState<ImportGroup[]>([]);
   const [duplicateAction, setDuplicateAction] = useState<DuplicateAction>('merge');
+  const [targetSet, setTargetSet] = useState('');
+  const [setNames, setSetNames] = useState<string[]>([]);
   const [result, setResult] = useState<CommitResult | null>(null);
   const [latestBatch, setLatestBatch] = useState<ImportBatch | undefined>(undefined);
   const [undone, setUndone] = useState(false);
@@ -74,6 +77,10 @@ export function ImportPage() {
 
   useEffect(() => {
     void refreshLatestBatch();
+    // Existing set names (both languages) as suggestions for the target set.
+    void Promise.all([listWordSets('en'), listWordSets('de')]).then(([en, de]) =>
+      setSetNames([...new Set([...en, ...de].map((s) => s.name))].sort()),
+    );
   }, []);
 
   async function loadTable(bytes: ArrayBuffer, fileName: string, options: ReadOptions) {
@@ -159,6 +166,7 @@ export function ImportPage() {
         fileName: source.fileName,
         mode,
         duplicateAction,
+        targetSetName: targetSet,
       });
       setResult(committed);
       setUndone(false);
@@ -386,6 +394,28 @@ export function ImportPage() {
               <LangToggle value={defaultLang} onChange={setDefaultLang} />
             </div>
             <div>
+              <label className={fieldStyles.label} htmlFor="import-set">
+                Thêm tất cả vào bộ từ (tùy chọn)
+              </label>
+              <input
+                id="import-set"
+                className={fieldStyles.input}
+                list="import-set-names"
+                value={targetSet}
+                onChange={(e) => setTargetSet(e.target.value)}
+                placeholder="vd: IT, Từ phim — tạo mới nếu chưa có"
+              />
+              <datalist id="import-set-names">
+                {setNames.map((n) => (
+                  <option key={n} value={n} />
+                ))}
+              </datalist>
+              <p className={fieldStyles.hint}>
+                Từ đã có trong thư viện cũng được thêm vào bộ này mà không bị nhân đôi. Cột <code>set</code> trong
+                file (nếu có) được dùng thêm.
+              </p>
+            </div>
+            <div>
               <label className={fieldStyles.label}>Chế độ</label>
               <select
                 className={fieldStyles.input}
@@ -432,6 +462,7 @@ export function ImportPage() {
                 <p className={styles.sectionTitle}>Đã nhập xong</p>
                 <ul className={styles.summary}>
                   <li>{result.createdConcepts} từ mới</li>
+                  {result.addedToSets > 0 && <li>{result.addedToSets} từ đã có được thêm vào bộ từ</li>}
                   {result.mergedConcepts > 0 && <li>{result.mergedConcepts} từ đã có được gộp thêm</li>}
                   {result.updatedConcepts > 0 && <li>{result.updatedConcepts} từ đã có được cập nhật</li>}
                   <li>{result.skippedDuplicates} từ trùng/không đổi (bỏ qua)</li>

@@ -41,6 +41,7 @@ interface IndexedDoc {
   status?: AcquisitionStatus;
   verification: Verification;
   lesson?: string;
+  setIds: string[];
   sourceType?: ConceptSource['type'];
   attributes?: Example['attributes'];
   unlinked: boolean;
@@ -102,6 +103,7 @@ export class LocalSearchService implements SearchService {
   private readonly db: DuoDB;
   private docs: IndexedDoc[] = [];
   private lessons: string[] = [];
+  private sets: SearchFacets['sets'] = [];
   // Bumped on every write; the index is current when builtVersion matches.
   private version = 0;
   private builtVersion = -1;
@@ -110,7 +112,7 @@ export class LocalSearchService implements SearchService {
   constructor(db: DuoDB = defaultDb) {
     this.db = db;
     const touch = () => this.invalidate();
-    for (const table of [db.concepts, db.examples, db.exampleLinks, db.dictionaries]) {
+    for (const table of [db.concepts, db.examples, db.exampleLinks, db.dictionaries, db.wordSets]) {
       // Dexie hooks: invalidate immediately, and again after commit so a
       // rebuild that started mid-transaction can't leave the index stale.
       table.hook('creating', function () {
@@ -150,12 +152,16 @@ export class LocalSearchService implements SearchService {
   }
 
   private async build(): Promise<void> {
-    const [dictionaries, concepts, examples, exampleLinks] = await Promise.all([
+    const [dictionaries, concepts, examples, exampleLinks, wordSets] = await Promise.all([
       this.db.dictionaries.toArray(),
       this.db.concepts.toArray(),
       this.db.examples.toArray(),
       this.db.exampleLinks.toArray(),
+      this.db.wordSets.toArray(),
     ]);
+    const liveSets = wordSets.filter((s) => s.deletedAt === undefined);
+    const liveSetIds = new Set(liveSets.map((s) => s.id));
+    const setsOf = (c: Concept | undefined) => (c?.setIds ?? []).filter((id) => liveSetIds.has(id));
     const langByDict = new Map(dictionaries.map((d) => [d.id, d.lang]));
     const activeConcepts = concepts.filter((c) => c.deletedAt === undefined);
     const conceptById = new Map<string, Concept>(activeConcepts.map((c) => [c.id, c]));
@@ -208,6 +214,7 @@ export class LocalSearchService implements SearchService {
         status: c.status,
         verification: c.verification,
         lesson: c.source.lesson,
+        setIds: setsOf(c),
         sourceType: c.source.type,
         unlinked: false,
         expressions,
@@ -236,6 +243,7 @@ export class LocalSearchService implements SearchService {
         status: concept?.status,
         verification: e.verification,
         lesson: concept?.source.lesson,
+        setIds: setsOf(concept),
         sourceType: concept?.source.type,
         attributes: e.attributes,
         unlinked: concept === undefined,
@@ -245,11 +253,14 @@ export class LocalSearchService implements SearchService {
 
     this.docs = docs;
     this.lessons = [...lessons].sort((a, b) => a.localeCompare(b));
+    this.sets = liveSets
+      .map((s) => ({ id: s.id, name: s.name, lang: s.lang }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 
   async getFacets(): Promise<SearchFacets> {
     await this.ensureIndex();
-    return { lessons: this.lessons };
+    return { lessons: this.lessons, sets: this.sets };
   }
 
   async search(query: SearchQuery): Promise<SearchResponse> {
@@ -270,6 +281,7 @@ export class LocalSearchService implements SearchService {
       filters.status !== undefined ||
       filters.verification !== undefined ||
       filters.lesson !== undefined ||
+      filters.setId !== undefined ||
       filters.sourceType !== undefined;
 
     // Empty query with no filter: nothing to show (callers list normally).
@@ -283,6 +295,7 @@ export class LocalSearchService implements SearchService {
       if (filters.status && doc.status !== filters.status) continue;
       if (filters.verification && doc.verification !== filters.verification) continue;
       if (filters.lesson && doc.lesson !== filters.lesson) continue;
+      if (filters.setId && !doc.setIds.includes(filters.setId)) continue;
       if (filters.sourceType && doc.sourceType !== filters.sourceType) continue;
       if (filters.unlinkedOnly && !doc.unlinked) continue;
       if (

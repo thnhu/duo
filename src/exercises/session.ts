@@ -4,6 +4,7 @@ import { loadLibrary } from './library';
 import { reviewLogRepository } from '../db/repositories';
 import type { Concept, Example, Lang, ReviewLog } from '../db/types';
 import { recordSchedule } from '../scheduling/store';
+import { inSelectedSets } from '../wordsets';
 import type { Answer, Exercise, ExerciseModule, GradeResult } from './types';
 
 // Runner side of an exercise session: choosing what to ask, and recording
@@ -28,6 +29,8 @@ export interface PairFilter {
   lang: Lang;
   // Only words of this lesson (spec A1d), if set.
   lesson?: string;
+  // Only words in one of these word sets (M13); empty/undefined = all.
+  setIds?: string[];
 }
 
 // Concepts that can be drilled with this module, each with one of its
@@ -54,6 +57,7 @@ export async function loadPairs(
     if ((concept.mode ?? 'breadth') !== module.mode) continue;
     if (concept.status === 'acquired') continue;
     if (filter.lesson && concept.source.lesson !== filter.lesson) continue;
+    if (!inSelectedSets(concept, filter.setIds)) continue;
     const usable = (byConcept.get(concept.id) ?? []).filter((e) => module.isEligible(concept, e, library));
     if (usable.length === 0) continue;
     // Real sentences make better drills than the auto-created minimal one.

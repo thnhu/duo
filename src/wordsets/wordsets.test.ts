@@ -9,6 +9,7 @@ import {
   createWordSet,
   deleteWordSet,
   filterBySet,
+  inSelectedSets,
   listWordSets,
   renameWordSet,
   setConceptSets,
@@ -107,5 +108,58 @@ describe('word sets', () => {
     await deleteWordSet(films.set.id);
     const after = await conceptRepository.listActive();
     expect(filterBySet(after, { kind: 'none' }, new Set([it1.set.id])).map((x) => x.id)).toEqual([c.id]);
+  });
+});
+
+describe('word sets in search, study and export', () => {
+  it('search filters concepts and their examples by set', async () => {
+    const { LocalSearchService } = await import('./../search/localSearchService');
+    await db.dictionaries.bulkPut([{ id: DICT, name: 'English', lang: 'en', updatedAt: 0 }]);
+    const search = new LocalSearchService(db);
+    const it1 = await createWordSet('en', 'IT');
+    if (!it1.ok) throw new Error('setup');
+    const a = await word('cache');
+    const b = await word('ball');
+    await setConceptSets(a.id, [it1.set.id]);
+    search.invalidate();
+    const inSet = await search.search({ text: 'a', filters: { setId: it1.set.id } });
+    expect(inSet.hits.map((h) => h.text)).toEqual(['cache']);
+    expect((await search.search({ text: 'ball' })).hits.map((h) => h.id)).toContain(b.id);
+    expect((await search.getFacets()).sets.map((s) => s.name)).toEqual(['IT']);
+    // a deleted set is no longer a facet and matches nothing
+    await deleteWordSet(it1.set.id);
+    search.invalidate();
+    expect((await search.getFacets()).sets).toEqual([]);
+  });
+
+  it('review/flash only picks words in the chosen sets; empty selection = all', async () => {
+    const { loadReviewItems } = await import('../exercises/review');
+    const it1 = await createWordSet('en', 'IT');
+    if (!it1.ok) throw new Error('setup');
+    const a = await word('cache');
+    await word('ball');
+    await setConceptSets(a.id, [it1.set.id]);
+    const all = await loadReviewItems({ kind: 'flash', count: 10 });
+    const only = await loadReviewItems({ kind: 'flash', count: 10, setIds: [it1.set.id] });
+    const none = await loadReviewItems({ kind: 'flash', count: 10, setIds: [] });
+    expect(only.map((i) => i.concept.text)).toEqual(['cache']);
+    expect(none).toHaveLength(all.length);
+    expect(all.length).toBeGreaterThanOrEqual(1);
+    expect(inSelectedSets(a, [])).toBe(true);
+    expect(inSelectedSets(a, ['other'])).toBe(false);
+  });
+
+  it('exports the set names in the set column, in the import form', async () => {
+    const { exportTable } = await import('../backup/table');
+    const { importFields } = await import('../import/fields');
+    const it1 = await createWordSet('en', 'IT');
+    const films = await createWordSet('en', 'Films');
+    if (!it1.ok || !films.ok) throw new Error('setup');
+    const ball = await word('ball');
+    await setConceptSets(ball.id, [it1.set.id, films.set.id]);
+    const sets = await listWordSets('en');
+    const [header, ...rows] = exportTable(await conceptRepository.listActive(), [], sets);
+    expect(rows[0][header.indexOf('set')].split('; ').sort()).toEqual(['Films', 'IT']);
+    expect(importFields.some((f) => f.id === 'set')).toBe(true);
   });
 });

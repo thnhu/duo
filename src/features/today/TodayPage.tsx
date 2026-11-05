@@ -5,19 +5,48 @@ import { Card } from '../../ui/Card';
 import { SearchLink } from '../../ui/SearchLink';
 import { countDueWords } from '../../exercises/review';
 import { defaultStudySettings, loadStudy } from '../../settings/study';
+import type { WordSet } from '../../db/types';
+import { listWordSets, readStudySets, writeStudySets } from '../../wordsets';
 import type { SessionConfig } from '../learn/LearnPage';
+import { SetChips } from '../sets/SetChips';
 import styles from './TodayPage.module.css';
 
 export function TodayPage() {
   const navigate = useNavigate();
   const [due, setDue] = useState<number | null>(null);
   const [count, setCount] = useState(defaultStudySettings.sessionCount);
+  const [sets, setSets] = useState<WordSet[]>([]);
+  const [setIds, setSetIdsState] = useState<string[] | null>(null);
+
+  // Sets of both languages; the choice is remembered on this device.
+  useEffect(() => {
+    void Promise.all([listWordSets('en'), listWordSets('de')]).then(([en, de]) => {
+      const all = [...en, ...de];
+      const live = new Set(all.map((s) => s.id));
+      setSets(all);
+      setSetIdsState(readStudySets('duo:today-sets').filter((id) => live.has(id)));
+    });
+  }, []);
+
+  function chooseSets(ids: string[]) {
+    writeStudySets('duo:today-sets', ids);
+    setSetIdsState(ids);
+  }
+
+  useEffect(() => {
+    if (setIds === null) return;
+    let current = true;
+    setDue(null);
+    void countDueWords(Date.now(), setIds).then((n) => {
+      if (current) setDue(n);
+    });
+    return () => {
+      current = false;
+    };
+  }, [setIds]);
 
   useEffect(() => {
     let current = true;
-    void countDueWords().then((n) => {
-      if (current) setDue(n);
-    });
     void loadStudy().then((study) => {
       if (current) setCount(study.sessionCount);
     });
@@ -27,7 +56,7 @@ export function TodayPage() {
   }, []);
 
   function start(kind: 'review' | 'flash') {
-    const config: SessionConfig = { kind, count, options: {} };
+    const config: SessionConfig = { kind, count, setIds: setIds ?? [], options: {} };
     navigate('/learn/session', { state: config });
   }
 
@@ -43,6 +72,13 @@ export function TodayPage() {
         </div>
       </div>
 
+      {sets.length > 0 && setIds !== null && (
+        <Card className={styles.card}>
+          <h2>Bộ từ cần ôn</h2>
+          <SetChips sets={sets} selected={setIds} onChange={chooseSets} showLang />
+        </Card>
+      )}
+
       <Card className={styles.card}>
         <h2>Ôn tập</h2>
         {due === null ? (
@@ -55,7 +91,11 @@ export function TodayPage() {
             <Button onClick={() => start('review')}>Ôn tập</Button>
           </>
         ) : (
-          <p>Hôm nay không có gì cần ôn. Học bài mới hoặc luyện phản xạ chớp nhoáng nhé.</p>
+          <p>
+            {setIds && setIds.length > 0
+              ? 'Hôm nay không có từ nào trong các bộ đã chọn cần ôn.'
+              : 'Hôm nay không có gì cần ôn. Học bài mới hoặc luyện phản xạ chớp nhoáng nhé.'}
+          </p>
         )}
       </Card>
 

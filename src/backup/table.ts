@@ -1,5 +1,5 @@
 import { importFields, MEANING_SEPARATOR, type ImportFieldId } from '../import/fields';
-import type { Concept, Example } from '../db/types';
+import type { Concept, Example, WordSet } from '../db/types';
 
 // xlsx export (spec E3): the columns are exactly the import columns
 // (importFields, the same list the template uses), so an exported file can
@@ -10,7 +10,8 @@ import type { Concept, Example } from '../db/types';
 // concept and details that have no import column (dictionary-lookup data,
 // schedules, review history) are only in the JSON backup.
 
-export function exportTable(concepts: Concept[], examples: Example[]): string[][] {
+export function exportTable(concepts: Concept[], examples: Example[], sets: WordSet[] = []): string[][] {
+  const setName = new Map(sets.filter((s) => s.deletedAt === undefined).map((s) => [s.id, s.name]));
   const header = importFields.map((f) => f.id as string);
   const byConcept = new Map<string, Example[]>();
   for (const example of examples) {
@@ -34,6 +35,11 @@ export function exportTable(concepts: Concept[], examples: Example[]): string[][
         pos: concept.pos,
         meaning: concept.meanings.join(`${MEANING_SEPARATOR} `),
         lesson: concept.source.lesson,
+        // Word sets by name, in the same `a; b` form the import reads.
+        set: (concept.setIds ?? [])
+          .map((id) => setName.get(id))
+          .filter((n): n is string => !!n)
+          .join(`${MEANING_SEPARATOR} `),
         gender: concept.grammar?.gender,
         plural: concept.grammar?.plural,
         infinitiv: concept.grammar?.verbForms?.infinitiv,
@@ -64,8 +70,8 @@ export function exportTable(concepts: Concept[], examples: Example[]): string[][
   return [header, ...rows];
 }
 
-export async function exportXlsx(concepts: Concept[], examples: Example[]): Promise<Blob> {
+export async function exportXlsx(concepts: Concept[], examples: Example[], sets: WordSet[] = []): Promise<Blob> {
   const { default: writeXlsxFile } = await import('write-excel-file/universal');
-  const data = exportTable(concepts, examples).map((row) => row.map((value) => ({ value })));
+  const data = exportTable(concepts, examples, sets).map((row) => row.map((value) => ({ value })));
   return writeXlsxFile(data).toBlob();
 }

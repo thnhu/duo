@@ -133,3 +133,27 @@ export function readAddSet(lang: Lang): string {
 export function writeAddSet(lang: Lang, setId: string): void {
   localStorage.setItem(addKey(lang), setId);
 }
+
+// ---- Choosing sets to study (Learn, Review) ----
+
+// Pure. Empty selection = no restriction; otherwise the concept must be in at
+// least one of the selected sets.
+export function inSelectedSets(concept: Concept, selectedIds: string[] | undefined): boolean {
+  if (!selectedIds || selectedIds.length === 0) return true;
+  return (concept.setIds ?? []).some((id) => selectedIds.includes(id));
+}
+
+// Which sets to study, remembered per device under a caller-chosen key
+// (Learn keeps one list per language, Today one for both).
+export function readStudySets(key: string): string[] {
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(key) ?? '[]');
+    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+export function writeStudySets(key: string, ids: string[]): void {
+  localStorage.setItem(key, JSON.stringify(ids));
+}

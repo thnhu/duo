@@ -5,7 +5,9 @@ import { Card } from '../../ui/Card';
 import { LangToggle } from '../../ui/LangToggle';
 import fieldStyles from '../../ui/field.module.css';
 import { conceptRepository } from '../../db/repositories';
-import type { Lang } from '../../db/types';
+import type { Lang, WordSet } from '../../db/types';
+import { listWordSets, readStudySets, writeStudySets } from '../../wordsets';
+import { SetChips } from '../sets/SetChips';
 import { exerciseModules, modulesForLanguage, type ExerciseModule } from '../../exercises';
 import { hasVoiceFor, isSpeechSupported } from '../../exercises/speech';
 import { loadPairs } from '../../exercises/session';
@@ -20,6 +22,8 @@ export interface SessionConfig {
   moduleId?: string;
   lang?: Lang;
   lesson?: string;
+  // Only words in one of these word sets (M13); empty/undefined = all.
+  setIds?: string[];
   count: number;
   options: Record<string, string>;
 }
@@ -38,12 +42,33 @@ export function LearnPage() {
   const [count, setCount] = useState(10);
   const [preferredCount, setPreferredCount] = useState(10);
   const [lessons, setLessons] = useState<string[]>([]);
+  const [sets, setSets] = useState<WordSet[]>([]);
+  const [setIds, setSetIdsState] = useState<string[]>([]);
   const [available, setAvailable] = useState<Record<string, number>>({});
   const [optionValues, setOptionValues] = useState<Record<string, string>>({});
   // Does this device have the voice a drill reads with? Keyed by voice tag.
   const [voices, setVoices] = useState<Record<string, boolean>>({});
 
   const modules = modulesForLanguage(lang);
+
+  // Sets of this language; the choice is remembered per language.
+  useEffect(() => {
+    let current = true;
+    void listWordSets(lang).then((list) => {
+      if (!current) return;
+      setSets(list);
+      const live = new Set(list.map((s) => s.id));
+      setSetIdsState(readStudySets(`duo:learn-sets:${lang}`).filter((id) => live.has(id)));
+    });
+    return () => {
+      current = false;
+    };
+  }, [lang]);
+
+  function chooseSets(ids: string[]) {
+    writeStudySets(`duo:learn-sets:${lang}`, ids);
+    setSetIdsState(ids);
+  }
 
   useEffect(() => {
     let current = true;
@@ -64,7 +89,7 @@ export function LearnPage() {
     let current = true;
     void Promise.all(
       exerciseModules.list().map(async (m) => {
-        const pairs = await loadPairs(m, { lang, lesson: lesson || undefined });
+        const pairs = await loadPairs(m, { lang, lesson: lesson || undefined, setIds });
         return [m.id, pairs.length] as const;
       }),
     ).then((entries) => {
@@ -73,7 +98,7 @@ export function LearnPage() {
     return () => {
       current = false;
     };
-  }, [lang, lesson]);
+  }, [lang, lesson, setIds]);
 
   useEffect(() => {
     void loadStudy().then((study) => {
@@ -103,6 +128,7 @@ export function LearnPage() {
       moduleId: module.id,
       lang,
       lesson: lesson || undefined,
+      setIds,
       count,
       options,
     };
@@ -135,6 +161,12 @@ export function LearnPage() {
             ))}
           </div>
         </div>
+        {sets.length > 0 && (
+          <div>
+            <label className={fieldStyles.label}>Bộ từ</label>
+            <SetChips sets={sets} selected={setIds} onChange={chooseSets} />
+          </div>
+        )}
         {lessons.length > 0 && (
           <div>
             <label className={fieldStyles.label} htmlFor="learn-lesson">

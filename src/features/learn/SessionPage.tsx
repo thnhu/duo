@@ -65,10 +65,10 @@ function Session({ config }: { config: SessionConfig }) {
     let current = true;
     const loading: Promise<SessionItem[]> =
       kind === 'drill' && fixedModule && config.lang
-        ? loadPairs(fixedModule, { lang: config.lang, lesson: config.lesson }).then((all) =>
+        ? loadPairs(fixedModule, { lang: config.lang, lesson: config.lesson, setIds: config.setIds }).then((all) =>
             buildSession(all, config.count, Math.random).map((p) => ({ ...p, module: fixedModule })),
           )
-        : loadReviewItems({ kind: kind === 'flash' ? 'flash' : 'review', count: config.count, lang: config.lang });
+        : loadReviewItems({ kind: kind === 'flash' ? 'flash' : 'review', count: config.count, lang: config.lang, setIds: config.setIds });
     void Promise.all([loading, loadCriteria(), loadLibrary()]).then(([items, loadedCriteria, loadedLibrary]) => {
       if (!current) return;
       setCriteria(loadedCriteria);

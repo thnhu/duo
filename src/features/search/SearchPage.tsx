@@ -59,7 +59,7 @@ export function SearchPage() {
   const [sort, setSort] = useState<SearchSort>('relevance');
   const [showFilters, setShowFilters] = useState(false);
   const [attributeSets, setAttributeSets] = useState<AttributeValueSets | null>(null);
-  const [facets, setFacets] = useState<SearchFacets>({ lessons: [] });
+  const [facets, setFacets] = useState<SearchFacets>({ lessons: [], sets: [] });
 
   // Value sets come from Settings (configurable), not hard-coded.
   useEffect(() => {
@@ -182,6 +182,14 @@ export function SearchPage() {
             }
             options={SOURCES}
           />
+          {facets.sets.length > 0 && (
+            <FilterSelect
+              label="Bộ từ"
+              value={filters.setId ?? ''}
+              onChange={(v) => setFilter({ setId: v || undefined })}
+              options={facets.sets.map((s) => ({ value: s.id, label: `${s.name} (${s.lang === 'en' ? 'Anh' : 'Đức'})` }))}
+            />
+          )}
           {facets.lessons.length > 0 && (
             <FilterSelect
               label="Bài"

@@ -32,7 +32,8 @@ export interface SearchQuery {
   limit?: number;
 }
 
-export type SearchField = 'text' | 'meaning' | 'note' | 'lesson';
+// 'expression' = one of a depth concept's ways of saying it (spec 1.4).
+export type SearchField = 'text' | 'meaning' | 'note' | 'lesson' | 'expression';
 
 export interface SearchSnippet {
   field: SearchField;
@@ -54,6 +55,10 @@ export interface SearchHit {
   ranges: Array<[number, number]>;
   // Matches found in other fields (meaning, note, lesson).
   snippets: SearchSnippet[];
+  // Depth concept (an idea): the ways of saying it, so a search for the
+  // idea shows them right in the result.
+  isDepth?: boolean;
+  expressions?: string[];
   status?: AcquisitionStatus;
   verification: Verification;
   score: number;

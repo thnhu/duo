@@ -21,6 +21,7 @@ const FIELD_WEIGHT = {
   exampleText: 5,
   note: 3,
   lesson: 2,
+  expression: 4,
 } as const;
 
 interface IndexedField {
@@ -43,6 +44,7 @@ interface IndexedDoc {
   sourceType?: ConceptSource['type'];
   attributes?: Example['attributes'];
   unlinked: boolean;
+  expressions?: string[];
   updatedAt: number;
 }
 
@@ -108,7 +110,7 @@ export class LocalSearchService implements SearchService {
   constructor(db: DuoDB = defaultDb) {
     this.db = db;
     const touch = () => this.invalidate();
-    for (const table of [db.concepts, db.examples, db.dictionaries]) {
+    for (const table of [db.concepts, db.examples, db.exampleLinks, db.dictionaries]) {
       // Dexie hooks: invalidate immediately, and again after commit so a
       // rebuild that started mid-transaction can't leave the index stale.
       table.hook('creating', function () {
@@ -148,15 +150,33 @@ export class LocalSearchService implements SearchService {
   }
 
   private async build(): Promise<void> {
-    const [dictionaries, concepts, examples] = await Promise.all([
+    const [dictionaries, concepts, examples, exampleLinks] = await Promise.all([
       this.db.dictionaries.toArray(),
       this.db.concepts.toArray(),
       this.db.examples.toArray(),
+      this.db.exampleLinks.toArray(),
     ]);
     const langByDict = new Map(dictionaries.map((d) => [d.id, d.lang]));
     const activeConcepts = concepts.filter((c) => c.deletedAt === undefined);
     const conceptById = new Map<string, Concept>(activeConcepts.map((c) => [c.id, c]));
     const lessons = new Set<string>();
+
+    // Ways of saying each depth concept: examples whose home it is, plus
+    // examples linked to it (ExampleLink), without duplicates.
+    const activeExamples = new Map(examples.filter((e) => e.deletedAt === undefined).map((e) => [e.id, e]));
+    const expressionsByConcept = new Map<string, Map<string, Example>>();
+    const addExpression = (conceptId: string, e: Example) => {
+      const bucket = expressionsByConcept.get(conceptId) ?? new Map<string, Example>();
+      bucket.set(e.id, e);
+      expressionsByConcept.set(conceptId, bucket);
+    };
+    for (const e of activeExamples.values()) {
+      if (e.targetConceptId && !e.isMinimal) addExpression(e.targetConceptId, e);
+    }
+    for (const link of exampleLinks) {
+      const e = activeExamples.get(link.exampleId);
+      if (link.deletedAt === undefined && e) addExpression(link.conceptId, e);
+    }
 
     const docs: IndexedDoc[] = [];
 
@@ -164,6 +184,15 @@ export class LocalSearchService implements SearchService {
       const fields: IndexedField[] = [makeField('text', FIELD_WEIGHT.conceptText, c.text)];
       for (const meaning of c.meanings) {
         fields.push(makeField('meaning', FIELD_WEIGHT.meaning, meaning));
+      }
+      const expressions =
+        c.mode === 'depth'
+          ? [...(expressionsByConcept.get(c.id)?.values() ?? [])]
+              .sort((a, b) => a.createdAt - b.createdAt)
+              .map((e) => e.text)
+          : undefined;
+      for (const text of expressions ?? []) {
+        fields.push(makeField('expression', FIELD_WEIGHT.expression, text));
       }
       if (c.source.lesson) {
         fields.push(makeField('lesson', FIELD_WEIGHT.lesson, c.source.lesson));
@@ -181,6 +210,7 @@ export class LocalSearchService implements SearchService {
         lesson: c.source.lesson,
         sourceType: c.source.type,
         unlinked: false,
+        expressions,
         updatedAt: c.updatedAt,
       });
     }
@@ -285,6 +315,7 @@ export class LocalSearchService implements SearchService {
       text: doc.text,
       status: doc.status,
       verification: doc.verification,
+      ...(doc.expressions ? { isDepth: true, expressions: doc.expressions } : {}),
       updatedAt: doc.updatedAt,
     };
 

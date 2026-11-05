@@ -8,6 +8,7 @@ import type { Example, ExampleAttributes } from '../db/types';
 import {
   addExpression,
   createDepthConcept,
+  groupExpressions,
   linkExample,
   listExpressions,
   listLinksOfExample,
@@ -139,3 +140,34 @@ describe('depth settings', () => {
     expect((await loadDepthSettings()).minExpressions).toBe(4);
   });
 });
+
+describe('grouping expressions on the shelf', () => {
+  it('groups by one attribute in value-set order, unlabelled last', async () => {
+    const c = await createDepthConcept(DICT, 'quantity', '');
+    const a = await addExpression(c, 'a lot of');
+    const b = await addExpression(c, 'a bunch of');
+    const d = await addExpression(c, 'a great deal of');
+    const e = await addExpression(c, 'loads of');
+    await label(a, {});
+    await label(b, { tone: 'Informal' });
+    await label(e, { tone: 'Informal' });
+    // d has no verified labels
+    const order = ['Neutral', 'Informal', 'Formal'];
+    const groups = groupExpressions(await listExpressions(c.id), 'tone', order);
+    expect(groups.map((g) => [g.value, g.expressions.map((x) => x.text)])).toEqual([
+      ['Neutral', ['a lot of']],
+      ['Informal', ['a bunch of', 'loads of']],
+      [null, ['a great deal of']],
+    ]);
+    expect(d.text).toBe('a great deal of');
+  });
+
+  it('keeps values missing from the configured set instead of dropping them', async () => {
+    const c = await createDepthConcept(DICT, 'quantity', '');
+    const a = await addExpression(c, 'a lot of');
+    await label(a, { register: 'Academic' });
+    const groups = groupExpressions(await listExpressions(c.id), 'register', ['Neutral']);
+    expect(groups.map((g) => g.value)).toEqual(['Academic']);
+  });
+});
+

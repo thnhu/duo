@@ -43,6 +43,7 @@ function example(overrides: Partial<Example>): Example {
 beforeEach(async () => {
   await db.concepts.clear();
   await db.examples.clear();
+  await db.exampleLinks.clear();
   await db.dictionaries.clear();
   await db.dictionaries.bulkAdd([
     { id: 'dict-en', name: 'English', lang: 'en', updatedAt: 0 },
@@ -216,3 +217,52 @@ describe('LocalSearchService', () => {
     expect(performance.now() - start).toBeLessThan(100);
   });
 });
+
+describe('depth concepts (ideas with several ways of saying them)', () => {
+  async function seed() {
+    await conceptRepository.add(
+      concept({ id: 'qty', text: 'large quantity', meanings: ['số lượng nhiều'], mode: 'depth' }),
+    );
+    await conceptRepository.add(concept({ id: 'formal', text: 'formal quantity', mode: 'depth' }));
+    for (const [id, text, at] of [['e1', 'a lot of', 1], ['e2', 'a bunch of', 2], ['e3', 'a great deal of', 3]] as const) {
+      await exampleRepository.add(example({ id, text, targetConceptId: 'qty', createdAt: at }));
+    }
+    await db.exampleLinks.add({ id: 'l1', exampleId: 'e3', conceptId: 'formal', type: 'otherPhrase', updatedAt: 1 });
+    search.invalidate();
+  }
+
+  it('finds the idea by its Vietnamese description, without diacritics, and lists its ways', async () => {
+    await seed();
+    const { hits } = await search.search({ text: 'so luong', kinds: ['concept'] });
+    expect(hits.map((h) => h.id)).toEqual(['qty']);
+    expect(hits[0]).toMatchObject({
+      isDepth: true,
+      expressions: ['a lot of', 'a bunch of', 'a great deal of'],
+    });
+  });
+
+  it('finds the idea when searching one of its ways of saying it', async () => {
+    await seed();
+    const { hits } = await search.search({ text: 'bunch', kinds: ['concept'] });
+    expect(hits.map((h) => h.id)).toEqual(['qty']);
+    expect(hits[0].snippets[0]).toMatchObject({ field: 'expression', text: 'a bunch of' });
+  });
+
+  it('a linked example also lists under the other idea; deleting the link removes it', async () => {
+    await seed();
+    let { hits } = await search.search({ text: 'formal', kinds: ['concept'] });
+    expect(hits[0].expressions).toEqual(['a great deal of']);
+    await db.exampleLinks.update('l1', { deletedAt: 5 });
+    ({ hits } = await search.search({ text: 'formal', kinds: ['concept'] }));
+    expect(hits[0].expressions).toEqual([]);
+  });
+
+  it('ordinary (breadth) concepts have no expressions list', async () => {
+    await conceptRepository.add(concept({ id: 'w', text: 'swallow' }));
+    search.invalidate();
+    const { hits } = await search.search({ text: 'swallow' });
+    expect(hits[0].isDepth).toBeUndefined();
+    expect(hits[0].expressions).toBeUndefined();
+  });
+});
+

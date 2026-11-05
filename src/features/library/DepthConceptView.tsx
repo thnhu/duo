@@ -3,10 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
 import fieldStyles from '../../ui/field.module.css';
-import { conceptRepository } from '../../db/repositories';
-import type { Concept, Example } from '../../db/types';
+import { SETTINGS_ID } from '../../db/defaults';
+import { conceptRepository, settingsRepository } from '../../db/repositories';
+import type { AttributeValueSets, Concept, Example } from '../../db/types';
 import {
   addExpression,
+  groupExpressions,
   listExpressions,
   loadDepthSettings,
   triFoldProgress,
@@ -16,6 +18,13 @@ import { deleteConceptCascade, deleteExample } from './actions';
 import styles from './ConceptDetailPage.module.css';
 
 const LABEL_KEYS = ['tone', 'mode', 'register', 'nuance', 'dialect'] as const;
+const KEY_TITLE: Record<(typeof LABEL_KEYS)[number], string> = {
+  tone: 'Tone',
+  mode: 'Mode',
+  register: 'Register',
+  nuance: 'Nuance',
+  dialect: 'Dialect',
+};
 
 // A depth concept is an IDEA; this screen is its shelf (spec 1.4): the
 // different ways of saying it, each with the labels that tell them apart,
@@ -27,11 +36,15 @@ export function DepthConceptView({ concept, onChanged }: { concept: Concept; onC
   const [expressions, setExpressions] = useState<Example[]>([]);
   const [progress, setProgress] = useState<TriFoldProgress | null>(null);
   const [draft, setDraft] = useState('');
+  // Shelf view: group the ways of saying the idea by one label (or not).
+  const [groupBy, setGroupBy] = useState<(typeof LABEL_KEYS)[number] | ''>('');
+  const [valueSets, setValueSets] = useState<AttributeValueSets | null>(null);
 
   async function load() {
     const [list, settings] = await Promise.all([listExpressions(concept.id), loadDepthSettings()]);
     setExpressions(list);
     setProgress(triFoldProgress(list, settings.minExpressions));
+    setValueSets((await settingsRepository.getById(SETTINGS_ID))?.attributeValueSets ?? null);
   }
 
   useEffect(() => {
@@ -66,6 +79,9 @@ export function DepthConceptView({ concept, onChanged }: { concept: Concept; onC
   }
 
   const duplicateIds = new Set(progress?.duplicates.map((e) => e.id));
+  const groups = groupBy
+    ? groupExpressions(expressions, groupBy, (valueSets?.[groupBy] as string[] | undefined) ?? [])
+    : [{ value: null as string | null, expressions, plain: true }];
 
   return (
     <section className={styles.page}>
@@ -137,9 +153,37 @@ export function DepthConceptView({ concept, onChanged }: { concept: Concept; onC
             Thêm cách diễn đạt
           </Button>
         </div>
-        <div className={styles.examples}>
-          {expressions.map((example) => (
-            <Card key={example.id} className={styles.example}>
+        {expressions.length > 1 && (
+          <div>
+            <label className={fieldStyles.label} htmlFor="depth-group">
+              Gom theo
+            </label>
+            <select
+              id="depth-group"
+              className={fieldStyles.input}
+              value={groupBy}
+              onChange={(e) => setGroupBy(e.target.value as typeof groupBy)}
+            >
+              <option value="">Không gom</option>
+              {LABEL_KEYS.map((k) => (
+                <option key={k} value={k}>
+                  {KEY_TITLE[k]}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        {groups.map((group) => (
+          <div key={group.value ?? '__none__'}>
+            {groupBy && (
+              <h3>
+                {group.value === null ? 'Chưa gắn nhãn' : `${KEY_TITLE[groupBy]}: ${group.value}`} (
+                {group.expressions.length})
+              </h3>
+            )}
+            <div className={styles.examples}>
+              {group.expressions.map((example) => (
+                <Card key={example.id} className={styles.example}>
               <p className={styles.exampleText}>{example.text}</p>
               <div className={styles.exampleMeta}>
                 {example.attributesStatus === 'verified' ? (
@@ -169,8 +213,10 @@ export function DepthConceptView({ concept, onChanged }: { concept: Concept; onC
                 )}
               </div>
             </Card>
-          ))}
-        </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </section>
   );

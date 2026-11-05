@@ -36,7 +36,12 @@ const SOURCES: Array<{ value: ConceptSource['type']; label: string }> = [
   { value: 'lookup', label: 'Tra cứu' },
 ];
 
-const FIELD_LABEL: Record<string, string> = { meaning: 'Nghĩa', note: 'Ghi chú', lesson: 'Bài' };
+const FIELD_LABEL: Record<string, string> = {
+  meaning: 'Nghĩa',
+  note: 'Ghi chú',
+  lesson: 'Bài',
+  expression: 'Cách nói',
+};
 
 function hitLink(hit: SearchHit): string {
   return hit.conceptId ? `/library/${hit.conceptId}` : '/inbox';
@@ -240,12 +245,20 @@ export function SearchPage() {
                 </span>
                 <span className={styles.badges}>
                   <span className={styles.badge}>
-                    {hit.kind === 'concept' ? 'Từ' : hit.conceptId ? 'Ví dụ' : 'Chờ duyệt'}
+                    {hit.kind === 'concept' ? (hit.isDepth ? 'Ý (Sâu)' : 'Từ') : hit.conceptId ? 'Ví dụ' : 'Chờ duyệt'}
                   </span>
                   <span className={styles.badge}>{hit.lang === 'en' ? 'Anh' : 'Đức'}</span>
                 </span>
               </div>
-              {hit.snippets.map((snippet) => (
+              {hit.isDepth && hit.expressions && hit.expressions.length > 0 && (
+                <div className={styles.snippet}>
+                  <span className={styles.snippetLabel}>Cách diễn đạt: </span>
+                  {hit.expressions.join(' · ')}
+                </div>
+              )}
+              {hit.snippets
+                .filter((snippet) => !(hit.isDepth && snippet.field === 'expression'))
+                .map((snippet) => (
                 <div key={snippet.field} className={styles.snippet}>
                   <span className={styles.snippetLabel}>{FIELD_LABEL[snippet.field]}: </span>
                   <HighlightedText text={snippet.text} ranges={snippet.ranges} />

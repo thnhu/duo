@@ -163,6 +163,42 @@ export function triFoldProgress(expressions: Example[], needed: number): TriFold
   return { distinct: seen.size, needed, complete: seen.size >= needed, unlabelled, duplicates };
 }
 
+export interface ExpressionGroup {
+  // The attribute value shared by the group; null = not labelled yet.
+  value: string | null;
+  expressions: Example[];
+}
+
+// Pure. Groups expressions by one TMRND attribute (e.g. all the Informal
+// ways together), in the order of the configured value set; values missing
+// from it come after, and unlabelled expressions (no verified labels, so no
+// trustworthy value) come last.
+export function groupExpressions(
+  expressions: Example[],
+  key: keyof ExampleAttributes,
+  order: string[],
+): ExpressionGroup[] {
+  const byValue = new Map<string, Example[]>();
+  const unlabelled: Example[] = [];
+  for (const e of expressions) {
+    const attrs = getVerifiedAttributes(e);
+    if (!attrs) {
+      unlabelled.push(e);
+      continue;
+    }
+    const value = attrs[key] as string;
+    byValue.set(value, [...(byValue.get(value) ?? []), e]);
+  }
+  const known = order.filter((v) => byValue.has(v));
+  const extra = [...byValue.keys()].filter((v) => !order.includes(v));
+  const groups: ExpressionGroup[] = [...known, ...extra].map((value) => ({
+    value,
+    expressions: byValue.get(value)!,
+  }));
+  if (unlabelled.length > 0) groups.push({ value: null, expressions: unlabelled });
+  return groups;
+}
+
 // Soft-deleting a concept also soft-deletes the extra links pointing to it.
 export async function deleteLinksOfConcept(conceptId: string): Promise<void> {
   const links = await db.exampleLinks.where('conceptId').equals(conceptId).toArray();

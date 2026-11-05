@@ -20,6 +20,8 @@ import { Layout } from './app/Layout'
 import { TodayPage } from './features/today/TodayPage'
 import { QuickAddPage } from './features/quick-add/QuickAddPage'
 import { AddChoicePage } from './features/quick-add/AddChoicePage'
+import { AddConceptPage } from './features/quick-add/AddConceptPage'
+import { AddExamplePage } from './features/quick-add/AddExamplePage'
 import { InboxPage } from './features/inbox/InboxPage'
 import { LibraryPage } from './features/library/LibraryPage'
 import { ConceptDetailPage } from './features/library/ConceptDetailPage'
@@ -55,9 +57,9 @@ async function bootstrap() {
           <Route element={<Layout />}>
             <Route index element={<TodayPage />} />
             <Route path="add" element={<AddChoicePage />} />
-            <Route path="add/word" element={<QuickAddPage kind="word" />} />
-            <Route path="add/concept" element={<QuickAddPage kind="concept" />} />
-            <Route path="add/example" element={<QuickAddPage kind="example" />} />
+            <Route path="add/word" element={<QuickAddPage />} />
+            <Route path="add/concept" element={<AddConceptPage />} />
+            <Route path="add/example" element={<AddExamplePage />} />
             <Route path="quick-add" element={<Navigate to="/add" replace />} />
             <Route path="inbox" element={<InboxPage />} />
             <Route path="learn" element={<LearnPage />} />

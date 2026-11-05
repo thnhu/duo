@@ -2,6 +2,7 @@ import { createId } from '../../core/id';
 import { createDefaultAttributes } from '../../db/defaults';
 import { findConceptByExactText } from '../../db/queries';
 import { conceptRepository, exampleRepository } from '../../db/repositories';
+import { createDepthConcept } from '../../depth';
 import type { Concept, Example, Lang } from '../../db/types';
 import { normalizeSelection, textForSelection, type Selection } from './highlight';
 
@@ -82,6 +83,29 @@ export async function saveConceptOnly(
   const concept = { ...newConcept(dictionaryId, lang, trimmed), kind: 'concept' as const };
   await conceptRepository.add(concept);
   return { outcome: 'created', concept };
+}
+
+// "Add concept" screen and the concept created from the example screen's
+// picker. English concepts are depth concepts (an idea with ways of saying it:
+// tri-fold progress, situation drills); German has no depth mode, so it stays
+// a plain concept. An existing concept with the same text is returned as is.
+export async function createConceptWithDescription(
+  dictionaryId: string,
+  lang: Lang,
+  name: string,
+  description: string,
+): Promise<{ outcome: SaveOutcome; concept: Concept }> {
+  const trimmed = name.trim();
+  const existing = await findConceptByExactText(dictionaryId, trimmed);
+  if (existing) return { outcome: 'duplicate', concept: existing };
+  if (lang === 'en') {
+    return { outcome: 'created', concept: await createDepthConcept(dictionaryId, trimmed, description) };
+  }
+  const { concept } = await saveConceptOnly(dictionaryId, lang, trimmed);
+  const meaning = description.trim();
+  if (!meaning) return { outcome: 'created', concept };
+  await conceptRepository.update(concept.id, { meanings: [meaning] });
+  return { outcome: 'created', concept: { ...concept, meanings: [meaning] } };
 }
 
 export type ConceptOutcome = 'created' | 'linked';

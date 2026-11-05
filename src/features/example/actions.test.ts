@@ -100,3 +100,36 @@ describe('addSecondPhrase', () => {
     expect((await listInboxExamples(DICT)).map((e) => e.id)).toEqual([copy.id]);
   });
 });
+
+describe('createExample (add example / examples under add concept)', () => {
+  it('links to the chosen concept, keeps the highlight and saves chosen labels as verified', async () => {
+    const { createExample } = await import('./actions');
+    const { createConceptWithDescription } = await import('../quick-add/actions');
+    const { listExpressions } = await import('../../depth');
+    const { concept } = await createConceptWithDescription('dict-en', 'en', 'số lượng nhiều', 'a lot');
+    const text = '  I have a lot of houses.';
+    const start = text.indexOf('a lot of');
+    const labelled = await createExample({
+      dictionaryId: 'dict-en',
+      text,
+      highlight: { start, end: start + 'a lot of'.length },
+      attributes: { ...createDefaultAttributes(), tone: 'Informal' },
+      labelsChosen: true,
+      conceptId: concept.id,
+    });
+    expect(labelled?.text).toBe('I have a lot of houses.');
+    expect(labelled?.text.slice(labelled!.highlight!.start, labelled!.highlight!.end)).toBe('a lot of');
+    expect(labelled).toMatchObject({ targetConceptId: concept.id, attributesStatus: 'verified' });
+    expect(labelled?.attributes.tone).toBe('Informal');
+
+    // Untouched labels never become answers.
+    const plain = await createExample({ dictionaryId: 'dict-en', text: 'Hi', conceptId: concept.id });
+    expect(plain).toMatchObject({ attributesStatus: 'empty' });
+    expect(plain?.highlight).toBeUndefined();
+    expect((await listExpressions(concept.id)).map((e) => e.text).sort()).toEqual(['Hi', 'I have a lot of houses.']);
+
+    // No concept: it waits in the inbox. Empty text is refused.
+    expect((await createExample({ dictionaryId: 'dict-en', text: 'Hello' }))?.targetConceptId).toBeUndefined();
+    expect(await createExample({ dictionaryId: 'dict-en', text: '   ' })).toBeNull();
+  });
+});

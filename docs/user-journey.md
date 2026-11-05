@@ -200,7 +200,7 @@ flowchart TD
 |---|---|---|
 | 1 | Bấm nút **(+)** (một chạm từ màn hình chính) | Màn **"Bạn muốn thêm gì?"** với ba thẻ lớn, mỗi thẻ có định nghĩa và ví dụ: **Thêm từ** (từ/cụm đứng riêng kèm nghĩa, hợp danh từ như "máy bay", "cửa sổ"), **Thêm example** (câu/cách diễn đạt, hợp động từ), **Thêm concept** (một ý, chưa có cách nói). Bấm một thẻ: ô nhập tự focus, ngôn ngữ và deck lấy theo lần dùng gần nhất |
 | 2a | **Thêm từ:** gõ từ/cụm, nghĩa, loại từ (nghĩa và loại từ không bắt buộc), chọn deck | Lưu concept `word` kèm example tối thiểu (chính nó); mặc định vào deck General; ô "Ở lại trang này" giữ form để nhập tiếp |
-| 2b | **Thêm example:** gõ hoặc dán **cả câu**, rồi **tô sáng đúng cụm muốn học** | Tạo concept từ cụm tô sáng (hoặc gợi ý concept đã có nếu cụm đã tồn tại); lưu câu làm example; **phần còn lại của câu chỉ là ngữ cảnh** |
+| 2b | **Thêm example:** gõ hoặc dán **cả câu**, **tô sáng đúng cụm muốn học**, chọn nhãn TMRND và **chọn concept** mà example thuộc về (tìm hoặc tạo mới tại chỗ). Có thể mở **Thêm concept** rồi nhập luôn nhiều example ngay dưới tên concept | Tạo concept từ cụm tô sáng (hoặc gợi ý concept đã có nếu cụm đã tồn tại); lưu câu làm example; **phần còn lại của câu chỉ là ngữ cảnh** |
 | 2c | **Thêm example, chưa tô sáng:** lưu câu mà chưa tô sáng | Câu vào **Hộp chờ duyệt** ở dạng "câu chưa gắn concept", tô sáng sau (J10) |
 | 3 | Quay lại xem phim | Mục vừa lưu nằm trong Hộp chờ duyệt với trạng thái `unverified` |
 

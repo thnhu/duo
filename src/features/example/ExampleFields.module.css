@@ -1,0 +1,33 @@
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.labels {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.labelHint {
+  color: var(--color-ink-muted);
+  font-weight: 400;
+}
+
+.preview {
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.highlight {
+  background: var(--color-primary-200);
+  color: var(--color-ink);
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 0 2px;
+}
+
+.context {
+  color: var(--color-ink-muted);
+}

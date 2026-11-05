@@ -94,3 +94,45 @@ export async function createNextExample(source: Example, text: string, keep: boo
   }
   return next;
 }
+
+// "Add example" and the examples under "Add concept": one new example. The
+// highlighted phrase (optional) is what gets studied; `conceptId` is the
+// concept the example is about (its main concept). With no concept it waits in
+// the inbox. TMRND labels count as chosen (`verified`) only when the PO touched
+// them, so untouched defaults never become answers (spec 6.6).
+export interface NewExampleInput {
+  dictionaryId: string;
+  text: string;
+  highlight?: Selection | null;
+  attributes?: ExampleAttributes;
+  labelsChosen?: boolean;
+  note?: string;
+  conceptId?: string;
+}
+
+export async function createExample(input: NewExampleInput): Promise<Example | null> {
+  const text = input.text.trim();
+  if (!text) return null;
+  // The selection was made on the untrimmed text, so normalise against that.
+  const highlight = input.highlight ? normalizeSelection(input.text, input.highlight) : null;
+  const shift = input.text.length - input.text.trimStart().length;
+  const now = Date.now();
+  const labelled = input.labelsChosen === true && input.attributes !== undefined;
+  const example: Example = {
+    id: createId(),
+    dictionaryId: input.dictionaryId,
+    text,
+    targetConceptId: input.conceptId,
+    ...(highlight && highlight.start - shift >= 0 && highlight.end - shift <= text.length
+      ? { highlight: { start: highlight.start - shift, end: highlight.end - shift } }
+      : {}),
+    attributes: labelled ? { ...input.attributes! } : createDefaultAttributes(),
+    attributesStatus: labelled ? 'verified' : 'empty',
+    note: input.note?.trim() || undefined,
+    verification: 'unverified',
+    createdAt: now,
+    updatedAt: now,
+  };
+  await exampleRepository.add(example);
+  return example;
+}

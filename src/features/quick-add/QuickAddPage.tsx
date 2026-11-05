@@ -6,15 +6,19 @@ import { ButtonRow } from '../../ui/ButtonRow';
 import { LangToggle } from '../../ui/LangToggle';
 import fieldStyles from '../../ui/field.module.css';
 import { dictionaryIdForLang, findConceptByExactText } from '../../db/queries';
+import { conceptRepository } from '../../db/repositories';
 import type { Concept, WordSet } from '../../db/types';
 import { addConceptToSet, listWordSets, readAddSet, writeAddSet } from '../../wordsets';
 import { useLastLanguage } from './useLastLanguage';
 import { ConceptSuggestions } from '../search/ConceptSuggestions';
 import { normalizeSelection, textForSelection, type Selection } from './highlight';
-import { saveQuickWord, saveSentenceToInbox, saveSentenceWithHighlight } from './actions';
+import { saveConceptOnly, saveQuickWord, saveSentenceToInbox, saveSentenceWithHighlight } from './actions';
 import styles from './QuickAddPage.module.css';
 
-type Mode = 'word' | 'sentence';
+// Two separate screens (HUST PVO keeps Concept and Example apart):
+// kind 'word' = a word/phrase on its own (with its meaning); 'concept' = an idea;
+// 'example' = one way of saying it, in a sentence.
+type Kind = 'word' | 'concept' | 'example';
 type Message = { kind: 'success' | 'info'; text: string; linkTo?: string } | null;
 
 // "Stay to keep entering": by default a save goes back to the Library (or the
@@ -22,7 +26,7 @@ type Message = { kind: 'success' | 'info'; text: string; linkTo?: string } | nul
 // long list the box keeps the form open. Remembered on this device.
 const STAY_KEY = 'duo:quick-add-stay';
 
-export function QuickAddPage() {
+export function QuickAddPage({ kind }: { kind: Kind }) {
   const navigate = useNavigate();
   const toast = useToast();
   const [stay, setStayState] = useState(() => localStorage.getItem(STAY_KEY) === '1');
@@ -31,7 +35,7 @@ export function QuickAddPage() {
     setStayState(on);
   }
   const [lang, setLang] = useLastLanguage();
-  const [mode, setMode] = useState<Mode>('word');
+  const mode = kind === 'example' ? 'sentence' : 'word';
 
   // The word set new words go into, remembered from last time ('' = none).
   const [sets, setSets] = useState<WordSet[]>([]);
@@ -51,6 +55,8 @@ export function QuickAddPage() {
   const inSet = setName ? ` Đã thêm vào deck "${setName}".` : '';
 
   const [wordText, setWordText] = useState('');
+  const [wordDescription, setWordDescription] = useState('');
+  const [wordPos, setWordPos] = useState('');
   const [wordMessage, setWordMessage] = useState<Message>(null);
 
   const [sentenceText, setSentenceText] = useState('');
@@ -65,16 +71,30 @@ export function QuickAddPage() {
     if (!trimmed) return;
 
     const dictionaryId = await dictionaryIdForLang(lang);
-    const { outcome, concept } = await saveQuickWord(dictionaryId, lang, trimmed);
+    const { outcome, concept } =
+      kind === 'concept'
+        ? await saveConceptOnly(dictionaryId, lang, trimmed)
+        : await saveQuickWord(dictionaryId, lang, trimmed);
 
     // Also for a word that already exists: that is how one word ends up in
     // several sets without a second copy.
     if (setId) await addConceptToSet(concept.id, setId);
+    // The description is the concept's Vietnamese meaning; an existing concept keeps its own.
+    const description = wordDescription.trim();
+    const pos = wordPos.trim();
+    if (outcome === 'created' && (description || pos)) {
+      await conceptRepository.update(concept.id, {
+        ...(description ? { meanings: [description] } : {}),
+        ...(pos ? { pos } : {}),
+      });
+    }
 
     setWordMessage(null);
     setWordText('');
+    setWordDescription('');
+    setWordPos('');
     if (outcome === 'created') {
-      toast.show(`Đã lưu "${concept.text}".${inSet}`);
+      toast.show(`Đã thêm ${kind === 'concept' ? 'concept' : 'từ'} "${concept.text}".${inSet}`);
     } else {
       toast.show(`"${concept.text}" đã có trong thư viện.${inSet}`, {
         kind: 'info',
@@ -150,30 +170,18 @@ export function QuickAddPage() {
   return (
     <section className={styles.page}>
       <div className={styles.header}>
-        <h1>Ghi nhanh</h1>
+        <h1>{kind === 'word' ? 'Thêm từ' : kind === 'concept' ? 'Thêm concept' : 'Thêm example'}</h1>
         <LangToggle value={lang} onChange={setLang} />
       </div>
 
-      <div className={styles.modeToggle} role="group" aria-label="Cách ghi nhanh">
-        <button
-          type="button"
-          className={[styles.modeOption, mode === 'word' && styles.modeOptionActive]
-            .filter(Boolean)
-            .join(' ')}
-          onClick={() => setMode('word')}
-        >
-          Từ hoặc cụm
-        </button>
-        <button
-          type="button"
-          className={[styles.modeOption, mode === 'sentence' && styles.modeOptionActive]
-            .filter(Boolean)
-            .join(' ')}
-          onClick={() => setMode('sentence')}
-        >
-          Cả câu
-        </button>
-      </div>
+      <p className={fieldStyles.hint}>
+        {kind === 'word'
+          ? 'Từ hoặc cụm từ đứng riêng, kèm nghĩa; không cần đặt vào câu (hợp với danh từ như "máy bay", "cửa sổ"). Muốn đặt vào câu, dùng "Thêm example".'
+          : kind === 'concept'
+            ? 'Concept là một ý trừu tượng (nút để gom và tìm lại), chưa cần có cách nói cụ thể. Các cách nói thêm sau bằng "Thêm example".'
+            : 'Example là một câu hoặc cách diễn đạt đang dùng (hợp với động từ). Tô sáng cụm cần học; cụm đó thành (hoặc gắn vào) một concept.'}{' '}
+        <Link to="/add">Chọn loại khác</Link>
+      </p>
 
       <label className={styles.stay}>
         <input type="checkbox" checked={stay} onChange={(e) => chooseStay(e.target.checked)} />
@@ -183,10 +191,10 @@ export function QuickAddPage() {
       {sets.length > 0 && (
         <div>
           <label className={fieldStyles.label} htmlFor="quick-set">
-            Thêm vào deck
+            Deck của concept
           </label>
           <select id="quick-set" className={fieldStyles.input} value={setId} onChange={(e) => chooseSet(e.target.value)}>
-            <option value="">Không xếp deck</option>
+            <option value="">General (mặc định)</option>
             {sets.map((set) => (
               <option key={set.id} value={set.id}>
                 {set.name}
@@ -212,7 +220,7 @@ export function QuickAddPage() {
         >
           <div>
             <label className={fieldStyles.label} htmlFor="quick-word">
-              Từ hoặc cụm từ
+              {kind === 'word' ? 'Từ hoặc cụm từ (*)' : 'Tên concept (*)'}
             </label>
             <input
               id="quick-word"
@@ -222,13 +230,39 @@ export function QuickAddPage() {
                 setWordText(e.target.value);
                 setWordMessage(null);
               }}
-              placeholder="vd: swallow"
+              placeholder={kind === 'word' ? 'vd: swallow, window, der Apfel' : 'vd: số lượng nhiều'}
               autoFocus
             />
           </div>
+          <div>
+            <label className={fieldStyles.label} htmlFor="quick-description">
+              {kind === 'word' ? 'Nghĩa (không bắt buộc)' : 'Mô tả (không bắt buộc)'}
+            </label>
+            <textarea
+              id="quick-description"
+              className={fieldStyles.textarea}
+              value={wordDescription}
+              onChange={(e) => setWordDescription(e.target.value)}
+              placeholder={kind === 'word' ? 'vd: nuốt, cửa sổ' : 'vd: nói về một lượng lớn'}
+            />
+          </div>
+          {kind === 'word' && (
+            <div>
+              <label className={fieldStyles.label} htmlFor="quick-pos">
+                Loại từ (không bắt buộc)
+              </label>
+              <input
+                id="quick-pos"
+                className={fieldStyles.input}
+                value={wordPos}
+                onChange={(e) => setWordPos(e.target.value)}
+                placeholder="vd: noun, verb"
+              />
+            </div>
+          )}
           <ButtonRow>
             <Button type="submit" disabled={!wordText.trim()}>
-              Lưu
+              {kind === 'word' ? 'Lưu từ' : 'Lưu concept'}
             </Button>
           </ButtonRow>
           {wordMessage && (
@@ -249,7 +283,7 @@ export function QuickAddPage() {
         <div className={styles.form}>
           <div>
             <label className={fieldStyles.label} htmlFor="quick-sentence">
-              Câu hoặc đoạn chứa cụm cần học
+              Example (*): câu hoặc cụm đang dùng
             </label>
             <textarea
               id="quick-sentence"

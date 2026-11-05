@@ -68,6 +68,22 @@ export async function saveQuickWord(
   return { outcome: 'created', concept };
 }
 
+// "Add concept": an idea on its own (e.g. "số lượng nhiều"). No expression
+// yet, so no minimal example either: ways of saying it are added later as
+// examples, and until then there is nothing to review for it.
+export async function saveConceptOnly(
+  dictionaryId: string,
+  lang: Lang,
+  text: string,
+): Promise<{ outcome: SaveOutcome; concept: Concept }> {
+  const trimmed = text.trim();
+  const existing = await findConceptByExactText(dictionaryId, trimmed);
+  if (existing) return { outcome: 'duplicate', concept: existing };
+  const concept = { ...newConcept(dictionaryId, lang, trimmed), kind: 'concept' as const };
+  await conceptRepository.add(concept);
+  return { outcome: 'created', concept };
+}
+
 export type ConceptOutcome = 'created' | 'linked';
 
 async function resolveConceptForPhrase(

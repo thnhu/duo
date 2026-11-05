@@ -12,7 +12,7 @@ export function Layout() {
         <Outlet />
       </main>
 
-      <NavLink to="/quick-add" className={styles.fab} aria-label="Ghi nhanh">
+      <NavLink to="/add" className={styles.fab} aria-label="Thêm concept hoặc example">
         +
       </NavLink>
 

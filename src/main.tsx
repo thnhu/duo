@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { HashRouter, Route, Routes } from 'react-router-dom'
+import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 // Only the Latin + Vietnamese subsets are loaded (covers en/de/vi, including
 // ä/ö/ü/ß) — importing the full font pulls in Cyrillic/Greek/math subsets
 // nobody needs, which would bloat the PWA's offline precache for nothing.
@@ -19,6 +19,7 @@ import { syncManager } from './sync/manager'
 import { Layout } from './app/Layout'
 import { TodayPage } from './features/today/TodayPage'
 import { QuickAddPage } from './features/quick-add/QuickAddPage'
+import { AddChoicePage } from './features/quick-add/AddChoicePage'
 import { InboxPage } from './features/inbox/InboxPage'
 import { LibraryPage } from './features/library/LibraryPage'
 import { ConceptDetailPage } from './features/library/ConceptDetailPage'
@@ -53,7 +54,11 @@ async function bootstrap() {
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<TodayPage />} />
-            <Route path="quick-add" element={<QuickAddPage />} />
+            <Route path="add" element={<AddChoicePage />} />
+            <Route path="add/word" element={<QuickAddPage kind="word" />} />
+            <Route path="add/concept" element={<QuickAddPage kind="concept" />} />
+            <Route path="add/example" element={<QuickAddPage kind="example" />} />
+            <Route path="quick-add" element={<Navigate to="/add" replace />} />
             <Route path="inbox" element={<InboxPage />} />
             <Route path="learn" element={<LearnPage />} />
             <Route path="learn/session" element={<SessionPage />} />

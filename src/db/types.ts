@@ -78,6 +78,8 @@ export interface LookupSuggestion {
   license?: { name: string; url?: string };
 }
 
+export type ConceptKind = 'word' | 'concept';
+
 export interface Concept {
   id: string;
   dictionaryId: string;
@@ -88,6 +90,10 @@ export interface Concept {
   grammar?: ConceptGrammar;
   // Undefined = breadth (concepts created before M3 have no mode).
   mode?: StudyMode;
+  // Which sub deck it shows in: a 'word' (a word/phrase with its meaning) or a
+  // 'concept' (an idea, wording added later as examples). Undefined = derived
+  // for older rows: depth concepts are concepts, everything else is a word.
+  kind?: ConceptKind;
   // Word sets this concept belongs to (M13). Undefined/empty = in no set.
   setIds?: string[];
   // Pending lookup suggestion awaiting PO review (M3b).

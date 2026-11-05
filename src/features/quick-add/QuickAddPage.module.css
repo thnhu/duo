@@ -43,11 +43,6 @@
   gap: var(--space-4);
 }
 
-.actions {
-  display: flex;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-}
 
 .preview {
   font-size: 18px;

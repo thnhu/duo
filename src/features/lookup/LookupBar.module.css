@@ -4,11 +4,6 @@
   gap: var(--space-3);
 }
 
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-}
 
 .progress {
   height: 8px;

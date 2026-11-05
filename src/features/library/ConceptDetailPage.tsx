@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Button } from '../../ui/Button';
+import { ButtonRow } from '../../ui/ButtonRow';
+import { LinkButton } from '../../ui/LinkButton';
 import { Card } from '../../ui/Card';
 import fieldStyles from '../../ui/field.module.css';
 import { listExamplesForConcept } from '../../db/queries';
@@ -136,15 +138,17 @@ export function ConceptDetailPage() {
           />
         </div>
 
-        <div className={styles.actions}>
+        <ButtonRow>
           <Button onClick={() => void handleSave()}>Lưu</Button>
           <Button variant="destructive" onClick={() => void handleDeleteConcept()}>
             Xóa
           </Button>
-        </div>
+        </ButtonRow>
       </div>
 
-      <Link to={`/tree/${concept.id}`}>Xem cây (concept cha, con)</Link>
+      <ButtonRow>
+        <LinkButton to={`/tree/${concept.id}`}>Xem cây (concept cha, con)</LinkButton>
+      </ButtonRow>
 
       <GrammarSummary concept={concept} />
 
@@ -157,20 +161,20 @@ export function ConceptDetailPage() {
       {concept.lookup?.status === 'not-found' && (
         <Card tinted className={styles.lookupCard}>
           <p>Từ điển không có mục từ này — hãy tự nhập nghĩa.</p>
-          <div className={styles.actions}>
+          <ButtonRow>
             <Button variant="secondary" onClick={() => lookupQueue.enqueue([concept.id])}>
               Tra lại
             </Button>
             <Button variant="ghost" onClick={() => void dismissSuggestion(concept.id).then(() => load(concept.id))}>
               Ẩn
             </Button>
-          </div>
+          </ButtonRow>
         </Card>
       )}
 
       {!concept.lookup && (
         <Card tinted className={styles.lookupCard}>
-          <div className={styles.actions}>
+          <ButtonRow>
             <Button
               variant="secondary"
               disabled={!isSingleWord(concept.text) || queue.status === 'running'}
@@ -183,7 +187,7 @@ export function ConceptDetailPage() {
                 Đánh dấu đã duyệt
               </Button>
             )}
-          </div>
+          </ButtonRow>
           {!isSingleWord(concept.text) && (
             <p className={styles.note}>Chỉ tra cứu được từ đơn (không gửi cụm nhiều từ ra ngoài).</p>
           )}
@@ -214,9 +218,9 @@ export function ConceptDetailPage() {
               <div className={styles.exampleMeta}>
                 {example.isMinimal && <span className={styles.minimalTag}>Example tối thiểu</span>}
                 {example.attributesStatus === 'verified' && <span className={styles.minimalTag}>Đã gắn nhãn</span>}
-                <Link to={`/example/${example.id}`} className={styles.editLink}>
+                <LinkButton to={`/example/${example.id}`}>
                   Sửa / gắn nhãn
-                </Link>
+                </LinkButton>
                 <Button variant="ghost" onClick={() => void handleDeleteExample(example.id)}>
                   Xóa
                 </Button>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Button } from '../../ui/Button';
+import { ButtonRow } from '../../ui/ButtonRow';
 import { Card } from '../../ui/Card';
 import fieldStyles from '../../ui/field.module.css';
 import { SETTINGS_ID } from '../../db/defaults';
@@ -157,14 +158,14 @@ export function ExampleEditPage() {
             readOnly
             aria-label="Câu ví dụ, kéo chọn cụm cần học"
           />
-          <div className={styles.actions}>
+          <ButtonRow>
             <Button variant="secondary" onClick={handlePickHighlight}>
               Tô sáng cụm đã chọn
             </Button>
             <Button variant="ghost" onClick={handleHighlightAll}>
               Tô cả câu
             </Button>
-          </div>
+          </ButtonRow>
           <p className={fieldStyles.hint}>
             Chỉ cụm tô sáng được kiểm tra; phần còn lại là ngữ cảnh. Concept giữ nguyên, chỉ vị trí tô sáng đổi.
           </p>
@@ -219,14 +220,14 @@ export function ExampleEditPage() {
 
       {message && <p className={fieldStyles.hint}>{message}</p>}
 
-      <div className={styles.actions}>
+      <ButtonRow>
         <Button onClick={() => void handleSave()}>Lưu</Button>
         {example.attributesStatus !== 'empty' && (
           <Button variant="ghost" onClick={() => void handleClear()}>
             Bỏ nhãn
           </Button>
         )}
-      </div>
+      </ButtonRow>
 
       {canHighlight && concept && (
         <Card tinted className={styles.section}>

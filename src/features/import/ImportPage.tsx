@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../../ui/Button';
+import { ButtonRow } from '../../ui/ButtonRow';
 import { Card } from '../../ui/Card';
 import { LangToggle } from '../../ui/LangToggle';
 import fieldStyles from '../../ui/field.module.css';
@@ -220,7 +221,7 @@ export function ImportPage() {
 
           <Card tinted className={styles.card}>
             <p className={styles.sectionTitle}>Chưa có file? Tải file mẫu</p>
-            <div className={styles.row}>
+            <ButtonRow>
               <Button
                 variant="secondary"
                 onClick={() =>
@@ -235,7 +236,7 @@ export function ImportPage() {
               >
                 Mẫu XLSX
               </Button>
-            </div>
+            </ButtonRow>
             <p className={fieldStyles.hint}>
               Chỉ cột <code>text</code> là bắt buộc. Tên cột trong file của bạn có thể khác — bạn sẽ
               ánh xạ ở bước sau.
@@ -397,14 +398,14 @@ export function ImportPage() {
             </div>
           </Card>
 
-          <div className={styles.row}>
+          <ButtonRow>
             <Button variant="ghost" onClick={reset}>
               Đổi file
             </Button>
             <Button disabled={!textMapped || busy} onClick={() => void handleToReview()}>
               {busy ? 'Đang kiểm tra…' : 'Tiếp: kiểm tra'}
             </Button>
-          </div>
+          </ButtonRow>
         </>
       )}
 
@@ -444,7 +445,7 @@ export function ImportPage() {
               </>
             )}
           </Card>
-          <div className={styles.row}>
+          <ButtonRow>
             {!undone && result.batchId && (
               <Button variant="destructive" disabled={busy} onClick={() => void handleUndo(result.batchId!)}>
                 Hoàn tác lần nhập này
@@ -454,7 +455,7 @@ export function ImportPage() {
               Nhập file khác
             </Button>
             <Button onClick={() => navigate('/library')}>Xem thư viện</Button>
-          </div>
+          </ButtonRow>
         </>
       )}
     </section>

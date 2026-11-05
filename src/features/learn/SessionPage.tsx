@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../../ui/Button';
+import { ButtonRow } from '../../ui/ButtonRow';
 import { Card } from '../../ui/Card';
 import fieldStyles from '../../ui/field.module.css';
 import { maxResponseTimeFor } from '../../acquisition';
@@ -379,12 +380,12 @@ function Summary({
         </Card>
       )}
 
-      <div className={styles.actions}>
+      <ButtonRow>
         <Button onClick={onAgain}>Học tiếp</Button>
         <Button variant="secondary" onClick={onBack}>
           Chọn bài khác
         </Button>
-      </div>
+      </ButtonRow>
     </section>
   );
 }

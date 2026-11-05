@@ -136,11 +136,6 @@
   gap: var(--space-1);
 }
 
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-}
 
 .countdown {
   height: 6px;

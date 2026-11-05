@@ -1,4 +1,5 @@
 import { Button } from '../../ui/Button';
+import { ButtonRow } from '../../ui/ButtonRow';
 import { Card } from '../../ui/Card';
 import type { Concept } from '../../db/types';
 import { lookupQueue, needsLookup } from '../../lookup';
@@ -42,7 +43,7 @@ export function LookupBar({ concepts }: LookupBarProps) {
             {state.notFound > 0 && ` · ${state.notFound} không thấy`}
           </p>
           {paused && state.error && <p className={styles.warning}>{state.error.message}</p>}
-          <div className={styles.actions}>
+          <ButtonRow>
             {running && (
               <Button variant="secondary" onClick={() => lookupQueue.stop()}>
                 Dừng
@@ -56,7 +57,7 @@ export function LookupBar({ concepts }: LookupBarProps) {
                 </Button>
               </>
             )}
-          </div>
+          </ButtonRow>
         </>
       )}
 

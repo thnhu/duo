@@ -1,0 +1,16 @@
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.fill > * {
+  flex: 1 1 0;
+  min-width: max-content;
+}
+
+/* Nút chữ đứng đầu hàng: kéo lùi để chữ thẳng với mép nội dung. */
+.row > [data-variant='ghost']:first-child {
+  margin-left: -12px;
+}

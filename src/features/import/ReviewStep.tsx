@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { Button } from '../../ui/Button';
+import { ButtonRow } from '../../ui/ButtonRow';
 import { Card } from '../../ui/Card';
 import fieldStyles from '../../ui/field.module.css';
 import type { BuildResult, ExampleDraft } from '../../import/build';
@@ -182,14 +183,14 @@ export function ReviewStep({
         </Button>
       )}
 
-      <div className={styles.row}>
+      <ButtonRow>
         <Button variant="ghost" onClick={onBack}>
           Quay lại
         </Button>
         <Button disabled={busy || includedCount === 0} onClick={onCommit}>
           {busy ? 'Đang lưu…' : `Nạp ${includedCount} từ`}
         </Button>
-      </div>
+      </ButtonRow>
     </>
   );
 }

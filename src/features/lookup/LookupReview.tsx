@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button } from '../../ui/Button';
+import { ButtonRow } from '../../ui/ButtonRow';
 import { Card } from '../../ui/Card';
 import fieldStyles from '../../ui/field.module.css';
 import type { Concept, ConceptGrammar, LookupEntry } from '../../db/types';
@@ -218,14 +219,14 @@ function EntryReview({
         ))}
       </ul>
 
-      <div className={styles.actions}>
+      <ButtonRow>
         <Button disabled={busy} onClick={() => void handleApprove()}>
           Duyệt và áp dụng
         </Button>
         <Button variant="ghost" disabled={busy} onClick={() => void handleDismiss()}>
           Bỏ gợi ý
         </Button>
-      </div>
+      </ButtonRow>
     </>
   );
 }

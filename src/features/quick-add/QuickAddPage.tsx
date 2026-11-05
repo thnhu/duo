@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../../ui/Button';
+import { ButtonRow } from '../../ui/ButtonRow';
 import { LangToggle } from '../../ui/LangToggle';
 import fieldStyles from '../../ui/field.module.css';
 import { dictionaryIdForLang, findConceptByExactText } from '../../db/queries';
@@ -163,11 +164,11 @@ export function QuickAddPage() {
               autoFocus
             />
           </div>
-          <div className={styles.actions}>
+          <ButtonRow>
             <Button type="submit" disabled={!wordText.trim()}>
               Lưu
             </Button>
-          </div>
+          </ButtonRow>
           {wordMessage && (
             <p
               className={[
@@ -236,7 +237,7 @@ export function QuickAddPage() {
             />
           )}
 
-          <div className={styles.actions}>
+          <ButtonRow>
             {!selection && (
               <Button
                 variant="secondary"
@@ -256,7 +257,7 @@ export function QuickAddPage() {
             >
               Lưu, chưa tô sáng
             </Button>
-          </div>
+          </ButtonRow>
 
           {sentenceMessage && (
             <p

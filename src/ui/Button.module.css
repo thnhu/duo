@@ -1,20 +1,27 @@
+/* Một khuôn chung cho Button và LinkButton: cùng chiều cao, cùng viền (trong suốt
+   khi không viền), cùng padding — để các nút đứng cạnh nhau luôn bằng nhau. */
 .button {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  min-height: 44px;
-  padding: 12px 24px;
+  height: 48px;
+  padding: 0 24px;
   border-radius: var(--radius-pill);
-  border: none;
+  border: 1.5px solid transparent;
   font-family: var(--font-ui);
   font-size: 16px;
   font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
   cursor: pointer;
   transition: opacity 0.15s ease;
 }
 
-.button:disabled {
+.button:disabled,
+.button[aria-disabled='true'] {
   opacity: 0.4;
   cursor: not-allowed;
 }
@@ -31,7 +38,7 @@
 .secondary {
   background: transparent;
   color: var(--color-ink);
-  border: 1.5px solid var(--color-ink);
+  border-color: var(--color-ink);
 }
 
 .accent {
@@ -39,14 +46,16 @@
   color: var(--color-ink);
 }
 
+/* Nút chữ: cùng chiều cao, padding ngang nhỏ hơn; ButtonRow kéo lề âm để chữ thẳng
+   với mép nội dung khi đứng đầu hàng. */
 .ghost {
   background: transparent;
   color: var(--color-primary-600);
-  padding: 12px 12px;
+  padding: 0 12px;
 }
 
 .destructive {
   background: transparent;
   color: var(--color-danger);
-  border: 1.5px solid var(--color-danger);
+  border-color: var(--color-danger);
 }

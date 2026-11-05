@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../../ui/Button';
+import { ButtonRow } from '../../ui/ButtonRow';
+import { LinkButton } from '../../ui/LinkButton';
 import { Card } from '../../ui/Card';
 import fieldStyles from '../../ui/field.module.css';
 import { SETTINGS_ID } from '../../db/defaults';
@@ -112,13 +114,15 @@ export function DepthConceptView({ concept, onChanged }: { concept: Concept; onC
             onChange={(e) => setDescription(e.target.value)}
           />
         </div>
-        <Link to={`/tree/${concept.id}`}>Xem cây (concept cha, con)</Link>
-        <div className={styles.actions}>
+        <ButtonRow>
+        <LinkButton to={`/tree/${concept.id}`}>Xem cây (concept cha, con)</LinkButton>
+      </ButtonRow>
+        <ButtonRow>
           <Button onClick={() => void handleSave()}>Lưu</Button>
           <Button variant="destructive" onClick={() => void handleDeleteConcept()}>
             Xóa
           </Button>
-        </div>
+        </ButtonRow>
       </div>
 
       {progress && (
@@ -204,9 +208,9 @@ export function DepthConceptView({ concept, onChanged }: { concept: Concept; onC
                 {example.targetConceptId !== concept.id && (
                   <span className={styles.minimalTag}>Nối từ concept khác</span>
                 )}
-                <Link to={`/example/${example.id}`} className={styles.editLink}>
+                <LinkButton to={`/example/${example.id}`}>
                   Sửa / gắn nhãn
-                </Link>
+                </LinkButton>
                 {example.targetConceptId === concept.id && (
                   <Button variant="ghost" onClick={() => void handleDeleteExpression(example)}>
                     Xóa

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Button } from '../../ui/Button';
+import { LinkButton } from '../../ui/LinkButton';
 import { Card } from '../../ui/Card';
 import fieldStyles from '../../ui/field.module.css';
 import { SETTINGS_ID } from '../../db/defaults';
@@ -143,7 +144,7 @@ export function TreePage() {
           <Card className={styles.section}>
             <div className={styles.row}>
               <h2>{root.text}</h2>
-              <Link to={`/library/${root.id}`}>Mở concept</Link>
+              <LinkButton to={`/library/${root.id}`}>Mở concept</LinkButton>
             </div>
             {root.meanings[0] && <p className={styles.hint}>{root.meanings[0]}</p>}
             {error && (

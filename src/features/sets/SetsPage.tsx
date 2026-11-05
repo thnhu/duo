@@ -34,7 +34,7 @@ export function SetsPage() {
   }, [lang]);
 
   const reasonText = (reason: 'empty' | 'duplicate') =>
-    reason === 'duplicate' ? 'Đã có bộ cùng tên.' : 'Hãy nhập tên bộ.';
+    reason === 'duplicate' ? 'Đã có deck cùng tên.' : 'Hãy nhập tên deck.';
 
   async function handleCreate() {
     setError('');
@@ -57,8 +57,8 @@ export function SetsPage() {
     const n = counts?.bySet.get(set.id) ?? 0;
     const message =
       n > 0
-        ? `Xóa bộ "${set.name}"? ${n} từ trong bộ vẫn còn trong thư viện, chỉ bỏ nhãn bộ.`
-        : `Xóa bộ "${set.name}"?`;
+        ? `Xóa deck "${set.name}"? ${n} từ trong deck vẫn còn trong thư viện, chỉ bỏ nhãn deck.`
+        : `Xóa deck "${set.name}"?`;
     if (!confirm(message)) return;
     await deleteWordSet(set.id);
     await load();
@@ -70,11 +70,11 @@ export function SetsPage() {
         ← Thư viện
       </Link>
       <div className={styles.header}>
-        <h1>Bộ từ</h1>
+        <h1>Deck</h1>
         <LangToggle value={lang} onChange={setLang} />
       </div>
       <p className={styles.hint}>
-        Bộ từ gom các từ theo mục đích (ví dụ IT, từ phim). Một từ có thể nằm trong nhiều bộ.
+        Deck gom các từ theo mục đích (ví dụ IT, từ phim). Một từ có thể nằm trong nhiều deck.
       </p>
 
       {error && (
@@ -85,7 +85,7 @@ export function SetsPage() {
 
       <Card className={styles.card}>
         <label className={fieldStyles.label} htmlFor="new-set">
-          Tạo bộ mới
+          Tạo deck mới
         </label>
         <input
           id="new-set"
@@ -99,12 +99,12 @@ export function SetsPage() {
         />
         <ButtonRow>
           <Button disabled={!draft.trim()} onClick={() => void handleCreate()}>
-            Tạo bộ
+            Tạo deck
           </Button>
         </ButtonRow>
       </Card>
 
-      {sets.length === 0 && <p className={styles.hint}>Chưa có bộ nào cho ngôn ngữ này.</p>}
+      {sets.length === 0 && <p className={styles.hint}>Chưa có deck nào cho ngôn ngữ này.</p>}
 
       {sets.map((set) => (
         <Card key={set.id} className={styles.setRow}>
@@ -112,7 +112,7 @@ export function SetsPage() {
             <>
               <input
                 className={fieldStyles.input}
-                aria-label="Tên bộ"
+                aria-label="Tên deck"
                 value={editing.name}
                 onChange={(e) => setEditing({ id: set.id, name: e.target.value })}
                 onKeyDown={(e) => {
@@ -137,7 +137,7 @@ export function SetsPage() {
                   Đổi tên
                 </Button>
                 <Button variant="ghost" onClick={() => void handleDelete(set)}>
-                  Xóa bộ
+                  Xóa deck
                 </Button>
               </ButtonRow>
             </>

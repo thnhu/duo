@@ -54,7 +54,11 @@ export function guessMapping(headers: string[], saved: ImportMapping[]): Mapping
   }
   if (best) {
     const mapping: ColumnMapping = {};
-    for (const header of headers) mapping[header] = (best.columns[header] as ImportFieldId) ?? '';
+    for (const header of headers) {
+      const stored = best.columns[header] as string | undefined;
+      // The deck column was briefly called `set`; mappings saved then still work.
+      mapping[header] = ((stored === 'set' ? 'deck' : stored) as ImportFieldId) ?? '';
+    }
     return { mapping, source: 'saved', savedName: best.name };
   }
   return { mapping: guessFromHeaders(headers), source: 'headers' };

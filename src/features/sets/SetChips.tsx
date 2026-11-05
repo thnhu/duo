@@ -20,7 +20,7 @@ export function SetChips({ sets, selected, onChange, showLang }: SetChipsProps) 
     onChange(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
   const chip = (on: boolean) => [styles.chip, on ? styles.chipOn : ''].filter(Boolean).join(' ');
   return (
-    <div className={styles.chips} role="group" aria-label="Chọn bộ từ">
+    <div className={styles.chips} role="group" aria-label="Chọn deck">
       <button type="button" className={chip(selected.length === 0)} aria-pressed={selected.length === 0} onClick={() => onChange([])}>
         Tất cả
       </button>

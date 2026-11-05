@@ -78,11 +78,11 @@ export function LibraryPage() {
       </div>
 
       {counts && (
-        <div className={styles.filters} role="group" aria-label="Lọc theo bộ từ">
+        <div className={styles.filters} role="group" aria-label="Lọc theo deck">
           {([
             { f: ALL_SETS, label: 'Tất cả', n: counts.all },
             ...sets.map((set) => ({ f: { kind: 'set', id: set.id } as SetFilter, label: set.name, n: counts.bySet.get(set.id) ?? 0 })),
-            ...(sets.length > 0 ? [{ f: { kind: 'none' } as SetFilter, label: 'Chưa xếp bộ', n: counts.none }] : []),
+            ...(sets.length > 0 ? [{ f: { kind: 'none' } as SetFilter, label: 'Chưa xếp deck', n: counts.none }] : []),
           ]).map(({ f, label, n }) => (
             <button
               key={f.kind === 'set' ? f.id : f.kind}
@@ -94,7 +94,7 @@ export function LibraryPage() {
               {label} <strong>{n}</strong>
             </button>
           ))}
-          <LinkButton to="/sets">Quản lý bộ</LinkButton>
+          <LinkButton to="/sets">Quản lý deck</LinkButton>
         </div>
       )}
 

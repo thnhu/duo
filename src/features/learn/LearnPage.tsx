@@ -163,7 +163,7 @@ export function LearnPage() {
         </div>
         {sets.length > 0 && (
           <div>
-            <label className={fieldStyles.label}>Bộ từ</label>
+            <label className={fieldStyles.label}>Deck</label>
             <SetChips sets={sets} selected={setIds} onChange={chooseSets} />
           </div>
         )}

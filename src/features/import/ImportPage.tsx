@@ -402,7 +402,7 @@ export function ImportPage() {
             </div>
             <div>
               <label className={fieldStyles.label} htmlFor="import-set">
-                Thêm tất cả vào bộ từ (tùy chọn)
+                Thêm tất cả vào deck (tùy chọn)
               </label>
               <select
                 id="import-set"
@@ -410,34 +410,34 @@ export function ImportPage() {
                 value={targetChoice}
                 onChange={(e) => setTargetChoice(e.target.value)}
               >
-                <option value="">Không thêm vào bộ nào</option>
+                <option value="">Không thêm vào deck nào</option>
                 {wordSets.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name} ({s.lang === 'en' ? 'Anh' : 'Đức'})
                   </option>
                 ))}
-                <option value={NEW_SET}>+ Tạo bộ mới…</option>
+                <option value={NEW_SET}>+ Tạo deck mới…</option>
               </select>
               {targetChoice === NEW_SET && (
                 <>
                   <input
                     id="import-new-set"
                     className={fieldStyles.input}
-                    aria-label="Tên bộ mới"
+                    aria-label="Tên deck mới"
                     value={newSetName}
                     onChange={(e) => setNewSetName(e.target.value)}
-                    placeholder="Tên bộ mới, vd: IT"
+                    placeholder="Tên deck mới, vd: IT"
                   />
                   {existingSetNamed(newSetName) && (
                     <p className={fieldStyles.hint}>
-                      Đã có bộ “{existingSetNamed(newSetName)}”, sẽ dùng bộ đó thay vì tạo bộ trùng tên.
+                      Đã có deck “{existingSetNamed(newSetName)}”, sẽ dùng deck đó thay vì tạo deck trùng tên.
                     </p>
                   )}
                 </>
               )}
               <p className={fieldStyles.hint}>
-                Bộ có sẵn chỉ nhận từ cùng ngôn ngữ. Từ đã có trong thư viện cũng được thêm vào bộ này mà không bị
-                nhân đôi. Cột <code>set</code> trong file (nếu có) được dùng thêm.
+                Deck có sẵn chỉ nhận từ cùng ngôn ngữ. Từ đã có trong thư viện cũng được thêm vào deck này mà không bị
+                nhân đôi. Cột <code>deck</code> trong file (nếu có) được dùng thêm.
               </p>
             </div>
             <div>
@@ -487,7 +487,7 @@ export function ImportPage() {
                 <p className={styles.sectionTitle}>Đã nhập xong</p>
                 <ul className={styles.summary}>
                   <li>{result.createdConcepts} từ mới</li>
-                  {result.addedToSets > 0 && <li>{result.addedToSets} từ đã có được thêm vào bộ từ</li>}
+                  {result.addedToSets > 0 && <li>{result.addedToSets} từ đã có được thêm vào deck</li>}
                   {result.mergedConcepts > 0 && <li>{result.mergedConcepts} từ đã có được gộp thêm</li>}
                   {result.updatedConcepts > 0 && <li>{result.updatedConcepts} từ đã có được cập nhật</li>}
                   <li>{result.skippedDuplicates} từ trùng/không đổi (bỏ qua)</li>

@@ -74,7 +74,7 @@ export function TodayPage() {
 
       {sets.length > 0 && setIds !== null && (
         <Card className={styles.card}>
-          <h2>Bộ từ cần ôn</h2>
+          <h2>Deck cần ôn</h2>
           <SetChips sets={sets} selected={setIds} onChange={chooseSets} showLang />
         </Card>
       )}
@@ -93,7 +93,7 @@ export function TodayPage() {
         ) : (
           <p>
             {setIds && setIds.length > 0
-              ? 'Hôm nay không có từ nào trong các bộ đã chọn cần ôn.'
+              ? 'Hôm nay không có từ nào trong các deck đã chọn cần ôn.'
               : 'Hôm nay không có gì cần ôn. Học bài mới hoặc luyện phản xạ chớp nhoáng nhé.'}
           </p>
         )}

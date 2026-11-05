@@ -146,7 +146,7 @@ Ghi chú:
 - C3. **Liên kết** concept – concept và example – concept, đầy đủ loại của PVO (mục 8). Liên kết tạo trong tool (file nhập ở bản đầu chưa mang liên kết, xem mục 9).
 - C4. **Mỗi concept có ít nhất một example** [ĐỀ XUẤT]: nếu chưa có câu ví dụ, tool tự tạo example tối thiểu (chính văn bản của concept) để có đơn vị ôn tập; khi có câu thật thì thay hoặc bổ sung.
 - C5. Phát âm tiếng Đức bằng giọng đọc có sẵn của trình duyệt/điện thoại (Web Speech API, `de-DE`). Chất lượng giọng tùy thiết bị. Bản sau có thể thử lấy file ghi âm từ Wiktionary nếu có (kiểm tra giấy phép từng file).
-- C6. **Bộ từ điển (Dictionary)**: mỗi ngôn ngữ một bộ tự tạo, giữ concept/example/liên kết/lịch ôn. **Cập nhật 2026-11-05 (PO yêu cầu, M13):** để gom từ theo mục đích (IT, từ phim…) thêm khái niệm **Bộ từ (`WordSet`)**: nhãn có tên, thuộc một ngôn ngữ, gắn vào concept qua `Concept.setIds`; một concept nằm được trong nhiều bộ (dùng chung, không nhập lại). Không đổi `dictionaryId`.
+- C6. **Bộ từ điển (Dictionary)**: mỗi ngôn ngữ một bộ tự tạo, giữ concept/example/liên kết/lịch ôn. **Cập nhật 2026-11-05 (PO yêu cầu, M13):** để gom từ theo mục đích (IT, từ phim…) thêm khái niệm **Deck (`WordSet`, trước đây gọi "bộ từ"; PO đổi tên vì "bộ" tối nghĩa)**: nhãn có tên, thuộc một ngôn ngữ, gắn vào concept qua `Concept.setIds`; một concept nằm được trong nhiều bộ (dùng chung, không nhập lại). Không đổi `dictionaryId`.
 
 - C7. **Học cụm từ trong câu ví dụ bằng cách tô sáng (highlight)** **[CHỐT hướng, ĐỀ XUẤT chi tiết]:** khi PO nhập một câu nhưng chỉ muốn học **một cụm** trong đó, PO **tô sáng cụm đó**. Quy tắc:
   - **Cụm được tô sáng = concept cần học.** Phần còn lại của câu chỉ là **ngữ cảnh**, không bị kiểm tra.

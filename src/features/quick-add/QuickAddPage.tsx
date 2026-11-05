@@ -35,7 +35,7 @@ export function QuickAddPage() {
     setSetIdState(id);
   }
   const setName = sets.find((s) => s.id === setId)?.name;
-  const inSet = setName ? ` Đã thêm vào bộ "${setName}".` : '';
+  const inSet = setName ? ` Đã thêm vào deck "${setName}".` : '';
 
   const [wordText, setWordText] = useState('');
   const [wordMessage, setWordMessage] = useState<Message>(null);
@@ -166,10 +166,10 @@ export function QuickAddPage() {
       {sets.length > 0 && (
         <div>
           <label className={fieldStyles.label} htmlFor="quick-set">
-            Thêm vào bộ
+            Thêm vào deck
           </label>
           <select id="quick-set" className={fieldStyles.input} value={setId} onChange={(e) => chooseSet(e.target.value)}>
-            <option value="">Không xếp bộ</option>
+            <option value="">Không xếp deck</option>
             {sets.map((set) => (
               <option key={set.id} value={set.id}>
                 {set.name}
@@ -181,7 +181,7 @@ export function QuickAddPage() {
 
       {sets.length === 0 && (
         <p className={fieldStyles.hint}>
-          Muốn gom từ theo mục đích (IT, từ phim…)? <Link to="/sets">Tạo bộ từ</Link>.
+          Muốn gom từ theo mục đích (IT, từ phim…)? <Link to="/sets">Tạo deck</Link>.
         </p>
       )}
 

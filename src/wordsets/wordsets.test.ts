@@ -159,7 +159,7 @@ describe('word sets in search, study and export', () => {
     await setConceptSets(ball.id, [it1.set.id, films.set.id]);
     const sets = await listWordSets('en');
     const [header, ...rows] = exportTable(await conceptRepository.listActive(), [], sets);
-    expect(rows[0][header.indexOf('set')].split('; ').sort()).toEqual(['Films', 'IT']);
-    expect(importFields.some((f) => f.id === 'set')).toBe(true);
+    expect(rows[0][header.indexOf('deck')].split('; ').sort()).toEqual(['Films', 'IT']);
+    expect(importFields.some((f) => f.id === 'deck')).toBe(true);
   });
 });

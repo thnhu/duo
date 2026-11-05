@@ -31,7 +31,7 @@ export function ConceptSetsCard({ concept, onChanged }: { concept: Concept; onCh
     setError('');
     const result = await createWordSet(concept.lang, draft);
     if (!result.ok) {
-      setError(result.reason === 'duplicate' ? 'Đã có bộ cùng tên.' : 'Hãy nhập tên bộ.');
+      setError(result.reason === 'duplicate' ? 'Đã có deck cùng tên.' : 'Hãy nhập tên deck.');
       return;
     }
     await addConceptToSet(concept.id, result.set.id);
@@ -41,8 +41,8 @@ export function ConceptSetsCard({ concept, onChanged }: { concept: Concept; onCh
 
   return (
     <Card className={styles.card}>
-      <h2>Bộ từ</h2>
-      {sets.length === 0 && <p className={styles.hint}>Chưa có bộ nào. Tạo bộ đầu tiên bên dưới.</p>}
+      <h2>Deck</h2>
+      {sets.length === 0 && <p className={styles.hint}>Chưa có deck nào. Tạo deck đầu tiên bên dưới.</p>}
       {sets.map((set) => (
         <label key={set.id} className={styles.check}>
           <input type="checkbox" checked={current.has(set.id)} onChange={(e) => void toggle(set, e.target.checked)} />
@@ -51,7 +51,7 @@ export function ConceptSetsCard({ concept, onChanged }: { concept: Concept; onCh
       ))}
       <div>
         <label className={fieldStyles.label} htmlFor="concept-new-set">
-          Tạo bộ mới và thêm từ này vào
+          Tạo deck mới và thêm từ này vào
         </label>
         <input
           id="concept-new-set"
@@ -68,7 +68,7 @@ export function ConceptSetsCard({ concept, onChanged }: { concept: Concept; onCh
         </Button>
       </ButtonRow>
       <p className={styles.hint}>
-        Một từ có thể nằm trong nhiều bộ mà không phải nhập lại. <Link to="/sets">Quản lý bộ từ</Link>
+        Một từ có thể nằm trong nhiều deck mà không phải nhập lại. <Link to="/sets">Quản lý deck</Link>
       </p>
     </Card>
   );

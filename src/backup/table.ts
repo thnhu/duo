@@ -35,8 +35,8 @@ export function exportTable(concepts: Concept[], examples: Example[], sets: Word
         pos: concept.pos,
         meaning: concept.meanings.join(`${MEANING_SEPARATOR} `),
         lesson: concept.source.lesson,
-        // Word sets by name, in the same `a; b` form the import reads.
-        set: (concept.setIds ?? [])
+        // Decks by name, in the same `a; b` form the import reads.
+        deck: (concept.setIds ?? [])
           .map((id) => setName.get(id))
           .filter((n): n is string => !!n)
           .join(`${MEANING_SEPARATOR} `),

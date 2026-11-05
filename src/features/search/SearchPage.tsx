@@ -184,7 +184,7 @@ export function SearchPage() {
           />
           {facets.sets.length > 0 && (
             <FilterSelect
-              label="Bộ từ"
+              label="Deck"
               value={filters.setId ?? ''}
               onChange={(v) => setFilter({ setId: v || undefined })}
               options={facets.sets.map((s) => ({ value: s.id, label: `${s.name} (${s.lang === 'en' ? 'Anh' : 'Đức'})` }))}

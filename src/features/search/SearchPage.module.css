@@ -97,3 +97,8 @@
 .snippetLabel {
   font-weight: 500;
 }
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+}

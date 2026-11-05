@@ -54,7 +54,11 @@ export function SearchPage() {
   const [params, setParams] = useSearchParams();
   const [lastLang] = useLastLanguage();
 
+  // The query runs only on Enter / "Tìm", not on every keystroke: one user,
+  // local data, so there is no need for search-as-you-type.
   const text = params.get('q') ?? '';
+  const [draft, setDraft] = useState(text);
+  useEffect(() => setDraft(text), [text]);
   const [filters, setFilters] = useState<SearchFilters>({});
   const [sort, setSort] = useState<SearchSort>('relevance');
   const [showFilters, setShowFilters] = useState(false);
@@ -113,15 +117,26 @@ export function SearchPage() {
         <LinkButton to="/association">Tìm theo liên kết (đồ thị)</LinkButton>
       </ButtonRow>
 
-      <input
-        type="search"
-        className={fieldStyles.input}
-        value={text}
-        onChange={(e) => setParams(e.target.value ? { q: e.target.value } : {}, { replace: true })}
-        placeholder="Từ, nghĩa, câu ví dụ, ghi chú…"
-        aria-label="Tìm kiếm"
-        autoFocus
-      />
+      <form
+        className={styles.toolbar}
+        onSubmit={(e) => {
+          e.preventDefault();
+          const q = draft.trim();
+          setParams(q ? { q } : {}, { replace: true });
+        }}
+      >
+        <input
+          type="search"
+          className={`${fieldStyles.input} ${styles.searchInput}`}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder="Từ, nghĩa, câu ví dụ, ghi chú…"
+          aria-label="Tìm kiếm"
+          enterKeyHint="search"
+          autoFocus
+        />
+        <Button type="submit">Tìm</Button>
+      </form>
 
       <div className={styles.toolbar}>
         <Button

@@ -20,6 +20,16 @@ export const ATTRIBUTE_TITLE: Record<AttributeKey, string> = {
   dialect: 'Dialect',
 };
 
+// What each label means, shown next to its name (Tone = formality, Register
+// = field of use: easy to mix up).
+export const ATTRIBUTE_HINT: Record<AttributeKey, string> = {
+  tone: 'mức trang trọng',
+  mode: 'nói hay viết',
+  register: 'lĩnh vực sử dụng',
+  nuance: 'sắc thái',
+  dialect: 'phương ngữ',
+};
+
 export const SITUATIONS: Record<AttributeKey, Record<string, string>> = {
   tone: {
     Neutral: 'Một tình huống bình thường, không đặc biệt trang trọng cũng không suồng sã.',

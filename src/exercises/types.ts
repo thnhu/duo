@@ -1,5 +1,5 @@
 import type { RegistrableModule } from '../core/registry';
-import type { Concept, Example, ExampleLink, Lang, StudyMode } from '../db/types';
+import type { AttributeValueSets, Concept, Example, ExampleLink, Lang, StudyMode } from '../db/types';
 
 // ExerciseModule (spec section 7): every exercise type is a module behind
 // this one interface, registered in a registry. The runner and the screens
@@ -78,6 +78,8 @@ export interface ExerciseLibrary {
   // the examples linked to it.
   examples?: Example[];
   exampleLinks?: ExampleLink[];
+  // The TMRND value sets PO configured (labelling drills offer these).
+  valueSets?: AttributeValueSets;
 }
 
 export interface ExerciseContext {

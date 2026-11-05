@@ -10,7 +10,7 @@ import { exerciseModules } from '../index';
 import { loadLibrary } from '../library';
 import { loadReviewItems } from '../review';
 import { loadPairs, recordAnswer } from '../session';
-import { buildSceneChoice, englishDeepSituation } from './deep';
+import { buildSceneChoice, englishDeepLabel, englishDeepSituation, labelCount, pickLabelKeys } from './deep';
 
 const DICT = 'dict-en';
 const attrs = (patch: Partial<ExampleAttributes>): ExampleAttributes => ({
@@ -160,6 +160,111 @@ describe('answers to depth drills', () => {
     const depth = items.filter((i) => i.concept.id === c.id);
     expect(depth).toHaveLength(1);
     expect(depth[0].module.id).toBe('en.deep-situation');
+  });
+});
+
+describe('en.deep-label (S1)', () => {
+  const ask = async (conceptId: string, example: Awaited<ReturnType<typeof labelled>>, count?: string) =>
+    englishDeepLabel.generate((await conceptRepository.getById(conceptId))!, example, {
+      rng: first,
+      options: count ? { count } : {},
+      library: await loadLibrary(),
+    });
+
+  it('is a depth, English-only drill with a configurable number of labels', () => {
+    expect(englishDeepLabel).toMatchObject({ mode: 'depth', languages: ['en'] });
+    expect(englishDeepLabel.options?.[0].default).toBe('2');
+    expect(labelCount('3')).toBe(3);
+    expect(labelCount('7')).toBe(2); // not offered: default
+    expect(labelCount(undefined)).toBe(2);
+  });
+
+  it('only expressions with verified labels, of their own concept, can be asked', async () => {
+    const c = await createDepthConcept(DICT, 'quantity', '');
+    const done = await labelled(c.id, 'a bunch of', { tone: 'Informal' });
+    const raw = await labelled(c.id, 'loads of', null); // no verified labels
+    const library = await loadLibrary();
+    expect(englishDeepLabel.isEligible(c, done, library)).toBe(true);
+    expect(englishDeepLabel.isEligible(c, raw, library)).toBe(false);
+
+    // A suggested (unverified) label is never an answer either.
+    await db.examples.update(raw.id, { attributes: attrs({ tone: 'Formal' }), attributesStatus: 'suggested' });
+    expect(englishDeepLabel.isEligible(c, (await db.examples.get(raw.id))!, await loadLibrary())).toBe(false);
+
+    // A way linked in from another concept is asked under its own concept only.
+    const other = await createDepthConcept(DICT, 'other idea', '');
+    expect(englishDeepLabel.isEligible(other, done, library)).toBe(false);
+
+    expect((await loadPairs(englishDeepLabel, { lang: 'en' })).map((p) => p.example.id)).toEqual([done.id]);
+  });
+
+  it('asks the chosen number of labels and the right answers are the verified labels', async () => {
+    const c = await createDepthConcept(DICT, 'quantity', 'số lượng nhiều');
+    const e = await labelled(c.id, 'a great deal of', { register: 'Academic', tone: 'Formal' });
+    for (const n of [1, 2, 3, 5]) {
+      const exercise = await ask(c.id, e, String(n));
+      expect(exercise.fields).toHaveLength(n);
+      expect(exercise.prompt).toBe('a great deal of');
+      expect(exercise.detail).toContain('quantity');
+      for (const f of exercise.fields) {
+        expect(f.type).toBe('choice');
+        expect(exercise.expected[f.key]).toEqual([e.attributes[f.key as keyof ExampleAttributes]]);
+        expect(f.options).toContain(exercise.expected[f.key][0]);
+      }
+    }
+  });
+
+  it('always asks at least one marked label when the expression has one', () => {
+    const marked = attrs({ register: 'Academic' });
+    for (const r of [0, 0.3, 0.6, 0.99]) {
+      expect(pickLabelKeys(marked, 1, () => r)).toEqual(['register']);
+      expect(pickLabelKeys(marked, 2, () => r)).toContain('register');
+    }
+    // All Neutral: nothing to force, any labels do.
+    expect(pickLabelKeys(attrs({}), 2, first)).toHaveLength(2);
+  });
+
+  it('grades each label, and the answer is right only when every label is', async () => {
+    const c = await createDepthConcept(DICT, 'quantity', '');
+    const e = await labelled(c.id, 'a bunch of', { tone: 'Informal' });
+    const exercise = await ask(c.id, e, '5');
+    const right = Object.fromEntries(exercise.fields.map((f) => [f.key, exercise.expected[f.key][0]]));
+    expect(englishDeepLabel.grade(right, exercise).correct).toBe(true);
+    const wrong = { ...right, tone: 'Formal' };
+    const graded = englishDeepLabel.grade(wrong, exercise);
+    expect(graded.correct).toBe(false);
+    expect(graded.perField.tone).toBe(false);
+    expect(graded.perField.mode).toBe(true);
+    expect(graded.expected.tone).toBe('Informal');
+  });
+
+  it('offers the value sets PO configured, and still includes a right answer missing from them', async () => {
+    const c = await createDepthConcept(DICT, 'quantity', '');
+    const e = await labelled(c.id, 'a bunch of', { tone: 'Informal' });
+    const library = {
+      ...(await loadLibrary()),
+      valueSets: { ...createDefaultSettings().attributeValueSets, tone: ['Neutral', 'Formal'] as never },
+    };
+    const exercise = englishDeepLabel.generate(c, e, { rng: first, options: { count: '5' }, library });
+    const tone = exercise.fields.find((f) => f.key === 'tone')!;
+    expect(tone.options).toEqual(['Neutral', 'Formal', 'Informal']);
+  });
+
+  it('logs the answer by example and never makes the concept acquired', async () => {
+    const c = await createDepthConcept(DICT, 'quantity', '');
+    const e = await labelled(c.id, 'a bunch of', { tone: 'Informal' });
+    await settingsRepository.update(SETTINGS_ID, {
+      acquisitionCriteria: { minCorrect: 1, minDistinctContexts: 1, minDistinctDays: 1, maxResponseTimeMsDefault: 100000, maxResponseTimeMsByExerciseType: {} },
+    });
+    const exercise = await ask(c.id, e, '1');
+    const right = Object.fromEntries(exercise.fields.map((f) => [f.key, exercise.expected[f.key][0]]));
+    const record = await recordAnswer(englishDeepLabel, exercise, right, 900);
+    expect(record.result.correct).toBe(true);
+    expect(record.statusChange).toBeUndefined();
+    expect((await conceptRepository.getById(c.id))!.status).toBe('loaded');
+    const logs = await reviewLogRepository.listByExampleId(e.id);
+    expect(logs).toHaveLength(1);
+    expect(logs[0]).toMatchObject({ exerciseType: 'en.deep-label', conceptId: c.id, correct: true });
   });
 });
 

@@ -6,7 +6,8 @@ import { Card } from '../../ui/Card';
 import fieldStyles from '../../ui/field.module.css';
 import { SETTINGS_ID } from '../../db/defaults';
 import { conceptRepository, exampleRepository, settingsRepository } from '../../db/repositories';
-import type { AttributeValueSets, Concept, Example, ExampleAttributes } from '../../db/types';
+import { dictionaryIdForLang } from '../../db/queries';
+import type { AttributeValueSets, Concept, Example, ExampleAttributes, Lang } from '../../db/types';
 import { normalizeSelection, type Selection } from '../quick-add/highlight';
 import { addSecondPhrase, clearExampleAttributes, createNextExample, saveExampleEdits } from './actions';
 import { ExampleLinksCard } from './ExampleLinksCard';
@@ -40,6 +41,7 @@ export function ExampleEditPage() {
   const [note, setNote] = useState('');
   const [highlight, setHighlight] = useState<Selection | null>(null);
   const [message, setMessage] = useState('');
+  const [lang, setLang] = useState<Lang>('en');
   const [keep, setKeep] = useState(true);
   const [nextText, setNextText] = useState<string | null>(null);
 
@@ -53,6 +55,7 @@ export function ExampleEditPage() {
     setConcept(
       found.targetConceptId ? ((await conceptRepository.getById(found.targetConceptId)) ?? null) : null,
     );
+    setLang((await dictionaryIdForLang('de')) === found.dictionaryId ? 'de' : 'en');
     const settings = await settingsRepository.getById(SETTINGS_ID);
     setValueSets(settings?.attributeValueSets ?? null);
   }
@@ -220,7 +223,7 @@ export function ExampleEditPage() {
         </p>
       </Card>
 
-      {concept && <ExampleLinksCard example={example} onMainChanged={() => void load(example.id)} />}
+      <ExampleLinksCard example={example} lang={lang} onMainChanged={() => void load(example.id)} />
 
       <div>
         <label className={fieldStyles.label} htmlFor="example-note">

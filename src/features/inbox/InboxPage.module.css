@@ -16,11 +16,6 @@
   gap: var(--space-3);
 }
 
-.cardActions {
-  display: flex;
-  gap: var(--space-3);
-}
-
 .empty {
   color: var(--color-ink-muted);
 }

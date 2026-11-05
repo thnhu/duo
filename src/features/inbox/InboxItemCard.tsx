@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react';
 import { Card } from '../../ui/Card';
 import { Button } from '../../ui/Button';
+import { ButtonRow } from '../../ui/ButtonRow';
+import { LinkButton } from '../../ui/LinkButton';
 import fieldStyles from '../../ui/field.module.css';
 import { findConceptByExactText } from '../../db/queries';
 import { ConceptSuggestions } from '../search/ConceptSuggestions';
@@ -69,14 +71,15 @@ export function InboxItemCard({ example, lang, onResolved }: InboxItemCardProps)
           onPick={setPickedConceptId}
         />
       )}
-      <div className={styles.cardActions}>
+      <ButtonRow>
         {!selection && (
           <Button variant="secondary" onClick={() => void handlePickHighlight()}>
             Tô sáng cụm đã chọn
           </Button>
         )}
         {selection && <Button onClick={() => void handleSave()}>Lưu</Button>}
-      </div>
+        <LinkButton to={`/example/${example.id}`}>Sửa / gắn nhãn</LinkButton>
+      </ButtonRow>
     </Card>
   );
 }

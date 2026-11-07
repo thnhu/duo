@@ -1,5 +1,5 @@
 import { db } from '../../db/schema';
-import { conceptRepository, passageRepository, wordSetRepository } from '../../db/repositories';
+import { conceptRepository, lessonRepository, passageRepository, wordSetRepository } from '../../db/repositories';
 import type { Concept } from '../../db/types';
 import { deleteConceptCascade, type DeletedRows } from '../library/actions';
 
@@ -42,7 +42,7 @@ export async function previewDeckDelete(setId: string): Promise<DeckDeletePrevie
 
 export async function deleteDeckWithContents(setId: string): Promise<DeletedRows> {
   const { own, shared } = await splitDeckContents(setId);
-  const rows: DeletedRows = { concepts: [], examples: [], exampleLinks: [], conceptLinks: [], sets: [setId], passages: [], labels: [] };
+  const rows: DeletedRows = { concepts: [], examples: [], exampleLinks: [], conceptLinks: [], sets: [setId], passages: [], lessons: [], labels: [] };
 
   for (const c of own) {
     const part = await deleteConceptCascade(c.id);
@@ -64,10 +64,22 @@ export async function deleteDeckWithContents(setId: string): Promise<DeletedRows
     }
   }
 
-  // Shared concepts stay; only this deck's label goes.
+  // The deck's lessons go with it. Shared concepts stay: they only lose this
+  // deck's label and, if it was in one of its lessons, that lesson.
+  const deckLessons = new Set(
+    (await lessonRepository.listActive()).filter((l) => l.setId === setId).map((l) => l.id),
+  );
+  for (const id of deckLessons) {
+    await lessonRepository.softDelete(id);
+    rows.lessons!.push(id);
+  }
   for (const c of shared) {
-    rows.labels!.push({ conceptId: c.id, setIds: c.setIds ?? [] });
-    await conceptRepository.update(c.id, { setIds: (c.setIds ?? []).filter((id) => id !== setId) });
+    const lessonId = c.lessonId && deckLessons.has(c.lessonId) ? c.lessonId : undefined;
+    rows.labels!.push({ conceptId: c.id, setIds: c.setIds ?? [], ...(lessonId ? { lessonId } : {}) });
+    await conceptRepository.update(c.id, {
+      setIds: (c.setIds ?? []).filter((id) => id !== setId),
+      ...(lessonId ? { lessonId: undefined } : {}),
+    });
   }
 
   await wordSetRepository.softDelete(setId);

@@ -7,6 +7,7 @@ import type {
   ExampleLink,
   ImportBatch,
   ImportMapping,
+  Lesson,
   Passage,
   ReviewLog,
   ScheduleState,
@@ -14,6 +15,8 @@ import type {
   SyncMetaRow,
   WordSet,
 } from './types';
+
+import { planLessonMigration } from './lessonMigration';
 
 export class DuoDB extends Dexie {
   dictionaries!: EntityTable<Dictionary, 'id'>;
@@ -29,6 +32,7 @@ export class DuoDB extends Dexie {
   syncMeta!: EntityTable<SyncMetaRow, 'key'>;
   wordSets!: EntityTable<WordSet, 'id'>;
   passages!: EntityTable<Passage, 'id'>;
+  lessons!: EntityTable<Lesson, 'id'>;
 
   constructor(name = 'duo') {
     super(name);
@@ -111,6 +115,26 @@ export class DuoDB extends Dexie {
           .toCollection()
           .modify((row: { schemaVersion?: number }) => {
             row.schemaVersion = 7;
+          });
+      });
+    // v8 (Bản 8): adds lessons (named topics inside a deck) and the optional
+    // `Concept.lessonId`. Lessons are made from the old free-text
+    // `source.lesson`, which stays as the record of where the word came from.
+    this.version(8)
+      .stores({ lessons: 'id, lang, setId, updatedAt, deletedAt' })
+      .upgrade(async (tx) => {
+        const concepts = await tx.table('concepts').toArray();
+        const sets = await tx.table('wordSets').toArray();
+        const plan = planLessonMigration(concepts, sets, Date.now());
+        if (plan.lessons.length > 0) await tx.table('lessons').bulkPut(plan.lessons);
+        for (const [conceptId, lessonId] of plan.assignments) {
+          await tx.table('concepts').update(conceptId, { lessonId, updatedAt: plan.now });
+        }
+        await tx
+          .table('settings')
+          .toCollection()
+          .modify((row: { schemaVersion?: number }) => {
+            row.schemaVersion = 8;
           });
       });
   }

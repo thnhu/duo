@@ -629,7 +629,7 @@ Lý do: PO học tiếng Đức A1 theo giáo trình có danh sách từ chia th
 
 | Bước | Nội dung | Xong khi |
 |---|---|---|
-| **M15a** Dữ liệu | Bảng `lessons`, `Concept.lessonId`, schema v8 và migration từ `source.lesson`; vào `SYNC_TABLES` và `BACKUP_TABLES`; xóa deck thì xóa mềm cả bài của deck | Mở dữ liệu cũ có `source.lesson`: các từ nằm đúng bài của đúng deck; xuất rồi nhập lại JSON giữ nguyên bài |
+| **M15a** Dữ liệu (*đã làm*) | Bảng `lessons`, `Concept.lessonId`, schema v8 và migration từ `source.lesson`; vào `SYNC_TABLES` và `BACKUP_TABLES`; xóa deck thì xóa mềm cả bài của deck (Hoàn tác khôi phục cả bài và nhãn bài của từ dùng chung); id bài của migration sinh theo ngôn ngữ + deck + tên nên hai máy cùng nâng cấp không tạo bài trùng khi đồng bộ; một từ rời deck của bài thì rời bài | Mở dữ liệu cũ có `source.lesson`: các từ nằm đúng bài của đúng deck; xuất rồi nhập lại JSON giữ nguyên bài |
 | **M15b** Quản lý bài | Module `src/lessons` (tạo, đổi tên, đổi thứ tự, xóa gỡ nhãn, gắn từ vào bài, tìm hoặc tạo theo tên) và màn `/lessons?deck=…` (có ô xác nhận xóa tại chỗ và Hoàn tác) | Tạo bài "Family" trong deck A1, đổi tên thì các từ trong bài đổi theo, xóa bài thì từ vẫn còn |
 | **M15c** Nhập và xuất file | Cột `lesson` tìm hoặc tạo bài trong deck của file (deck từ cột `deck` hoặc deck đích); bước duyệt hiện bài; hoàn tác lần nhập xóa bài do lần nhập tạo ra; xuất xlsx ghi tên bài | Nhập file Goethe A1: bài tạo đúng thứ tự trong file, nhập lại không tạo bài trùng |
 | **M15d** Gắn bài bằng tay | Hộp chọn "Bài" (danh sách bài của deck đã chọn, có "+ Tạo bài mới…") ở Thêm word và màn chi tiết concept | Thêm tay một word vào bài có sẵn; đổi bài ở chi tiết; chọn deck khác thì danh sách bài đổi theo |

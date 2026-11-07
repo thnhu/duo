@@ -14,6 +14,7 @@ import type {
   Settings,
   Passage,
   WordSet,
+  Lesson,
 } from './types';
 
 export const dictionaryRepository = new Repository<Dictionary, string>(
@@ -66,4 +67,7 @@ export const wordSetRepository = new Repository<WordSet, string>(
 );
 export const passageRepository = new Repository<Passage, string>(
   db.passages as unknown as Table<Passage, string>,
+);
+export const lessonRepository = new Repository<Lesson, string>(
+  db.lessons as unknown as Table<Lesson, string>,
 );

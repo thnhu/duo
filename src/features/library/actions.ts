@@ -5,6 +5,7 @@ import {
   conceptRepository,
   exampleLinkRepository,
   exampleRepository,
+  lessonRepository,
   passageRepository,
   wordSetRepository,
 } from '../../db/repositories';
@@ -23,7 +24,9 @@ export interface DeletedRows {
   // the previous deck labels of concepts that were kept.
   sets?: string[];
   passages?: string[];
-  labels?: Array<{ conceptId: string; setIds: string[] }>;
+  // `lessonId` is the lesson the concept had in the deleted deck.
+  lessons?: string[];
+  labels?: Array<{ conceptId: string; setIds: string[]; lessonId?: string }>;
 }
 
 // Soft-deleting a concept also soft-deletes its linked examples, otherwise
@@ -73,5 +76,11 @@ export async function restoreDeleted(rows: DeletedRows): Promise<void> {
   for (const id of rows.conceptLinks) await conceptLinkRepository.update(id, { deletedAt: undefined });
   for (const id of rows.sets ?? []) await wordSetRepository.update(id, { deletedAt: undefined });
   for (const id of rows.passages ?? []) await passageRepository.update(id, { deletedAt: undefined });
-  for (const label of rows.labels ?? []) await conceptRepository.update(label.conceptId, { setIds: label.setIds });
+  for (const id of rows.lessons ?? []) await lessonRepository.update(id, { deletedAt: undefined });
+  for (const label of rows.labels ?? []) {
+    await conceptRepository.update(label.conceptId, {
+      setIds: label.setIds,
+      ...(label.lessonId ? { lessonId: label.lessonId } : {}),
+    });
+  }
 }

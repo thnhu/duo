@@ -1,6 +1,7 @@
 import { createId } from '../core/id';
 import { db } from '../db/schema';
-import { conceptRepository, wordSetRepository } from '../db/repositories';
+import { conceptRepository, lessonRepository, wordSetRepository } from '../db/repositories';
+import { lessonFitsDecks } from '../lessons/rules';
 import type { Concept, ConceptKind, Lang, WordSet } from '../db/types';
 
 // Word sets (M13): named groups of concepts inside one language, e.g. "IT" or
@@ -57,8 +58,12 @@ export async function deleteWordSet(id: string): Promise<void> {
   const concepts = await db.concepts.toArray();
   for (const c of concepts) {
     if (c.setIds?.includes(id)) {
-      await conceptRepository.update(c.id, { setIds: c.setIds.filter((x) => x !== id) });
+      await setConceptSets(c.id, c.setIds.filter((x) => x !== id));
     }
+  }
+  // The deck's lessons go with it; the concepts only lose the lesson label.
+  for (const lesson of await lessonRepository.listActive()) {
+    if (lesson.setId === id) await lessonRepository.softDelete(lesson.id);
   }
   await wordSetRepository.softDelete(id);
 }
@@ -71,7 +76,10 @@ export async function setConceptSets(conceptId: string, setIds: string[]): Promi
   const next = [...new Set(setIds)].filter((id) => live.has(id));
   const current = (concept.setIds ?? []).filter((id) => live.has(id));
   if (next.length === current.length && next.every((id) => current.includes(id))) return;
-  await conceptRepository.update(conceptId, { setIds: next });
+  // A lesson belongs to one deck: leaving that deck leaves the lesson too.
+  const lesson = concept.lessonId ? await lessonRepository.getById(concept.lessonId) : undefined;
+  const dropLesson = !!concept.lessonId && !(lesson && lesson.deletedAt === undefined && lessonFitsDecks(lesson, next));
+  await conceptRepository.update(conceptId, { setIds: next, ...(dropLesson ? { lessonId: undefined } : {}) });
 }
 
 // Adds a concept to a set, keeping the sets it is already in. Quick-add uses

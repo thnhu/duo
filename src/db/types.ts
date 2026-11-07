@@ -26,6 +26,21 @@ export interface WordSet {
   deletedAt?: number;
 }
 
+// A lesson (Bản 8): a named topic inside one deck ("Family", "Daily
+// activities"), about twenty words. A concept is in at most one lesson
+// (`Concept.lessonId`). `setId` is the deck it belongs to; none = the General
+// deck. The name is unique inside a deck (ignoring case).
+export interface Lesson {
+  id: string;
+  lang: Lang;
+  name: string;
+  // Position among the lessons of the same deck (file order, can be changed).
+  order: number;
+  setId?: string;
+  updatedAt: number;
+  deletedAt?: number;
+}
+
 // A passage (a short text) that is studied as a gap-fill: the PO marks the
 // words to learn, the drill hides them and asks for them back. Each gap is an
 // Example (text = this passage, highlight = the gap, passageId = this row) so
@@ -110,6 +125,8 @@ export interface Concept {
   kind?: ConceptKind;
   // Word sets this concept belongs to (M13). Undefined/empty = in no set.
   setIds?: string[];
+  // The lesson (Bản 8) of one of this concept's decks, if any.
+  lessonId?: string;
   // Pending lookup suggestion awaiting PO review (M3b).
   lookup?: LookupSuggestion;
   verification: Verification;

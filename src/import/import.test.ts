@@ -488,7 +488,7 @@ describe('schema v2 migration', () => {
     const v2 = new DuoDB(name);
     await v2.open();
     expect((await v2.concepts.get('c1'))?.text).toBe('swallow');
-    expect((await v2.settings.get('default'))?.schemaVersion).toBe(7);
+    expect((await v2.settings.get('default'))?.schemaVersion).toBe(8);
     expect(await v2.importBatches.count()).toBe(0);
     expect(await v2.syncMeta.count()).toBe(0);
     v2.close();

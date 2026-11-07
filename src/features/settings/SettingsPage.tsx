@@ -5,7 +5,7 @@ import { Card } from '../../ui/Card';
 import { BackupError, exportBackup, restoreBackup } from '../../backup/json';
 import { dateStamp, downloadBlob, getLastBackupAt, setLastBackupAt } from '../../backup/download';
 import { exportXlsx } from '../../backup/table';
-import { conceptsInScope, isWholeKit, scopeLabel, xlsxFileName, type ExportScope } from '../../backup/scope';
+import { conceptsInScope, isWholeKit, scopeLabel, scopeSlug, xlsxFileName, type ExportScope } from '../../backup/scope';
 import { ExportScopeCard } from './ExportScopeCard';
 import { conceptRepository, exampleRepository, lessonRepository, wordSetRepository } from '../../db/repositories';
 import { useToast } from '../../ui/Toast';
@@ -44,13 +44,23 @@ export function SettingsPage() {
 
   const handleExportJson = () =>
     run(async () => {
-      const backup = await exportBackup();
+      const whole = isWholeKit(scope);
+      const backup = await exportBackup(Date.now(), scope);
+      if (backup.scope && backup.scope.conceptCount === 0) {
+        throw new BackupError(`Phạm vi "${backup.scope.label}" chưa có concept nào để sao lưu.`);
+      }
       const blob = new Blob([JSON.stringify(backup)], { type: 'application/json' });
-      downloadBlob(blob, `duo-backup-${dateStamp()}.json`);
-      setLastBackupAt(backup.exportedAt);
-      setLastBackup(backup.exportedAt);
-      const count = backup.tables.concepts.length;
-      return `Đã xuất bản sao lưu đầy đủ (${count} concept). Hãy cất file ở nơi an toàn.`;
+      const slug = backup.scope
+        ? scopeSlug(backup.scope, { deckName: backup.scope.deckName, lessonName: backup.scope.lessonName })
+        : '';
+      downloadBlob(blob, slug ? `duo-backup-${slug}-${dateStamp()}.json` : `duo-backup-${dateStamp()}.json`);
+      // Only a full backup counts as "the last backup" (the reminder).
+      if (whole) {
+        setLastBackupAt(backup.exportedAt);
+        setLastBackup(backup.exportedAt);
+        return `Đã xuất bản sao lưu đầy đủ (${backup.tables.concepts.length} concept). Hãy cất file ở nơi an toàn.`;
+      }
+      return `Đã xuất bản sao lưu một phần (${backup.scope!.label}): ${backup.scope!.conceptCount} concept cùng example, bài, đoạn văn, lịch ôn của chúng. Nạp lại ở Khôi phục sẽ về đúng deck, bài. Bản đầy đủ là xuất khi không chọn phạm vi.`;
     });
 
   const handleExportXlsx = () =>
@@ -107,13 +117,13 @@ export function SettingsPage() {
             : 'Chưa xuất bản sao lưu nào trên máy này.'}
         </p>
         <Button disabled={busy} onClick={() => void handleExportJson()}>
-          Xuất sao lưu JSON (đầy đủ)
+          {isWholeKit(scope) ? 'Xuất sao lưu JSON (đầy đủ)' : 'Xuất sao lưu JSON theo phạm vi'}
         </Button>
         <Button variant="secondary" disabled={busy} onClick={() => void handleExportXlsx()}>
           Xuất danh sách concept (xlsx){isWholeKit(scope) ? '' : ' theo phạm vi'}
         </Button>
         <p className={styles.note}>
-          Phạm vi ở trên áp dụng cho file xlsx. Bản JSON hiện vẫn xuất đầy đủ (JSON theo phạm vi sẽ có ở bước sau).
+          Phạm vi ở trên áp dụng cho cả JSON và xlsx. Không chọn phạm vi thì JSON là bản sao lưu đầy đủ.
         </p>
       </Card>
 

@@ -1,5 +1,7 @@
 import { db } from '../db/schema';
 import { CURRENT_SCHEMA_VERSION } from '../db/defaults';
+import { buildScopedBackup, type BackupScopeInfo } from './scopedBackup';
+import { isWholeKit, type ExportScope } from './scope';
 
 // Full JSON backup (spec E2/E3). It is the backup that does not depend on any
 // sync service: every table, including soft-deleted rows (so a restore keeps
@@ -33,15 +35,22 @@ export interface BackupFile {
   format: number;
   schemaVersion: number;
   exportedAt: number;
+  // Only in a backup of one scope (Bản 9): says what the file covers. A file
+  // without it is the full backup.
+  scope?: BackupScopeInfo;
   tables: Record<BackupTableName, Array<Record<string, unknown>>>;
 }
 
-export async function exportBackup(now: number = Date.now()): Promise<BackupFile> {
+export async function exportBackup(now: number = Date.now(), scope?: ExportScope): Promise<BackupFile> {
   const tables = {} as BackupFile['tables'];
   for (const [name] of BACKUP_TABLES) {
     tables[name] = (await db.table(name).toArray()) as Array<Record<string, unknown>>;
   }
-  return { app: BACKUP_APP, format: BACKUP_FORMAT, schemaVersion: CURRENT_SCHEMA_VERSION, exportedAt: now, tables };
+  const header = { app: BACKUP_APP, format: BACKUP_FORMAT, schemaVersion: CURRENT_SCHEMA_VERSION, exportedAt: now } as const;
+  if (!scope || isWholeKit(scope)) return { ...header, tables };
+  // One scope: the concepts in it and what belongs with them.
+  const scoped = buildScopedBackup(tables, scope);
+  return { ...header, scope: scoped.scope, tables: scoped.tables as BackupFile['tables'] };
 }
 
 export class BackupError extends Error {}

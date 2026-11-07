@@ -21,6 +21,8 @@ import {
   type SessionItem,
 } from '../../exercises/session';
 import { ReflexTimer } from '../../exercises/timer';
+import { defaultStudySettings, gapAccuracy, loadStudy, needsRetry } from '../../settings/study';
+import type { StudySettings } from '../../db/types';
 import type { SessionConfig } from './LearnPage';
 import styles from './SessionPage.module.css';
 
@@ -53,6 +55,9 @@ function Session({ config }: { config: SessionConfig }) {
   const [records, setRecords] = useState<AnswerRecord[]>([]);
   const [finished, setFinished] = useState(false);
   const [focusedKey, setFocusedKey] = useState<string | null>(null);
+  const [study, setStudy] = useState<Required<StudySettings>>(defaultStudySettings);
+  // How many times the current passage was repeated because of a low score.
+  const [retriesDone, setRetriesDone] = useState(0);
 
   const timer = useRef(new ReflexTimer());
   const submitting = useRef(false);
@@ -69,8 +74,9 @@ function Session({ config }: { config: SessionConfig }) {
             buildSession(all, config.count, Math.random).map((p) => ({ ...p, module: fixedModule })),
           )
         : loadReviewItems({ kind: kind === 'flash' ? 'flash' : 'review', count: config.count, lang: config.lang, setIds: config.setIds });
-    void Promise.all([loading, loadCriteria(), loadLibrary()]).then(([items, loadedCriteria, loadedLibrary]) => {
+    void Promise.all([loading, loadCriteria(), loadLibrary(), loadStudy()]).then(([items, loadedCriteria, loadedLibrary, loadedStudy]) => {
       if (!current) return;
+      setStudy(loadedStudy);
       setCriteria(loadedCriteria);
       setLibrary(loadedLibrary);
       setPairs(items);
@@ -110,6 +116,7 @@ function Session({ config }: { config: SessionConfig }) {
     setAnswer({});
     setRecord(null);
     setTimedOut(false);
+    setRetriesDone(0);
     submitting.current = false;
     timer.current.start();
     if (exercise.speak) void speak(exercise.speak.text, exercise.speak.lang);
@@ -127,12 +134,16 @@ function Session({ config }: { config: SessionConfig }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exercise, timeLimit, record]);
 
+  const accuracy = record && exercise?.segments ? gapAccuracy(record.result.perField) : 1;
+  const mustRetry = !!record && !!exercise?.segments && needsRetry(accuracy, retriesDone, study);
+
   const allFilled = exercise?.fields.every((f) => (answer[f.key] ?? '').trim() !== '') ?? false;
 
   async function handleSubmit(force = false) {
     if (!exercise || !pair) return;
     if (record) {
-      next();
+      if (mustRetry) startRetry();
+      else next();
       return;
     }
     if ((!force && !allFilled) || submitting.current) return;
@@ -140,14 +151,27 @@ function Session({ config }: { config: SessionConfig }) {
     if (force) setTimedOut(true);
     // The core measures reaction time, from the question appearing to now.
     const elapsed = timer.current.stop();
-    const result = await recordAnswer(
-      pair.module,
-      exercise,
-      force ? answerRef.current : answer,
-      elapsed,
-    );
+    const given = force ? answerRef.current : answer;
+    if (retriesDone > 0) {
+      // A repeat is practice only: graded and shown, but not logged, so
+      // copying the answers just seen cannot push a word towards `acquired`.
+      const result = pair.module.grade(given, exercise);
+      setRecord({ exercise, answer: given, result, responseTimeMs: elapsed });
+      return;
+    }
+    const result = await recordAnswer(pair.module, exercise, given, elapsed);
     setRecord(result);
     setRecords((all) => [...all, result]);
+  }
+
+  // A passage scored under the pass mark is shown again straight away.
+  function startRetry() {
+    setRetriesDone((n) => n + 1);
+    setAnswer({});
+    setRecord(null);
+    setTimedOut(false);
+    submitting.current = false;
+    timer.current.start();
   }
 
   function next() {
@@ -365,8 +389,28 @@ function Session({ config }: { config: SessionConfig }) {
           </p>
         )}
 
+        {record && result && exercise.segments && (
+          <p className={mustRetry ? styles.wrong : styles.detail} role="status">
+            Chính xác {Math.round(accuracy * 100)}% (
+            {Object.values(result.perField).filter(Boolean).length}/{exercise.fields.length} chỗ trống).
+            {mustRetry
+              ? ` Dưới mức đạt ${study.passagePassPercent}% nên bạn cần làm lại đoạn này. Đây chỉ là làm lại vì còn chỗ sai, không phải đặt lại bài đã nộp: kết quả lần đầu đã được ghi, các lần làm lại chỉ để luyện. Còn ${study.passageMaxRetries - retriesDone} lần làm lại.`
+              : retriesDone > 0 && accuracy * 100 < study.passagePassPercent
+                ? ' Đã hết lượt làm lại, chuyển sang câu tiếp.'
+                : retriesDone > 0
+                  ? ' Đạt rồi, chuyển sang câu tiếp.'
+                  : ''}
+          </p>
+        )}
+
         <Button type="submit" disabled={!record && !allFilled}>
-          {record ? (index + 1 >= pairs.length ? 'Xem kết quả' : 'Tiếp') : 'Kiểm tra'}
+          {record
+            ? mustRetry
+              ? 'Làm lại đoạn này'
+              : index + 1 >= pairs.length
+                ? 'Xem kết quả'
+                : 'Tiếp'
+            : 'Kiểm tra'}
         </Button>
       </form>
     </section>

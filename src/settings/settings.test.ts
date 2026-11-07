@@ -5,7 +5,7 @@ import { conceptRepository, settingsRepository } from '../db/repositories';
 import type { Concept, ReviewLog } from '../db/types';
 import { loadCriteria, recomputeAcquisition, refreshAcquisition, saveCriteria } from '../acquisition/update';
 import { defaultForm, parseForm, toForm } from './criteria';
-import { defaultStudySettings, loadStudy, sanitizeStudy, saveStudy } from './study';
+import { defaultStudySettings, gapAccuracy, loadStudy, needsRetry, sanitizeStudy, saveStudy } from './study';
 
 const DAY = 24 * 60 * 60 * 1000;
 const T0 = new Date(2026, 0, 10, 12).getTime();
@@ -60,7 +60,23 @@ describe('study settings', () => {
   it('defaults to 10 questions and survives a save', async () => {
     expect(await loadStudy()).toEqual(defaultStudySettings);
     await saveStudy({ sessionCount: 15 });
-    expect(await loadStudy()).toEqual({ sessionCount: 15 });
+    expect(await loadStudy()).toEqual({ ...defaultStudySettings, sessionCount: 15 });
+  });
+
+  it('passage pass mark and retries are validated and decide when to repeat', () => {
+    const d = defaultStudySettings;
+    expect(d.passagePassPercent).toBe(90);
+    expect(sanitizeStudy({ passagePassPercent: 0 }).passagePassPercent).toBe(90);
+    expect(sanitizeStudy({ passagePassPercent: 101 }).passagePassPercent).toBe(90);
+    expect(sanitizeStudy({ passagePassPercent: 75 }).passagePassPercent).toBe(75);
+    expect(sanitizeStudy({ passageMaxRetries: 0 }).passageMaxRetries).toBe(0);
+    expect(sanitizeStudy({ passageMaxRetries: 11 }).passageMaxRetries).toBe(d.passageMaxRetries);
+    expect(needsRetry(0.75, 0, d)).toBe(true); // 3 of 4 gaps
+    expect(needsRetry(0.9, 0, d)).toBe(false); // exactly at the mark passes
+    expect(needsRetry(1, 0, d)).toBe(false);
+    expect(needsRetry(0.5, d.passageMaxRetries, d)).toBe(false); // retries used up
+    expect(needsRetry(0.5, 0, { ...d, passageMaxRetries: 0 })).toBe(false); // feature off
+    expect(gapAccuracy({ a: true, b: true, c: true, d: false })).toBe(0.75);
   });
 
   it('settings saved before M9c (no study field) get the default', async () => {
@@ -74,7 +90,7 @@ describe('study settings', () => {
       expect(sanitizeStudy({ sessionCount: bad })).toEqual(defaultStudySettings);
     }
     expect(sanitizeStudy(undefined)).toEqual(defaultStudySettings);
-    expect(sanitizeStudy({ sessionCount: 3 })).toEqual({ sessionCount: 3 });
+    expect(sanitizeStudy({ sessionCount: 3 })).toEqual({ ...defaultStudySettings, sessionCount: 3 });
   });
 
   it('saving criteria changes what the rest of the app reads', async () => {

@@ -12,7 +12,14 @@ import {
   toForm,
   type CriteriaForm,
 } from '../../settings/criteria';
-import { SESSION_COUNT_RANGE, defaultStudySettings, loadStudy, saveStudy } from '../../settings/study';
+import {
+  MAX_RETRIES_RANGE,
+  PASS_PERCENT_RANGE,
+  SESSION_COUNT_RANGE,
+  defaultStudySettings,
+  loadStudy,
+  saveStudy,
+} from '../../settings/study';
 import { useToast } from '../../ui/Toast';
 import styles from './SettingsPage.module.css';
 
@@ -25,6 +32,8 @@ const THRESHOLD_KEYS = ['minCorrect', 'minDistinctContexts', 'minDistinctDays'] 
 export function StudyCard() {
   const [form, setForm] = useState<CriteriaForm | null>(null);
   const [count, setCount] = useState(String(defaultStudySettings.sessionCount));
+  const [pass, setPass] = useState(String(defaultStudySettings.passagePassPercent));
+  const [retries, setRetries] = useState(String(defaultStudySettings.passageMaxRetries));
   const toast = useToast();
   const [notice, setNotice] = useState<Notice>(null);
   const modules = exerciseModules.list();
@@ -35,6 +44,8 @@ export function StudyCard() {
       if (!current) return;
       setForm(toForm(criteria));
       setCount(String(study.sessionCount));
+      setPass(String(study.passagePassPercent));
+      setRetries(String(study.passageMaxRetries));
     });
     return () => {
       current = false;
@@ -60,12 +71,20 @@ export function StudyCard() {
         `Số câu mỗi phiên: nhập số nguyên từ ${SESSION_COUNT_RANGE.min} đến ${SESSION_COUNT_RANGE.max}.`,
       );
     }
+    const passagePassPercent = Number(pass.trim());
+    if (!Number.isInteger(passagePassPercent) || passagePassPercent < PASS_PERCENT_RANGE.min || passagePassPercent > PASS_PERCENT_RANGE.max) {
+      errors.push(`Điểm đạt đoạn văn: nhập số nguyên từ ${PASS_PERCENT_RANGE.min} đến ${PASS_PERCENT_RANGE.max} (%).`);
+    }
+    const passageMaxRetries = Number(retries.trim());
+    if (retries.trim() === '' || !Number.isInteger(passageMaxRetries) || passageMaxRetries < MAX_RETRIES_RANGE.min || passageMaxRetries > MAX_RETRIES_RANGE.max) {
+      errors.push(`Số lần làm lại đoạn văn: nhập số nguyên từ ${MAX_RETRIES_RANGE.min} đến ${MAX_RETRIES_RANGE.max}.`);
+    }
     if (!parsed.ok || errors.length > 0) {
       setNotice({ kind: 'error', text: errors.join(' ') });
       return;
     }
     await saveCriteria(parsed.criteria);
-    await saveStudy({ sessionCount });
+    await saveStudy({ sessionCount, passagePassPercent, passageMaxRetries });
     // Every word is judged again against the new thresholds.
     const result = await recomputeAcquisition(parsed.criteria);
     const changes: string[] = [];
@@ -78,6 +97,8 @@ export function StudyCard() {
   function handleReset() {
     setForm(defaultForm());
     setCount(String(defaultStudySettings.sessionCount));
+    setPass(String(defaultStudySettings.passagePassPercent));
+    setRetries(String(defaultStudySettings.passageMaxRetries));
     setNotice(null);
   }
 
@@ -94,6 +115,36 @@ export function StudyCard() {
           className={fieldStyles.input}
           value={count}
           onChange={(e) => setCount(e.target.value)}
+        />
+      </div>
+
+      <h3>Bài điền đoạn văn</h3>
+      <p className={styles.note}>
+        Nếu tỉ lệ chỗ trống đúng thấp hơn điểm đạt, đoạn văn hiện lại để bạn làm lại ngay. Chỉ lần làm đầu
+        tiên được ghi vào lịch ôn và thụ đắc; các lần làm lại chỉ để luyện.
+      </p>
+      <div>
+        <label className={fieldStyles.label} htmlFor="study-pass">
+          Điểm đạt, % chỗ trống đúng ({PASS_PERCENT_RANGE.min}–{PASS_PERCENT_RANGE.max})
+        </label>
+        <input
+          id="study-pass"
+          inputMode="numeric"
+          className={fieldStyles.input}
+          value={pass}
+          onChange={(e) => setPass(e.target.value)}
+        />
+      </div>
+      <div>
+        <label className={fieldStyles.label} htmlFor="study-retries">
+          Số lần làm lại tối đa ({MAX_RETRIES_RANGE.min}–{MAX_RETRIES_RANGE.max}, 0 = không bắt làm lại)
+        </label>
+        <input
+          id="study-retries"
+          inputMode="numeric"
+          className={fieldStyles.input}
+          value={retries}
+          onChange={(e) => setRetries(e.target.value)}
         />
       </div>
 

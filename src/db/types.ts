@@ -316,6 +316,11 @@ export interface AiProviderConfig {
 export interface StudySettings {
   // Questions per session (drills, review and flash round).
   sessionCount: number;
+  // Passage drill: share of gaps (%) that must be right to pass without
+  // repeating, and how many repeats are asked at most. Optional for settings
+  // stored before this existed.
+  passagePassPercent?: number;
+  passageMaxRetries?: number;
 }
 
 // Depth mode (M11a): how many different ways of saying one concept make it

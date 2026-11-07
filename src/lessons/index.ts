@@ -1,7 +1,8 @@
 import { createId } from '../core/id';
 import { db } from '../db/schema';
 import { conceptRepository, lessonRepository, wordSetRepository } from '../db/repositories';
-import type { Concept, Lang, Lesson } from '../db/types';
+import type { Concept, Lang, Lesson, WordSet } from '../db/types';
+import { filterBySet, type SetFilter } from '../wordsets';
 import { lessonFitsDecks } from './rules';
 
 // Lessons (Bản 8): a named topic inside one deck, or inside General when
@@ -154,4 +155,43 @@ export async function assignLesson(conceptId: string, lessonId: string | undefin
   if (!lessonFitsDecks(lesson, await liveDeckIdsOf(concept))) return { ok: false, reason: 'other-deck' };
   if (concept.lessonId !== lessonId) await conceptRepository.update(conceptId, { lessonId });
   return { ok: true };
+}
+
+// ---- Library: the lessons of a deck, and the words of one lesson ----
+
+// The deck (set id, or undefined for General) a deck filter stands for. "All"
+// is not one deck, so it has no lessons.
+export function deckOfFilter(filter: SetFilter): { ok: true; setId: string | undefined } | { ok: false } {
+  if (filter.kind === 'all') return { ok: false };
+  return { ok: true, setId: filter.kind === 'set' ? filter.id : undefined };
+}
+
+// Words of a lesson, in the order they were entered (the order of the file).
+export async function listLessonConcepts(lang: Lang, lessonId: string): Promise<Concept[]> {
+  const rows = await db.concepts
+    .where('lang')
+    .equals(lang)
+    .filter((c) => c.deletedAt === undefined && c.lessonId === lessonId)
+    .toArray();
+  return rows.sort((a, b) => a.createdAt - b.createdAt || (a.source.row ?? 0) - (b.source.row ?? 0));
+}
+
+// Words of the deck that are in none of its lessons.
+export async function listUnassignedConcepts(
+  lang: Lang,
+  filter: SetFilter,
+  sets: WordSet[],
+): Promise<Concept[]> {
+  const deck = deckOfFilter(filter);
+  if (!deck.ok) return [];
+  const lessonIds = new Set((await listLessons(lang, deck.setId)).map((l) => l.id));
+  const liveSets = new Set(sets.map((s) => s.id));
+  const rows = await db.concepts
+    .where('lang')
+    .equals(lang)
+    .filter((c) => c.deletedAt === undefined)
+    .toArray();
+  return filterBySet(rows, filter, liveSets)
+    .filter((c) => !c.lessonId || !lessonIds.has(c.lessonId))
+    .sort((a, b) => a.createdAt - b.createdAt || (a.source.row ?? 0) - (b.source.row ?? 0));
 }

@@ -314,3 +314,52 @@ describe('lesson module (M15b)', () => {
     expect((await db.concepts.get(word.id))?.lessonId).toBe(family.lesson.id);
   });
 });
+
+describe('library by lesson (M15e)', () => {
+  beforeEach(async () => {
+    await db.delete();
+    await db.open();
+  });
+
+  it('lists the words of a lesson in entry order, and the words of the deck in no lesson', async () => {
+    const { createLesson, assignLesson, listLessonConcepts, listUnassignedConcepts, deckOfFilter } = await import('./index');
+    const a1 = await createWordSet('de', 'A1');
+    if (!a1.ok) throw new Error('deck');
+    const family = await createLesson('de', a1.set.id, 'Family');
+    if (!family.ok) throw new Error('lesson');
+    const make = async (text: string, createdAt: number) => {
+      const c = (await saveQuickWord('dict-de', 'de', text)).concept;
+      await db.concepts.update(c.id, { createdAt });
+      await setConceptSets(c.id, [a1.set.id]);
+      return c;
+    };
+    const vater = await make('Vater', 2);
+    const mutter = await make('Mutter', 1);
+    const haus = await make('Haus', 3); // in the deck, in no lesson
+    const outside = (await saveQuickWord('dict-de', 'de', 'Tisch')).concept; // General
+    await assignLesson(vater.id, family.lesson.id);
+    await assignLesson(mutter.id, family.lesson.id);
+
+    expect((await listLessonConcepts('de', family.lesson.id)).map((c) => c.text)).toEqual(['Mutter', 'Vater']);
+    const filter = { kind: 'set', id: a1.set.id } as const;
+    expect((await listUnassignedConcepts('de', filter, [a1.set])).map((c) => c.text)).toEqual(['Haus']);
+    // General only sees the words in no deck.
+    expect((await listUnassignedConcepts('de', { kind: 'none' }, [a1.set])).map((c) => c.text)).toEqual(['Tisch']);
+    // "All decks" is not one deck: no lessons.
+    expect(await listUnassignedConcepts('de', { kind: 'all' }, [a1.set])).toEqual([]);
+    expect(deckOfFilter({ kind: 'all' })).toEqual({ ok: false });
+    expect(deckOfFilter({ kind: 'none' })).toEqual({ ok: true, setId: undefined });
+    expect(deckOfFilter(filter)).toEqual({ ok: true, setId: a1.set.id });
+    expect(haus.id).not.toBe(outside.id);
+  });
+
+  it('a deleted word is not in the lesson list', async () => {
+    const { createLesson, assignLesson, listLessonConcepts } = await import('./index');
+    const lesson = await createLesson('de', undefined, 'Misc');
+    if (!lesson.ok) throw new Error('lesson');
+    const word = (await saveQuickWord('dict-de', 'de', 'Tisch')).concept;
+    await assignLesson(word.id, lesson.lesson.id);
+    await db.concepts.update(word.id, { deletedAt: 5 });
+    expect(await listLessonConcepts('de', lesson.lesson.id)).toEqual([]);
+  });
+});

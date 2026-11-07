@@ -20,7 +20,10 @@ import {
   type SetCounts,
   type SetFilter,
 } from '../../wordsets';
+import { deckOfFilter, listLessons } from '../../lessons';
 import { LookupBar } from '../lookup/LookupBar';
+import { ConceptRow } from './ConceptRow';
+import { LessonBrowser } from './LessonBrowser';
 import { useLookupQueue } from '../lookup/useLookupQueue';
 import { useLastLanguage } from '../quick-add/useLastLanguage';
 import styles from './LibraryPage.module.css';
@@ -33,6 +36,8 @@ export function LibraryPage() {
   const [subCounts, setSubCounts] = useState<Record<ConceptKind, number> | null>(null);
   const [inboxCount, setInboxCount] = useState(0);
   const [sets, setSets] = useState<WordSet[]>([]);
+  // How many lessons the open deck has (for its "Bài" card).
+  const [lessonTotal, setLessonTotal] = useState<number | null>(null);
 
   // Landing = deck cards only. The words are read after a deck card is
   // opened (address ?deck=general | all | <deck id>).
@@ -44,6 +49,9 @@ export function LibraryPage() {
   const subParam = params.get('sub');
   const activeSub: ConceptKind | null = activeFilter && (subParam === 'word' || subParam === 'concept') ? subParam : null;
   const SUB_LABEL: Record<ConceptKind, string> = { concept: 'Concept', word: 'Word' };
+  // The third card of a deck: its lessons (&sub=lesson, and &lesson=<id|none> for one lesson).
+  const inLessons = !!activeFilter && activeFilter.kind !== 'all' && subParam === 'lesson';
+  const lessonParam = params.get('lesson');
 
   async function refresh() {
     const list = await listWordSets(lang);
@@ -52,7 +60,11 @@ export function LibraryPage() {
       const filter: SetFilter =
         activeFilter.kind === 'set' && !list.some((s) => s.id === activeFilter.id) ? GENERAL_FILTER : activeFilter;
       if (activeSub) setConcepts(await listDeckConcepts(lang, filter, list, activeSub));
-      else setSubCounts(await countSubDecks(lang, filter, list));
+      else {
+        setSubCounts(await countSubDecks(lang, filter, list));
+        const deck = deckOfFilter(filter);
+        setLessonTotal(deck.ok ? (await listLessons(lang, deck.setId)).length : null);
+      }
     } else {
       setCounts(await countDecks(lang, list));
     }
@@ -71,6 +83,7 @@ export function LibraryPage() {
     setConcepts(null);
     setCounts(null);
     setSubCounts(null);
+    setLessonTotal(null);
     void refresh();
     void loadInboxCount();
   }, [lang, activeKey, activeSub]);
@@ -104,9 +117,12 @@ export function LibraryPage() {
       : activeFilter.kind === 'all'
         ? 'Tất cả'
         : (sets.find((s) => s.id === activeFilter.id)?.name ?? '');
-  const subCards: Array<{ key: ConceptKind; label: string; hint: string }> = [
+  const subCards: Array<{ key: ConceptKind | 'lesson'; label: string; hint: string }> = [
     { key: 'concept', label: `Concept ${deckName}`, hint: 'Các ý; bấm một ý để xem example của nó' },
     { key: 'word', label: `Word ${deckName}`, hint: 'Các word đứng riêng (từ hoặc cụm)' },
+    ...(activeFilter && activeFilter.kind !== 'all'
+      ? [{ key: 'lesson' as const, label: `Bài ${deckName}`, hint: 'Các bài (chủ đề) của deck; bấm một bài để xem các từ của nó' }]
+      : []),
   ];
   const cards: Array<{ key: string; label: string; n: number }> = counts
     ? [
@@ -127,10 +143,24 @@ export function LibraryPage() {
 
       {activeFilter ? (
         <div className={styles.filters}>
-          <LinkButton to={activeSub ? `/library?deck=${deckToKey(activeFilter)}` : '/library'}>
-            {activeSub ? `← ${deckName}` : '← Các deck'}
+          <LinkButton
+            to={
+              inLessons && lessonParam
+                ? `/library?deck=${deckToKey(activeFilter)}&sub=lesson`
+                : activeSub || inLessons
+                  ? `/library?deck=${deckToKey(activeFilter)}`
+                  : '/library'
+            }
+          >
+            {inLessons && lessonParam
+              ? `← Bài ${deckName}`
+              : activeSub || inLessons
+                ? `← ${deckName}`
+                : '← Các deck'}
           </LinkButton>
-          <strong>{activeSub ? `${SUB_LABEL[activeSub]} ${deckName}` : deckName}</strong>
+          <strong>
+            {inLessons ? `Bài ${deckName}` : activeSub ? `${SUB_LABEL[activeSub]} ${deckName}` : deckName}
+          </strong>
         </div>
       ) : (
         <>
@@ -160,7 +190,7 @@ export function LibraryPage() {
         </>
       )}
 
-      {activeFilter && !activeSub && (
+      {activeFilter && !activeSub && !inLessons && (
         <div className={styles.deckGrid} role="list" aria-label="Sub deck">
           {subCards.map((card) => (
             <button
@@ -171,11 +201,29 @@ export function LibraryPage() {
               onClick={() => setParams({ deck: deckToKey(activeFilter), sub: card.key })}
             >
               <span className={styles.deckName}>{card.label}</span>
-              <span className={styles.deckCount}>{subCounts ? `${subCounts[card.key]} mục` : '…'}</span>
+              <span className={styles.deckCount}>
+                {card.key === 'lesson'
+                  ? lessonTotal === null
+                    ? '…'
+                    : `${lessonTotal} bài`
+                  : subCounts
+                    ? `${subCounts[card.key]} mục`
+                    : '…'}
+              </span>
               <span className={styles.deckHint}>{card.hint}</span>
             </button>
           ))}
         </div>
+      )}
+
+      {activeFilter && inLessons && (
+        <LessonBrowser
+          lang={lang}
+          filter={activeFilter}
+          sets={sets}
+          lessonKey={lessonParam}
+          onOpen={(key) => setParams({ deck: deckToKey(activeFilter), sub: 'lesson', lesson: key })}
+        />
       )}
 
       <Link to="/import" className={styles.banner}>
@@ -218,26 +266,7 @@ export function LibraryPage() {
 
       <div className={styles.list}>
         {visible?.map((concept) => (
-          <Link key={concept.id} to={`/library/${concept.id}`} className={styles.rowLink}>
-            <Card className={styles.row}>
-              <span>
-                <div className={styles.rowText}>{concept.text}</div>
-                {concept.meanings[0] && (
-                  <div className={styles.rowMeaning}>{concept.meanings[0]}</div>
-                )}
-              </span>
-              <span
-                className={[styles.badge, concept.status === 'acquired' && styles.badgeAcquired]
-                  .filter(Boolean)
-                  .join(' ')}
-              >
-                {concept.mode === 'depth' ? 'Sâu' : concept.status === 'acquired' ? 'Đã thụ đắc' : 'Đang học'}
-              </span>
-              {concept.lookup?.status === 'found' && concept.verification === 'unverified' && (
-                <span className={styles.badge}>Có gợi ý</span>
-              )}
-            </Card>
-          </Link>
+          <ConceptRow key={concept.id} concept={concept} />
         ))}
       </div>
     </section>

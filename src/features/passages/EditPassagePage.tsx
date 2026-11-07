@@ -28,6 +28,7 @@ export function EditPassagePage() {
     void loadPassageForEdit(passageId).then((loaded) => {
       if (!loaded) return;
       setPassage(loaded.passage);
+      setSetId(loaded.passage.setId ?? '');
       setDraft({ title: loaded.passage.title ?? '', text: loaded.passage.text, gaps: loaded.gaps });
     });
   }, [passageId]);
@@ -56,7 +57,8 @@ export function EditPassagePage() {
       toast.show(
         `Đã lưu đoạn văn: giữ ${result.kept} lỗ, thêm ${result.added}, bỏ ${result.removed}.`,
       );
-      navigate(backTo);
+      // The deck it is in now (it may have just been changed).
+      navigate(`/passages?deck=${setId || 'general'}`);
     } finally {
       setSaving(false);
     }
@@ -72,8 +74,18 @@ export function EditPassagePage() {
 
       <PassageEditor draft={draft} onChange={(next) => { setDraft(next); setError(''); }} note={error} />
 
-      <DeckSelect id="passage-deck" lang={passage.lang} value={setId} onChange={setSetId} />
-      <p className={fieldStyles.hint}>Deck áp dụng cho các word mới được tạo từ lỗ mới.</p>
+      <DeckSelect
+        id="passage-deck"
+        lang={passage.lang}
+        value={setId}
+        onChange={setSetId}
+        remember={false}
+        label="Deck của đoạn văn"
+      />
+      <p className={fieldStyles.hint}>
+        Đoạn văn nằm trong deck này ở màn Đoạn văn. Đổi deck không chuyển các word đã có; các word mới tạo từ lỗ mới
+        được thêm vào deck này.
+      </p>
 
       <ButtonRow>
         <Button disabled={!draft.text.trim() || draft.gaps.length === 0 || saving} onClick={() => void handleSave()}>

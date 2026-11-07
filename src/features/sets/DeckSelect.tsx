@@ -10,11 +10,15 @@ interface DeckSelectProps {
   // '' = General (no deck).
   value: string;
   onChange: (setId: string) => void;
+  // False when the screen shows a deck that already exists (editing): then the
+  // remembered "last used" deck is neither applied nor overwritten.
+  remember?: boolean;
+  label?: string;
 }
 
 // "Deck của concept": General by default, or one of the decks; the choice is
 // remembered per language on this device. Without decks it only shows a hint.
-export function DeckSelect({ id, lang, value, onChange }: DeckSelectProps) {
+export function DeckSelect({ id, lang, value, onChange, remember = true, label = 'Deck của concept' }: DeckSelectProps) {
   const [sets, setSets] = useState<WordSet[]>([]);
 
   useEffect(() => {
@@ -22,6 +26,7 @@ export function DeckSelect({ id, lang, value, onChange }: DeckSelectProps) {
     void listWordSets(lang).then((list) => {
       if (!current) return;
       setSets(list);
+      if (!remember) return;
       const remembered = readAddSet(lang);
       onChange(list.some((s) => s.id === remembered) ? remembered : '');
     });
@@ -42,14 +47,14 @@ export function DeckSelect({ id, lang, value, onChange }: DeckSelectProps) {
   return (
     <div>
       <label className={fieldStyles.label} htmlFor={id}>
-        Deck của concept
+        {label}
       </label>
       <select
         id={id}
         className={fieldStyles.input}
         value={value}
         onChange={(e) => {
-          writeAddSet(lang, e.target.value);
+          if (remember) writeAddSet(lang, e.target.value);
           onChange(e.target.value);
         }}
       >

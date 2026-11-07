@@ -249,3 +249,92 @@ describe('passages by deck (read only when a deck is opened)', () => {
     expect((await countPassagesByDeck('en', ids)).general).toBe(0);
   });
 });
+
+describe('older passages get the deck of their words', () => {
+  it('picks the deck most gap words are in; ties go to the smaller id; no deck stays General', async () => {
+    const { guessPassageDecks } = await import('../db/passageDeckMigration');
+    const word = (id: string, setIds?: string[]) =>
+      ({ id, dictionaryId: DICT, lang: 'en', text: id, meanings: [], verification: 'unverified', source: { type: 'import' }, status: 'loaded', createdAt: 1, updatedAt: 1, ...(setIds ? { setIds } : {}) }) as never;
+    const gap = (id: string, passageId: string, conceptId: string, deletedAt?: number) =>
+      ({ id, dictionaryId: DICT, text: 't', targetConceptId: conceptId, passageId, attributes: {}, attributesStatus: 'empty', verification: 'unverified', createdAt: 1, updatedAt: 1, ...(deletedAt ? { deletedAt } : {}) }) as never;
+    const passage = (id: string, extra = {}) => ({ id, dictionaryId: DICT, lang: 'en', text: 't', updatedAt: 1, ...extra }) as never;
+
+    const guessed = guessPassageDecks(
+      [passage('p1'), passage('p2'), passage('p3'), passage('p4', { setId: 'IT' }), passage('p5'), passage('p6', { deletedAt: 3 })],
+      [
+        gap('g1', 'p1', 'a'), gap('g2', 'p1', 'b'), gap('g3', 'p1', 'e'), // IT x2, Films x1 (b is in both), one word in no deck
+        gap('g4', 'p2', 'c'), gap('g5', 'p2', 'd'), // Films x1 (c) + Gone x1 (d): Films, "Gone" is not live
+        gap('g6', 'p3', 'e'), // word in no deck
+        gap('g7', 'p5', 'a', 9), gap('g8', 'p5', 'c'), // the deleted gap does not vote
+      ],
+      [word('a', ['IT']), word('b', ['IT', 'Films']), word('c', ['Films']), word('d', ['Gone']), word('e')],
+      new Set(['IT', 'Films']),
+    );
+    expect(guessed.get('p1')).toBe('IT');
+    expect(guessed.get('p2')).toBe('Films');
+    expect(guessed.has('p3')).toBe(false); // stays General
+    expect(guessed.has('p4')).toBe(false); // already has a deck
+    expect(guessed.get('p5')).toBe('Films');
+    expect(guessed.has('p6')).toBe(false); // deleted
+    // Tie: IT x1, Films x1 -> "Films" sorts before "IT".
+    const tie = guessPassageDecks([passage('t')], [gap('x', 't', 'b')], [word('b', ['IT', 'Films'])], new Set(['IT', 'Films']));
+    expect(tie.get('t')).toBe('Films');
+  });
+
+  it('upgrades a real v9 database: passages without a deck get one, and the screen shows them there', async () => {
+    const { default: Dexie } = await import('dexie');
+    const { DuoDB } = await import('../db/schema');
+    const name = 'duo-migration-v9-to-v10';
+    const v9 = new Dexie(name);
+    v9.version(9).stores({
+      dictionaries: 'id, lang',
+      concepts: 'id, dictionaryId, lang, status, [dictionaryId+text], updatedAt, deletedAt',
+      examples: 'id, dictionaryId, targetConceptId, passageId, attributesStatus, updatedAt, deletedAt',
+      scheduleStates: 'exampleId, due, updatedAt',
+      reviewLogs: 'id, conceptId, exampleId, timestamp',
+      importMappings: 'id, name',
+      settings: 'id',
+      importBatches: 'id, createdAt',
+      syncMeta: 'key',
+      exampleLinks: 'id, exampleId, conceptId, updatedAt, deletedAt',
+      conceptLinks: 'id, childId, parentId, updatedAt, deletedAt',
+      wordSets: 'id, lang, updatedAt, deletedAt',
+      passages: 'id, lang, updatedAt, deletedAt',
+      lessons: 'id, lang, setId, updatedAt, deletedAt',
+    });
+    await v9.open();
+    await v9.table('wordSets').add({ id: 'IT', name: 'IT', lang: 'en', updatedAt: 1 });
+    await v9.table('concepts').add({ id: 'w', dictionaryId: DICT, lang: 'en', text: 'router', meanings: [], setIds: ['IT'], createdAt: 1, updatedAt: 1, source: { type: 'import' } });
+    await v9.table('passages').bulkAdd([
+      { id: 'old', dictionaryId: DICT, lang: 'en', text: 'The router works.', updatedAt: 1 },
+      { id: 'lonely', dictionaryId: DICT, lang: 'en', text: 'Nothing here.', updatedAt: 1 },
+    ]);
+    await v9.table('examples').add({ id: 'g', dictionaryId: DICT, text: 'The router works.', targetConceptId: 'w', passageId: 'old', highlight: { start: 4, end: 10 }, createdAt: 1, updatedAt: 1 });
+    await v9.table('settings').add({ id: 'default', schemaVersion: 9 });
+    v9.close();
+
+    const v10 = new DuoDB(name);
+    await v10.open();
+    expect((await v10.passages.get('old'))?.setId).toBe('IT');
+    expect((await v10.passages.get('lonely'))?.setId).toBeUndefined();
+    expect((await v10.settings.get('default'))?.schemaVersion).toBe(10);
+    v10.close();
+    await Dexie.delete(name);
+  });
+
+  it('editing can move a passage to another deck, or leave it where it is', async () => {
+    const { createWordSet } = await import('../wordsets');
+    const it1 = await createWordSet('en', 'IT');
+    if (!it1.ok) throw new Error('deck');
+    const made = await createPassage({ dictionaryId: DICT, lang: 'en', text: TEXT, gaps: [at('towel')] });
+    if (!made.ok) throw new Error('passage');
+    const edit = { text: TEXT, gaps: await listGaps(made.passage.id).then((g) => g.map((e) => ({ start: e.highlight!.start, end: e.highlight!.end, exampleId: e.id }))) };
+
+    await updatePassage(made.passage.id, { ...edit, setId: it1.set.id });
+    expect((await db.passages.get(made.passage.id))?.setId).toBe(it1.set.id);
+    await updatePassage(made.passage.id, { ...edit }); // no setId: unchanged
+    expect((await db.passages.get(made.passage.id))?.setId).toBe(it1.set.id);
+    await updatePassage(made.passage.id, { ...edit, setId: '' }); // back to General
+    expect((await db.passages.get(made.passage.id))?.setId).toBeUndefined();
+  });
+});

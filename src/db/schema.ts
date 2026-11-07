@@ -17,6 +17,7 @@ import type {
 } from './types';
 
 import { planLessonMigration } from './lessonMigration';
+import { guessPassageDecks } from './passageDeckMigration';
 
 export class DuoDB extends Dexie {
   dictionaries!: EntityTable<Dictionary, 'id'>;
@@ -148,6 +149,31 @@ export class DuoDB extends Dexie {
           .toCollection()
           .modify((row: { schemaVersion?: number }) => {
             row.schemaVersion = 9;
+          });
+      });
+    // v10: older passages get the deck their words are in (`Passage.setId`),
+    // so the Passages screen groups them right. No table changes.
+    this.version(10)
+      .stores({})
+      .upgrade(async (tx) => {
+        const [passages, examples, concepts, sets] = await Promise.all([
+          tx.table('passages').toArray(),
+          tx.table('examples').toArray(),
+          tx.table('concepts').toArray(),
+          tx.table('wordSets').toArray(),
+        ]);
+        const live = new Set(
+          sets.filter((s: { deletedAt?: number }) => s.deletedAt === undefined).map((s: { id: string }) => s.id),
+        );
+        const now = Date.now();
+        for (const [passageId, setId] of guessPassageDecks(passages, examples, concepts, live)) {
+          await tx.table('passages').update(passageId, { setId, updatedAt: now });
+        }
+        await tx
+          .table('settings')
+          .toCollection()
+          .modify((row: { schemaVersion?: number }) => {
+            row.schemaVersion = 10;
           });
       });
   }

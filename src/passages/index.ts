@@ -242,7 +242,12 @@ export async function updatePassage(passageId: string, edit: PassageEdit): Promi
   if (!body.trim()) return { ok: false, reason: 'empty' };
   if (gaps.length === 0) return { ok: false, reason: 'no-gaps' };
 
-  await passageRepository.update(passageId, { text: body, title: edit.title?.trim() || undefined });
+  // `setId` moves the passage to that deck ('' = General); left out = unchanged.
+  await passageRepository.update(passageId, {
+    text: body,
+    title: edit.title?.trim() || undefined,
+    ...(edit.setId !== undefined ? { setId: edit.setId || undefined } : {}),
+  });
   const passage: Passage = { ...current, text: body };
 
   const existing = await listGaps(passageId);

@@ -5,6 +5,8 @@ import { Card } from '../../ui/Card';
 import { BackupError, exportBackup, restoreBackup } from '../../backup/json';
 import { dateStamp, downloadBlob, getLastBackupAt, setLastBackupAt } from '../../backup/download';
 import { exportXlsx } from '../../backup/table';
+import { conceptsInScope, isWholeKit, type ExportScope } from '../../backup/scope';
+import { ExportScopeCard } from './ExportScopeCard';
 import { conceptRepository, exampleRepository, lessonRepository, wordSetRepository } from '../../db/repositories';
 import { useToast } from '../../ui/Toast';
 import { StudyCard } from './StudyCard';
@@ -24,6 +26,7 @@ export function SettingsPage() {
   const [busy, setBusy] = useState(false);
   const toast = useToast();
   const [notice, setNotice] = useState<Notice>(null);
+  const [scope, setScope] = useState<ExportScope>({});
   const [lastBackup, setLastBackup] = useState<number | null>(getLastBackupAt());
 
   async function run(task: () => Promise<string>) {
@@ -58,8 +61,10 @@ export function SettingsPage() {
         wordSetRepository.listActive(),
         lessonRepository.listActive(),
       ]);
-      downloadBlob(await exportXlsx(concepts, examples, sets, lessons), `duo-words-${dateStamp()}.xlsx`);
-      return `Đã xuất ${concepts.length} concept ra file xlsx (cùng cột với file mẫu nhập). File này để đọc/lưu trữ; sao lưu đầy đủ là file JSON.`;
+      // Only the concepts inside the chosen scope.
+      const inScope = conceptsInScope(concepts, scope, new Set(sets.map((d) => d.id)));
+      downloadBlob(await exportXlsx(inScope, examples, sets, lessons), `duo-words-${dateStamp()}.xlsx`);
+      return `Đã xuất ${inScope.length} concept ra file xlsx (cùng cột với file mẫu nhập). File này để đọc/lưu trữ; sao lưu đầy đủ là file JSON.`;
     });
 
   const handleImportJson = (file: File) =>
@@ -86,6 +91,8 @@ export function SettingsPage() {
 
       <SyncCard />
 
+      <ExportScopeCard scope={scope} onChange={setScope} />
+
       <Card className={styles.card}>
         <h2>Sao lưu</h2>
         <p className={styles.note}>
@@ -97,8 +104,11 @@ export function SettingsPage() {
           Xuất sao lưu JSON (đầy đủ)
         </Button>
         <Button variant="secondary" disabled={busy} onClick={() => void handleExportXlsx()}>
-          Xuất danh sách concept (xlsx)
+          Xuất danh sách concept (xlsx){isWholeKit(scope) ? '' : ' theo phạm vi'}
         </Button>
+        <p className={styles.note}>
+          Phạm vi ở trên áp dụng cho file xlsx. Bản JSON hiện vẫn xuất đầy đủ (JSON theo phạm vi sẽ có ở bước sau).
+        </p>
       </Card>
 
       <Card className={styles.card}>

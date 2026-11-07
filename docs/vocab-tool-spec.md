@@ -650,7 +650,7 @@ Lý do: xuất JSON và xlsx hiện ghi **toàn bộ kho** (cả Anh và Đức,
 
 | Bước | Nội dung | Xong khi |
 |---|---|---|
-| **M16a** Phạm vi xuất | Hàm thuần chọn concept theo phạm vi (ngôn ngữ, deck/General, bài); thẻ chọn phạm vi ở Cài đặt → Sao lưu (hộp chọn ngôn ngữ, deck, bài; bài chỉ hiện khi đã chọn deck) kèm số concept trong phạm vi; dùng chung cho xlsx và JSON | Chọn Đức + Goethe A1 + bài Family thì thấy đúng số từ của bài; chọn lại deck thì bài bị bỏ chọn |
+| **M16a** Phạm vi xuất (*đã làm*) | Hàm thuần chọn concept theo phạm vi (ngôn ngữ, deck/General, bài); thẻ chọn phạm vi ở Cài đặt → Sao lưu (hộp chọn ngôn ngữ, deck, bài; bài chỉ hiện khi đã chọn deck) kèm số concept trong phạm vi; dùng chung cho xlsx và JSON (`src/backup/scope.ts`, `features/settings/ExportScopeCard.tsx`); nút xlsx đã lọc theo phạm vi, JSON theo phạm vi ở M16c | Chọn Đức + Goethe A1 + bài Family thì thấy đúng số từ của bài; chọn lại deck thì bài bị bỏ chọn |
 | **M16b** xlsx theo phạm vi | Xuất xlsx chỉ concept trong phạm vi; tên file ghi phạm vi; báo khi phạm vi trống; xuất rồi nhập lại vào kho trống thì về đúng ngôn ngữ, deck, bài | Xuất deck A1 của tiếng Đức ra file chỉ có từ của deck đó; nhập vào kho trống ra đúng deck và bài |
 | **M16c** JSON theo phạm vi | `exportBackup` nhận phạm vi: chọn bảng và dòng liên quan như trên, header `scope`, không có Cài đặt | Xuất một deck rồi nạp vào kho trống: concept, example, lịch ôn, bài, đoạn văn của deck đó về đúng chỗ, không có gì của deck khác |
 | **M16d** Nạp bản một phần và nhãn vai trò | Nạp JSON báo rõ "bản sao lưu một phần (phạm vi …)" và số dòng thêm/cập nhật; ghi chú vai trò JSON/xlsx ở Cài đặt; cập nhật hành trình J9 | Nạp bản một phần vào kho đang có dữ liệu thì gộp (mới hơn thắng), không xóa gì |

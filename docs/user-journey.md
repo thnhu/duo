@@ -459,6 +459,25 @@ flowchart TD
 - **Ngoại lệ:** word đã thụ đắc hiện sẵn trong đoạn, không hỏi lại; nếu chỗ sửa cắt qua mép một lỗ thì lỗ đó bị bỏ (có báo) và bạn đục lại.
 - **Spec:** Bản 6. **Mốc:** Bản 6.
 
+
+---
+
+### J15. Học và ôn theo bài (Bản 8)
+
+- **Mục tiêu:** ôn đúng các từ của một hay vài bài trong giáo trình (ví dụ deck A1: Family, Daily activities), thay vì cả deck.
+- **Bắt đầu:** PO đã nhập file có cột `lesson`, hoặc tự tạo bài.
+
+| # | PO làm | Hệ thống phản hồi |
+|---|---|---|
+| 1 | Nhập file có cột `lesson` vào deck A1 | Bài được tạo trong deck theo thứ tự xuất hiện trong file; bước duyệt hiện bài của từng từ; nhập lại không tạo bài trùng |
+| 2 | Mở **Thư viện → deck A1 → Bài** | Danh sách bài kèm số từ; bấm một bài thì ra ngay các từ của bài (~20 từ) |
+| 3 | Mở **Quản lý bài** của deck | Đổi tên, đổi thứ tự, xóa bài (có ô xác nhận và Hoàn tác); xóa bài chỉ gỡ nhãn bài khỏi các từ |
+| 4 | Thêm tay một word hoặc mở chi tiết concept, chọn bài ở hộp chọn "Bài" | Hộp chọn chỉ liệt kê bài của deck đã chọn; có "+ Tạo bài mới…"; không gõ tay nên không có bài trùng do gõ sai |
+| 5 | Ở **Ôn tập** (hoặc Học, Phản xạ chớp nhoáng, Hôm nay) chọn deck A1 rồi tick một hoặc nhiều bài | Số từ đến hạn và phiên ôn chỉ tính từ trong các bài đã tick (không tick = cả deck) |
+
+- **Ngoại lệ:** từ thuộc một bài; từ cần ở hai chủ đề thì thêm vào deck khác. Gỡ từ khỏi deck của bài thì từ rời bài đó. Từ không thuộc deck nào nằm trong deck General, và General cũng có bài.
+- **Spec:** C6, Bản 8. **Mốc:** M15a–M15f.
+
 ---
 
 ## 4. Ma trận: hành trình ↔ chức năng ↔ cột mốc
@@ -480,6 +499,7 @@ flowchart TD
 | J12 Gom từ theo deck | C6, Bản 4, Bản 5 | M13a, M13b, Bản 5 | 4 và 5 |
 | J13 Liên kết concept và tìm qua mạng liên kết | 1.4, R1–R7 | M11c, M12a–d | 3 và 3b |
 | J14 Học theo đoạn văn (đục lỗ) | Bản 6 | Bản 6 | 6 |
+| J15 Học và ôn theo bài | C6, Bản 8 | M15a–M15f | 8 |
 
 ---
 
@@ -532,6 +552,7 @@ Các điểm dưới đây là chỗ hành trình dựa vào **giả định c�
 | G16 | Xóa luôn có **ô xác nhận tại chỗ** nêu hậu quả, và sau đó có badge **Hoàn tác** (xóa mềm); không dùng hộp xác nhận của trình duyệt | J6, J8, J12 |
 | G19 | Nút (+) có **ba lựa chọn tách hẳn**: Thêm từ, Thêm example, Thêm concept. Từ và concept cùng là một dòng `concepts`, chỉ khác `kind`; Thêm concept không tạo example tối thiểu | J2 |
 | G20 | Từ không thuộc deck nào tự nằm trong deck **General** (mặc định ở Thư viện và các ô chọn deck); Thư viện đi **card deck → card con Concept/Word → danh sách**, chỉ tải khi bấm | J12 |
+| G22 | **Bài (lesson)** là chủ đề có tên nằm trong một deck (khoảng 20 word), chọn bằng hộp chọn, đổi tên một chỗ thì cả bài đổi; một từ thuộc một bài; Học, Ôn và Thư viện theo được bài | J15 |
 | G21 | Bài nhập chính tả **không phân biệt hoa/thường** (Anh và Đức), vẫn phân biệt `ä ö ü ß`; tìm kiếm chỉ chạy khi bấm Enter/"Tìm" | J4, J11 |
 | G17 | Lưu xong thì **báo bằng badge và chuyển trang** (concept → Thư viện, ví dụ → concept hoặc Hộp chờ, Ghi nhanh → Thư viện); Ghi nhanh có ô "Ở lại trang này để ghi tiếp" cho nhập hàng loạt | J2, J10 |
 | G18 | Liên kết concept luôn đọc theo chiều **con → cha**; nối ngược một cặp đã có thì hỏi đổi chiều; vòng tròn bị chặn | J13 |

@@ -362,6 +362,12 @@ WordSet {                              // "Deck" (v10): nhãn gom concept theo m
   updatedAt, deletedAt?
 }
 
+Lesson {                               // "Bài" (v12): chủ đề có tên trong một deck, ~20 word
+  id, lang, name, order,
+  setId?,                              // deck chứa bài; trống = deck General
+  updatedAt, deletedAt?
+}                                      // tên duy nhất trong một deck; một concept thuộc tối đa một bài
+
 Concept {                              // một từ, cụm từ hoặc nhóm từ đại diện cho một nghĩa
   id, dictionaryId, lang ("en"|"de"),
   text, pos,
@@ -370,6 +376,7 @@ Concept {                              // một từ, cụm từ hoặc nhóm t�
     gender?, plural?, verbForms?       // Infinitiv, Präteritum, Partizip II...
   },
   setIds?: string[],                   // deck chứa concept này (v10); rỗng = nằm trong deck General (v11)
+  lessonId?: string,                   // bài của concept (v12), thuộc một trong các deck của concept
   kind?: "word" | "concept",          // card con trong deck (v11); không có thì suy ra từ mode
   verification: "unverified" | "verified",
   source: { type ("import"|"quick-add"|"lookup"), fileName?, lesson?, row? },
@@ -603,6 +610,32 @@ Lý do: file nhập tiếng Đức mang nhiều thông tin (giống, số nhiề
 
 **Đã chốt (PO, 2026-11-07):** ngữ pháp gõ tay, từ file hay từ tra cứu đều lưu `unverified` (cùng nguyên tắc 8); màn Thêm word có nút "Tra cứu để điền" (kết quả chỉ là gợi ý, PO kiểm tra rồi mới lưu).
 
+### Bản 8: Bài (lesson) trong deck (v12, PO yêu cầu 2026-11-07)
+Lý do: PO học tiếng Đức A1 theo giáo trình có danh sách từ chia theo **bài**, mỗi bài là một **chủ đề có tên** (family, daily activities…), khoảng 20 word. Deck A1 có hai card con Concept/Word nhưng không có chỗ chứa các bài, nên không ôn được theo bài. Hiện `lesson` chỉ là chuỗi tự do trong `Concept.source.lesson` (từ file nhập, không sửa được, gõ khác một chữ là thành bài khác), chỉ màn Học lọc được và gộp chung mọi deck.
+
+**Đã chốt (PO, 2026-11-07):**
+- **Bài là một đối tượng nhẹ nằm trong deck**, không phải deck con (không có tầng deck lồng nhau, không chia Concept/Word trong từng bài). Mỗi bài có tên và thứ tự.
+- Dữ liệu sạch: gắn bài bằng **hộp chọn** từ danh sách (không gõ tay); đổi tên bài ở một chỗ thì mọi từ trong bài đổi theo; xóa bài chỉ gỡ nhãn bài khỏi các từ, không xóa từ.
+- **Một từ thuộc một bài.** Từ cần ở hai chủ đề thì dùng deck (một từ nằm được trong nhiều deck).
+- **Thứ tự bài** theo thứ tự xuất hiện lần đầu trong file nhập (đúng thứ tự giáo trình), đổi thứ tự được sau.
+- **Bài luôn thuộc một deck hoặc deck General**; tên bài duy nhất trong một deck (không phân biệt hoa/thường).
+- Cột `lesson` của file nhập tìm bài cùng tên trong deck (hoặc tạo mới), giống cột `deck`.
+- Ôn tập, Học, Phản xạ chớp nhoáng, Hôm nay chọn deck rồi **tick một hoặc nhiều bài**. Thư viện: trong deck có thêm card **"Bài"**, bấm vào ra danh sách bài, bấm một bài ra thẳng các từ của nó.
+- Mô hình dữ liệu: bảng mới `lessons` (`Lesson` = id, lang, setId?, name, order; `setId` trống = deck General; vào đồng bộ và sao lưu, xóa mềm) và `Concept.lessonId?`. **Schema Dexie v8** (`CURRENT_SCHEMA_VERSION` = 8). `Concept.source.lesson` vẫn giữ làm bản ghi nguồn gốc của file nhập, không dùng để lọc nữa.
+- **Migration:** mỗi concept có `source.lesson` được gắn vào bài cùng tên (tạo nếu chưa có) của deck đầu tiên trong `setIds`, hoặc của deck General nếu không có deck; thứ tự bài theo thứ tự concept được tạo. Không mất dữ liệu cũ.
+- Khi một từ bị gỡ khỏi deck của bài thì `lessonId` của nó bị xóa (bài không "sống" ngoài deck của nó).
+
+**Các bước (mỗi phiên một bước, theo thứ tự):**
+
+| Bước | Nội dung | Xong khi |
+|---|---|---|
+| **M15a** Dữ liệu | Bảng `lessons`, `Concept.lessonId`, schema v8 và migration từ `source.lesson`; vào `SYNC_TABLES` và `BACKUP_TABLES`; xóa deck thì xóa mềm cả bài của deck | Mở dữ liệu cũ có `source.lesson`: các từ nằm đúng bài của đúng deck; xuất rồi nhập lại JSON giữ nguyên bài |
+| **M15b** Quản lý bài | Module `src/lessons` (tạo, đổi tên, đổi thứ tự, xóa gỡ nhãn, gắn từ vào bài, tìm hoặc tạo theo tên) và màn `/lessons?deck=…` (có ô xác nhận xóa tại chỗ và Hoàn tác) | Tạo bài "Family" trong deck A1, đổi tên thì các từ trong bài đổi theo, xóa bài thì từ vẫn còn |
+| **M15c** Nhập và xuất file | Cột `lesson` tìm hoặc tạo bài trong deck của file (deck từ cột `deck` hoặc deck đích); bước duyệt hiện bài; hoàn tác lần nhập xóa bài do lần nhập tạo ra; xuất xlsx ghi tên bài | Nhập file Goethe A1: bài tạo đúng thứ tự trong file, nhập lại không tạo bài trùng |
+| **M15d** Gắn bài bằng tay | Hộp chọn "Bài" (danh sách bài của deck đã chọn, có "+ Tạo bài mới…") ở Thêm word và màn chi tiết concept | Thêm tay một word vào bài có sẵn; đổi bài ở chi tiết; chọn deck khác thì danh sách bài đổi theo |
+| **M15e** Thư viện theo bài | Card "Bài" trong deck → danh sách bài kèm số từ → danh sách từ của bài (chỉ tải khi bấm) | Từ deck A1 vào được bài Family và thấy đúng khoảng 20 từ |
+| **M15f** Học và ôn theo bài | Chọn deck rồi tick nhiều bài ở Học, Ôn tập, Phản xạ chớp nhoáng và Hôm nay (thay ô chọn một chuỗi bài của màn Học); số từ đến hạn đếm theo bài đã chọn; bộ lọc Bài của Tìm kiếm dùng bài mới | Ôn tập chỉ ra các từ của hai bài đã tick; số từ đến hạn khớp |
+
 ### Quy ước phản hồi giao diện (v10, PO yêu cầu 2026-11-05) **[CHỐT]**
 - **Không dùng `confirm()`/`alert()` của trình duyệt.** Thông báo dùng **badge (toast)** ở đầu màn hình: nhỏ (cao ~38 px), tự tắt sau 2,5 s (4,5 s nếu có nút hoặc là lỗi), dừng khi rê chuột/focus, vẫn còn sau khi chuyển trang.
 - **Xóa phải có ô xác nhận** hiện ngay tại nút (panel trong trang, không phủ màn hình), nêu hậu quả bằng số, focus ở "Hủy", Esc để hủy; sau khi xóa vẫn có badge **"Hoàn tác"** (xóa mềm nên khôi phục được concept, ví dụ và mọi liên kết đi kèm).
@@ -706,6 +739,7 @@ Chỉ `text` bắt buộc. Cột mẫu theo đúng thứ tự dưới đây.
 **v12 (bản này):**
 - **Mục 12 Format input file** (cột, quy tắc, ví dụ từ file mẫu Goethe A1 của PO).
 - **Cụm tô sáng nhiều đoạn** cho động từ tách (`Example.highlightExtra`, không cần migration): nhập file bằng `fahren … ab`, nút "Tô thêm đoạn nữa", bài điền cụm tiếng Anh và nghe chép, xuất xlsx giữ nguyên cách ghi (C7, 9.2 câu 2, mục 12).
+- **Kế hoạch Bản 8** (mục 10): bài (lesson) là đối tượng có tên nằm trong deck, chọn bằng hộp chọn; ôn tập, học và Thư viện theo bài; các bước M15a–M15f.
 - **Kế hoạch Bản 7** (mục 10): nhập tay và nhập file tiếng Đức cho cùng dạng dữ liệu; màn hình hiện và sửa được mọi thông tin của file; loại từ ở màn Thêm word là hộp chọn.
 - **Bài điền đoạn văn phải làm lại khi dưới ngưỡng đạt** (mặc định 90%, tối đa 2 lần làm lại; chỉnh ở Cài đặt → Học).
 

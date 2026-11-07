@@ -141,3 +141,52 @@ describe('JSON backup of one scope', () => {
     expect(concepts.some((c) => c.text === 'Haus')).toBe(false);
   });
 });
+
+describe('restoring a partial backup (M16d)', () => {
+  it('says it is partial, counts the concepts, merges into what is there and deletes nothing', async () => {
+    const { a1, mutter, haus } = await build();
+    const backup = await exportBackup(1, { lang: 'de', deck: a1.id });
+    const json = JSON.parse(JSON.stringify(backup));
+
+    // Later the library changed: Mutter was edited (newer than the file), a new word was added.
+    await db.concepts.update(mutter.id, { text: 'Mutter (neu)', updatedAt: Date.now() + 10_000 });
+    const extra = (await saveQuickWord(DE, 'de', 'Brot')).concept;
+
+    const summary = await restoreBackup(json);
+    expect(summary.partial).toEqual({ label: 'tiếng Đức · Goethe A1', conceptCount: 2 });
+    // Concepts in the file: Mutter (older than here: kept), Vater and the gap word Tisch (same: kept).
+    expect(summary.concepts.added).toBe(0);
+    expect(summary.concepts.updated).toBe(0);
+    expect(summary.concepts.kept).toBe(3);
+    // The newer local edit won; nothing else was removed.
+    expect((await db.concepts.get(mutter.id))?.text).toBe('Mutter (neu)');
+    expect((await db.concepts.get(extra.id))?.deletedAt).toBeUndefined();
+    expect((await db.concepts.get(haus.id))?.deletedAt).toBeUndefined();
+  });
+
+  it('counts new and updated concepts when the file is newer or brings words that are missing', async () => {
+    const { a1, vater } = await build();
+    const backup = await exportBackup(1, { lang: 'de', deck: a1.id });
+    const json = JSON.parse(JSON.stringify(backup));
+    // The copy in the file is newer than the one here for Vater, and Mutter is gone from here.
+    json.tables.concepts.find((c: { id: string }) => c.id === vater.id).updatedAt = Date.now() + 10_000;
+    json.tables.concepts.find((c: { id: string }) => c.id === vater.id).text = 'Vater (file)';
+    await db.concepts.delete(json.tables.concepts.find((c: { text: string }) => c.text === 'Mutter').id);
+
+    const summary = await restoreBackup(json);
+    expect(summary.concepts).toEqual({ added: 1, updated: 1, kept: 1 });
+    expect((await db.concepts.get(vater.id))?.text).toBe('Vater (file)');
+  });
+
+  it('a full backup is not partial, and a damaged scope header does not stop the restore', async () => {
+    const { a1 } = await build();
+    const full = JSON.parse(JSON.stringify(await exportBackup(1)));
+    expect((await restoreBackup(full)).partial).toBeUndefined();
+
+    const scoped = JSON.parse(JSON.stringify(await exportBackup(1, { lang: 'de', deck: a1.id })));
+    scoped.scope = 'broken';
+    const summary = await restoreBackup(scoped);
+    expect(summary.partial).toBeUndefined();
+    expect(summary.concepts.kept).toBeGreaterThan(0);
+  });
+});

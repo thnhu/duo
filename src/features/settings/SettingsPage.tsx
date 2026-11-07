@@ -92,6 +92,10 @@ export function SettingsPage() {
         throw new BackupError('File không đọc được (không phải JSON).');
       }
       const summary = await restoreBackup(data);
+      if (summary.partial) {
+        const c = summary.concepts;
+        return `Đã khôi phục bản sao lưu một phần (${summary.partial.label}): ${c.added} concept mới, ${c.updated} cập nhật, ${c.kept} giữ nguyên. Tổng cộng thêm ${summary.added}, cập nhật ${summary.updated}, giữ nguyên ${summary.kept} bản ghi. Không có gì bị xóa.`;
+      }
       return `Đã khôi phục: thêm ${summary.added}, cập nhật ${summary.updated}, giữ nguyên ${summary.kept} bản ghi. Không có gì bị xóa.`;
     });
 
@@ -125,13 +129,24 @@ export function SettingsPage() {
         <p className={styles.note}>
           Phạm vi ở trên áp dụng cho cả JSON và xlsx. Không chọn phạm vi thì JSON là bản sao lưu đầy đủ.
         </p>
+        <ul className={styles.note}>
+          <li>
+            <strong>JSON</strong>: để sao lưu và khôi phục. Có đủ example, liên kết, đoạn văn, bài, lịch ôn và lịch sử
+            trả lời; nạp lại tự về đúng deck, bài.
+          </li>
+          <li>
+            <strong>xlsx</strong>: để đọc và sửa hàng loạt trong Excel. Chỉ có từ vựng (không có liên kết, đoạn văn,
+            lịch ôn); nạp lại bằng Nhập từ file.
+          </li>
+        </ul>
       </Card>
 
       <Card className={styles.card}>
         <h2>Khôi phục</h2>
         <p className={styles.note}>
-          Nhập file JSON đã xuất ở máy này hoặc máy khác. Dữ liệu được <strong>gộp</strong> vào máy hiện tại:
-          bản ghi mới hơn thắng, không xóa gì.
+          Nhập file JSON đã xuất ở máy này hoặc máy khác, bản đầy đủ hay bản theo phạm vi. Dữ liệu được{' '}
+          <strong>gộp</strong> vào máy hiện tại: bản ghi mới hơn thắng, không xóa gì; riêng cài đặt chỉ có trong bản
+          đầy đủ.
         </p>
         <input
           ref={fileInput}

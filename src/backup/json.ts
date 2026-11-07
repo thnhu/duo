@@ -86,6 +86,18 @@ export interface RestoreSummary {
   updated: number;
   // Rows already on this device that were as new or newer.
   kept: number;
+  // What happened to the concepts alone (the number PO cares about).
+  concepts: { added: number; updated: number; kept: number };
+  // Set when the file is a backup of one scope, not the full backup.
+  partial?: { label: string; conceptCount: number };
+}
+
+// The scope header of a partial file, read carefully: a damaged one is ignored
+// (the rows are still restored) instead of stopping the restore.
+function partialInfo(file: BackupFile): RestoreSummary['partial'] {
+  const scope = file.scope as Partial<BackupFile['scope']> | undefined;
+  if (typeof scope !== 'object' || scope === null || typeof scope.label !== 'string') return undefined;
+  return { label: scope.label, conceptCount: typeof scope.conceptCount === 'number' ? scope.conceptCount : 0 };
 }
 
 function updatedAtOf(row: Record<string, unknown>): number {
@@ -100,7 +112,9 @@ function updatedAtOf(row: Record<string, unknown>): number {
 // Rows are written as they are, keeping their original `updatedAt`.
 export async function restoreBackup(data: unknown): Promise<RestoreSummary> {
   const file = validateBackup(data);
-  const summary: RestoreSummary = { added: 0, updated: 0, kept: 0 };
+  const summary: RestoreSummary = { added: 0, updated: 0, kept: 0, concepts: { added: 0, updated: 0, kept: 0 } };
+  const partial = partialInfo(file);
+  if (partial) summary.partial = partial;
 
   await db.transaction('rw', BACKUP_TABLES.map(([name]) => db.table(name)), async () => {
     for (const [name, key] of BACKUP_TABLES) {
@@ -120,11 +134,14 @@ export async function restoreBackup(data: unknown): Promise<RestoreSummary> {
         if (!current) {
           toWrite.push(row);
           summary.added++;
+          if (name === 'concepts') summary.concepts.added++;
         } else if (name !== 'reviewLogs' && updatedAtOf(row) > updatedAtOf(current)) {
           toWrite.push(row);
           summary.updated++;
+          if (name === 'concepts') summary.concepts.updated++;
         } else {
           summary.kept++;
+          if (name === 'concepts') summary.concepts.kept++;
         }
       }
       if (toWrite.length > 0) await table.bulkPut(toWrite);

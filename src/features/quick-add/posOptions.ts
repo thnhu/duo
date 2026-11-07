@@ -10,17 +10,19 @@ export interface PosOption {
   label: string;
 }
 
+// The label is the stored value itself (noun, verb…), so what PO sees in the
+// select box is what a file column must contain.
 const COMMON: PosOption[] = [
-  { value: 'noun', label: 'Noun (danh từ)' },
-  { value: 'verb', label: 'Verb (động từ)' },
-  { value: 'adjective', label: 'Adjective (tính từ)' },
-  { value: 'adverb', label: 'Adverb (trạng từ)' },
-  { value: 'preposition', label: 'Preposition (giới từ)' },
-  { value: 'pronoun', label: 'Pronoun (đại từ)' },
-  { value: 'conjunction', label: 'Conjunction (liên từ)' },
-  { value: 'phrase', label: 'Phrase (cụm từ)' },
-  { value: 'other', label: 'Khác' },
-];
+  'noun',
+  'verb',
+  'adjective',
+  'adverb',
+  'preposition',
+  'pronoun',
+  'conjunction',
+  'phrase',
+  'other',
+].map((value) => ({ value, label: value }));
 
 const POS_OPTIONS: Record<Lang, PosOption[]> = {
   en: COMMON,

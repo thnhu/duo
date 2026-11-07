@@ -338,3 +338,35 @@ describe('older passages get the deck of their words', () => {
     expect((await db.passages.get(made.passage.id))?.setId).toBeUndefined();
   });
 });
+
+describe('moving passages to another deck', () => {
+  it('moves them all at once, leaves the words alone, and can be undone', async () => {
+    const { movePassagesToDeck, undoMovePassages, listPassagesOfDeck } = await import('./index');
+    const { createWordSet } = await import('../wordsets');
+    const daily = await createWordSet('en', 'Daily activities');
+    if (!daily.ok) throw new Error('deck');
+    const mk = async () => {
+      const start = TEXT.indexOf('towel');
+      const r = await createPassage({ dictionaryId: DICT, lang: 'en', text: TEXT, gaps: [{ start, end: start + 5 }] });
+      if (!r.ok) throw new Error('passage');
+      return r.passage.id;
+    };
+    const ids = [await mk(), await mk()];
+    const words = (await db.concepts.toArray()).filter((c) => c.deletedAt === undefined).map((c) => [c.id, c.setIds]);
+
+    const undo = await movePassagesToDeck(ids, daily.set.id);
+    expect(undo.previous).toHaveLength(2);
+    const live = [daily.set.id];
+    expect((await listPassagesOfDeck('en', daily.set.id, live)).map((p) => p.id).sort()).toEqual([...ids].sort());
+    expect(await listPassagesOfDeck('en', undefined, live)).toEqual([]);
+    // The words did not move.
+    expect((await db.concepts.toArray()).filter((c) => c.deletedAt === undefined).map((c) => [c.id, c.setIds])).toEqual(words);
+
+    // Moving again to the same deck changes nothing (nothing to undo).
+    expect((await movePassagesToDeck(ids, daily.set.id)).previous).toEqual([]);
+
+    await undoMovePassages(undo);
+    expect((await listPassagesOfDeck('en', undefined, live)).map((p) => p.id).sort()).toEqual([...ids].sort());
+    expect(await listPassagesOfDeck('en', daily.set.id, live)).toEqual([]);
+  });
+});

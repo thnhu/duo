@@ -363,3 +363,27 @@ export function gapsIn(passageId: string, examples: Example[]): Example[] {
     .filter((e) => e.passageId === passageId && e.highlight && e.deletedAt === undefined)
     .sort((a, b) => a.highlight!.start - b.highlight!.start);
 }
+
+// ---- Moving passages between decks ----
+
+export interface PassageDeckUndo {
+  // The deck each passage was in before (undefined = General).
+  previous: Array<{ id: string; setId?: string }>;
+}
+
+// Puts these passages in a deck (undefined = General). Only the passage's own
+// deck changes: the words in its gaps stay in whatever decks they are in.
+export async function movePassagesToDeck(passageIds: string[], setId: string | undefined): Promise<PassageDeckUndo> {
+  const previous: PassageDeckUndo['previous'] = [];
+  for (const id of passageIds) {
+    const passage = await passageRepository.getById(id);
+    if (!passage || passage.deletedAt !== undefined || passage.setId === setId) continue;
+    previous.push({ id, ...(passage.setId ? { setId: passage.setId } : {}) });
+    await passageRepository.update(id, { setId });
+  }
+  return { previous };
+}
+
+export async function undoMovePassages(undo: PassageDeckUndo): Promise<void> {
+  for (const { id, setId } of undo.previous) await passageRepository.update(id, { setId });
+}

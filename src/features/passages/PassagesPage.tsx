@@ -8,7 +8,16 @@ import { LangToggle } from '../../ui/LangToggle';
 import { LinkButton } from '../../ui/LinkButton';
 import { useToast } from '../../ui/Toast';
 import type { Passage, WordSet } from '../../db/types';
-import { countGapsOf, countPassagesByDeck, deletePassage, listPassagesOfDeck } from '../../passages';
+import {
+  countGapsOf,
+  countPassagesByDeck,
+  deletePassage,
+  listPassagesOfDeck,
+  movePassagesToDeck,
+  undoMovePassages,
+} from '../../passages';
+import { DeckSelect } from '../sets/DeckSelect';
+import fieldStyles from '../../ui/field.module.css';
 import { GENERAL_DECK_NAME, listWordSets } from '../../wordsets';
 import { useLastLanguage } from '../quick-add/useLastLanguage';
 import libraryStyles from '../library/LibraryPage.module.css';
@@ -29,6 +38,8 @@ export function PassagesPage() {
   const [passages, setPassages] = useState<Passage[] | null>(null);
   const [gapCounts, setGapCounts] = useState<Map<string, number>>(new Map());
   const [confirming, setConfirming] = useState<string | null>(null);
+  // The deck the opened deck's passages would be moved to ('' = General).
+  const [moveTo, setMoveTo] = useState('');
   const toast = useToast();
 
   // ?deck=general | <deck id>: which deck's passages are open (none = the cards).
@@ -63,6 +74,23 @@ export function PassagesPage() {
     setConfirming(null);
     toast.show(`Đã xóa đoạn văn và ${removed} lỗ. Các word vẫn còn trong thư viện.`, { kind: 'info' });
     await load();
+  }
+
+  async function handleMoveAll() {
+    if (!passages || passages.length === 0) return;
+    const target = moveTo || undefined;
+    const undo = await movePassagesToDeck(passages.map((p) => p.id), target);
+    const targetName = target ? (decks?.find((d) => d.id === target)?.name ?? '') : GENERAL_DECK_NAME;
+    toast.show(`Đã chuyển ${undo.previous.length} đoạn văn sang deck "${targetName}".`, {
+      action: {
+        label: 'Hoàn tác',
+        onClick: () => {
+          void undoMovePassages(undo).then(() => load());
+        },
+      },
+    });
+    // Show them where they are now.
+    setParams({ deck: target ?? GENERAL });
   }
 
   const cards = counts
@@ -121,6 +149,32 @@ export function PassagesPage() {
             ))}
           </div>
         </>
+      )}
+
+      {openDeck && passages && passages.length > 0 && (
+        <Card>
+          <h2>Chuyển tất cả sang deck khác</h2>
+          <DeckSelect
+            id="passages-move-to"
+            lang={lang}
+            value={moveTo}
+            onChange={setMoveTo}
+            remember={false}
+            label={`Chuyển ${passages.length} đoạn văn của "${openName}" sang`}
+          />
+          <p className={fieldStyles.hint}>
+            Chỉ đổi deck của đoạn văn. Các word trong lỗ vẫn nằm ở deck của chúng. Có thể Hoàn tác ngay sau đó.
+          </p>
+          <ButtonRow>
+            <Button
+              variant="secondary"
+              disabled={(moveTo || GENERAL) === openDeck}
+              onClick={() => void handleMoveAll()}
+            >
+              Chuyển {passages.length} đoạn văn
+            </Button>
+          </ButtonRow>
+        </Card>
       )}
 
       {openDeck && passages && passages.length === 0 && (

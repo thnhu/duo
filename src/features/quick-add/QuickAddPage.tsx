@@ -9,6 +9,8 @@ import { dictionaryIdForLang } from '../../db/queries';
 import { conceptRepository } from '../../db/repositories';
 import { addConceptToSet } from '../../wordsets';
 import { DeckSelect } from '../sets/DeckSelect';
+import { LessonSelect } from '../lessons/LessonSelect';
+import { assignLesson } from '../../lessons';
 import { getLookupProvider, isSingleWord } from '../../lookup';
 import { matchPos, posOptionsFor } from './posOptions';
 import {
@@ -44,6 +46,8 @@ export function QuickAddPage() {
   }
   const [lang, setLang] = useLastLanguage();
   const [setId, setSetId] = useState('');
+  // The lesson stays chosen between saves, so a list of one lesson goes in fast.
+  const [lessonId, setLessonId] = useState('');
 
   const [wordText, setWordText] = useState('');
   const [wordDescription, setWordDescription] = useState('');
@@ -107,6 +111,8 @@ export function QuickAddPage() {
     // Also for a word that already exists: that is how one word ends up in
     // several decks without a second copy.
     if (setId) await addConceptToSet(concept.id, setId);
+    // The lesson is one of the chosen deck (or General); also for a word that already exists.
+    const lessonPlaced = lessonId ? (await assignLesson(concept.id, lessonId)).ok : false;
     // The description is the word's meaning; an existing word keeps its own.
     const description = wordDescription.trim();
     const pos = wordPos.trim();
@@ -142,7 +148,7 @@ export function QuickAddPage() {
     setWordPos('');
     setGrammar(emptyGrammarValues());
     setLookupNote('');
-    const inDeck = `${setId ? ' Đã thêm vào deck đã chọn.' : ''}${sentence ? ' Đã lưu kèm câu ví dụ.' : ''}`;
+    const inDeck = `${setId ? ' Đã thêm vào deck đã chọn.' : ''}${lessonPlaced ? ' Đã xếp vào bài.' : ''}${sentence ? ' Đã lưu kèm câu ví dụ.' : ''}`;
     if (outcome === 'created') {
       toast.show(`Đã thêm word "${concept.text}".${inDeck}`);
     } else {
@@ -172,7 +178,22 @@ export function QuickAddPage() {
         Ở lại trang này để ghi tiếp
       </label>
 
-      <DeckSelect id="quick-set" lang={lang} value={setId} onChange={setSetId} />
+      <DeckSelect
+        id="quick-set"
+        lang={lang}
+        value={setId}
+        onChange={(next) => {
+          setSetId(next);
+          setLessonId('');
+        }}
+      />
+      <LessonSelect
+        id="quick-lesson"
+        lang={lang}
+        decks={[{ setId: setId || undefined, label: setId ? 'Deck đã chọn' : 'General' }]}
+        value={lessonId}
+        onChange={setLessonId}
+      />
 
       <form
         className={styles.form}

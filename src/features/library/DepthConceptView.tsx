@@ -20,6 +20,7 @@ import { InlineConfirm } from '../../ui/InlineConfirm';
 import { useToast } from '../../ui/Toast';
 import { deleteConceptCascade, deleteExample, restoreDeleted } from './actions';
 import { ConceptSetsCard } from '../sets/ConceptSetsCard';
+import { ConceptLessonCard } from '../lessons/ConceptLessonCard';
 import styles from './ConceptDetailPage.module.css';
 
 const LABEL_KEYS = ['tone', 'mode', 'register', 'nuance', 'dialect'] as const;
@@ -161,6 +162,7 @@ export function DepthConceptView({ concept, onChanged }: { concept: Concept; onC
       </div>
 
       <ConceptSetsCard concept={concept} onChanged={onChanged} />
+      <ConceptLessonCard concept={concept} onChanged={onChanged} />
 
       {progress && (
         <Card tinted className={styles.lookupCard}>

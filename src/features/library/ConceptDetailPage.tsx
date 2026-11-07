@@ -22,6 +22,7 @@ import { LookupReview } from '../lookup/LookupReview';
 import { useLookupQueue } from '../lookup/useLookupQueue';
 import { DepthConceptView } from './DepthConceptView';
 import { ConceptSetsCard } from '../sets/ConceptSetsCard';
+import { ConceptLessonCard } from '../lessons/ConceptLessonCard';
 import styles from './ConceptDetailPage.module.css';
 
 export function ConceptDetailPage() {
@@ -294,6 +295,7 @@ export function ConceptDetailPage() {
       </ButtonRow>
 
       <ConceptSetsCard concept={concept} onChanged={() => void load(concept.id)} />
+      <ConceptLessonCard concept={concept} onChanged={() => void load(concept.id)} />
 
       <GrammarSummary concept={concept} />
 

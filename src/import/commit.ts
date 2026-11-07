@@ -2,7 +2,7 @@ import { createId } from '../core/id';
 import { createDefaultAttributes } from '../db/defaults';
 import { dictionaryIdForLang } from '../db/queries';
 import { db } from '../db/schema';
-import type { Concept, Example, ImportBatch, Lang, StudyMode } from '../db/types';
+import type { Concept, ConceptGrammar, Example, ImportBatch, Lang, StudyMode } from '../db/types';
 import { wordSetRepository } from '../db/repositories';
 import { createWordSet, listWordSets } from '../wordsets';
 import type { ExampleDraft } from './build';
@@ -230,8 +230,8 @@ export async function commitImport(
         if (JSON.stringify(meanings) !== JSON.stringify(existing.meanings)) patch.meanings = meanings;
         if (group.grammar) {
           const merged = overwrite
-            ? { ...existing.grammar, ...group.grammar }
-            : { ...group.grammar, ...existing.grammar };
+            ? mergeGrammar(existing.grammar, group.grammar)
+            : mergeGrammar(group.grammar, existing.grammar);
           if (JSON.stringify(merged) !== JSON.stringify(existing.grammar)) patch.grammar = merged;
         }
 
@@ -311,4 +311,17 @@ export async function undoImport(batchId: string): Promise<boolean> {
     await db.importBatches.update(latest.id, { undoneAt: now, updatedAt: now });
   });
   return true;
+}
+
+// `over` wins field by field, also inside the verb forms: importing a file that
+// adds only Präsens er/sie/es to a word keeps the forms it already had. Empty
+// values never win (a stored form can be an explicit `undefined`).
+function mergeGrammar(base: ConceptGrammar | undefined, over: ConceptGrammar | undefined): ConceptGrammar {
+  const filled = <T extends object>(o: T | undefined): Partial<T> =>
+    Object.fromEntries(Object.entries(o ?? {}).filter(([, v]) => v !== undefined && v !== '')) as Partial<T>;
+  const merged: ConceptGrammar = { ...filled(base), ...filled(over) };
+  const forms = { ...filled(base?.verbForms), ...filled(over?.verbForms) };
+  if (Object.keys(forms).length > 0) merged.verbForms = forms;
+  else delete merged.verbForms;
+  return merged;
 }

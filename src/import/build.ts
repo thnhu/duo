@@ -144,10 +144,11 @@ export function buildRows(
     if (cell('plural')) grammar.plural = cell('plural');
     const verbForms = {
       infinitiv: cell('infinitiv') || undefined,
+      praesens3sg: cell('praesens3sg') || undefined,
       praeteritum: cell('praeteritum') || undefined,
       partizip2: cell('partizip2') || undefined,
     };
-    if (verbForms.infinitiv || verbForms.praeteritum || verbForms.partizip2) {
+    if (verbForms.infinitiv || verbForms.praesens3sg || verbForms.praeteritum || verbForms.partizip2) {
       grammar.verbForms = verbForms;
     }
 

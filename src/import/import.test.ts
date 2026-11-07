@@ -288,6 +288,31 @@ describe('import into the library', () => {
     expect(concept.meanings).toEqual(['nuốt hẳn']);
   });
 
+  it('reads the Präsens er/sie/es column, and a re-import adds it to a word with other forms', async () => {
+    const first = 'text,lang,pos,infinitiv,praeteritum,partizip2\nabfahren,de,verb,abfahren,fuhr ab,ist abgefahren';
+    await importCsv(first);
+    let [concept] = await conceptRepository.listActive();
+    expect(concept.grammar?.verbForms).toEqual({
+      infinitiv: 'abfahren',
+      praeteritum: 'fuhr ab',
+      partizip2: 'ist abgefahren',
+    });
+
+    // The second file brings only the new column (header alias "Präsens er/sie/es").
+    await importCsv('text,lang,pos,Präsens er/sie/es\nabfahren,de,verb,fährt ab', 'merge');
+    [concept] = await conceptRepository.listActive();
+    expect(concept.grammar?.verbForms).toEqual({
+      infinitiv: 'abfahren',
+      praesens3sg: 'fährt ab',
+      praeteritum: 'fuhr ab',
+      partizip2: 'ist abgefahren',
+    });
+  });
+
+  it('the template has the Präsens er/sie/es column', () => {
+    expect(templateTable()[0]).toContain('praesens3sg');
+  });
+
   it('"skip" leaves existing words untouched', async () => {
     await importCsv('text,lang,meaning\nswallow,en,nuốt');
     const { result } = await importCsv('text,lang,meaning,example\nswallow,en,khác,Swallow it.', 'skip');

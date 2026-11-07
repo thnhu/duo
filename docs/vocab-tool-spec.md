@@ -599,7 +599,7 @@ Lý do: file nhập tiếng Đức mang nhiều thông tin (giống, số nhiề
 | **M14b** Chi tiết concept xem và sửa được | Loại từ là hộp chọn (nhận cả `Noun` viết hoa từ file); giống (hộp chọn), số nhiều, 4 dạng động từ sửa được và lưu vào `grammar`; hiện bài và nguồn (tên file, dòng); mỗi example hiện ghi chú và giá trị nhãn đã `verified` | Sửa số nhiều của một word đã nhập từ file, lưu, mở lại thấy đúng; bài giống/số nhiều dùng giá trị mới |
 | **M14c** Thêm word tiếng Đức: ô ngữ pháp (*đã làm*) | Registry `wordForms` (`features/quick-add/wordForms.ts`: ngôn ngữ + loại từ -> danh sách ô); màn Thêm word hiện ô giống/số nhiều (Noun) hoặc 4 dạng động từ (Verb) khi chọn tiếng Đức; lưu vào `grammar` (Infinitiv trống thì lấy chính word); nút **Tra cứu để điền** (Wiktionary, chỉ từ đơn) điền loại từ, nghĩa, giống, số nhiều, dạng động từ vào các ô còn trống, không ghi đè chữ đã gõ, kèm nguồn và giấy phép; tiếng Anh không đổi | Thêm tay *die Adresse* với số nhiều *Adressen*, bài giống/số nhiều hỏi được; chuyển sang tiếng Anh thì chỉ còn 4 ô |
 | **M14d** Thêm word tiếng Đức: câu ví dụ và ghi chú (*đã làm*) | Khối thu gọn "Câu ví dụ" (dùng lại `ExampleFields`: tô sáng, tô thêm đoạn, nhãn) và "Ghi chú"; có câu thì lưu example thật gắn vào word và không tạo example tối thiểu; tự tô sáng word trong câu nếu có đúng dạng đã gõ (không thì PO tô tay, kể cả cụm tách); từ đã có trong thư viện thì câu được thêm vào từ đó; chỉ hiện với tiếng Đức | Thêm tay một word kèm câu: word và example liên kết, example hiện ở chi tiết word, không có example tối thiểu thừa |
-| **M14e** Cột `praesens3sg` trong file (tùy chọn) | Thêm cột `praesens3sg` vào danh sách cột nhập, file mẫu và xuất xlsx (mục 12.2); bài chia động từ dùng được dạng er/sie/es từ file mà không chờ tra cứu | Nhập file có `praesens3sg`, bài chia động từ hỏi được động từ đổi thân (`fahren` -> `fährt`) |
+| **M14e** Cột `praesens3sg` trong file (*đã làm*) | Thêm cột `praesens3sg` vào danh sách cột nhập, file mẫu và xuất xlsx (mục 12.2); bài chia động từ dùng được dạng er/sie/es từ file mà không chờ tra cứu. Nhập lại file chỉ có cột này cho từ đã có (chọn gộp hoặc cập nhật) thì thêm dạng er/sie/es vào mà giữ nguyên các dạng đã lưu | Nhập file có `praesens3sg`, bài chia động từ hỏi được động từ đổi thân (`fahren` -> `fährt`) |
 
 **Đã chốt (PO, 2026-11-07):** ngữ pháp gõ tay, từ file hay từ tra cứu đều lưu `unverified` (cùng nguyên tắc 8); màn Thêm word có nút "Tra cứu để điền" (kết quả chỉ là gợi ý, PO kiểm tra rồi mới lưu).
 
@@ -660,6 +660,7 @@ Chỉ `text` bắt buộc. Cột mẫu theo đúng thứ tự dưới đây.
 | `gender` | Không | Giống danh từ tiếng Đức: `der`/`die`/`das` hoặc `m`/`f`/`n` (cũng nhận masc, fem, neut…). Giá trị lạ bị báo lỗi | gender, genus, artikel, article, giống |
 | `plural` | Không | Dạng số nhiều **đầy đủ** của tiếng Đức (`Adressen`, `Äpfel`), không phải hậu tố (`-en`): bài giống/số nhiều lấy đúng chuỗi này làm đáp án | plural, số nhiều |
 | `infinitiv` | Không | Dạng nguyên mẫu (động từ Đức) | infinitiv, infinitive |
+| `praesens3sg` | Không | Präsens ngôi er/sie/es (`fährt ab`). Cần cho bài chia động từ hỏi động từ đổi thân âm (`fahren`, `essen`); thiếu cột này thì bài chỉ hỏi được động từ yếu theo quy tắc | praesens3sg, präsens3sg, praesens er/sie/es, präsens er/sie/es, er/sie/es, 3sg |
 | `praeteritum` | Không | Dạng Präteritum | praeteritum, präteritum, preterite, past |
 | `partizip2` | Không | Dạng Partizip II | partizip2, partizip ii, partizip 2, past participle |
 | `tone` | Không | Mức trang trọng, giá trị thuộc bộ PVO (mục 1.3) | tone |
@@ -680,14 +681,14 @@ Chỉ `text` bắt buộc. Cột mẫu theo đúng thứ tự dưới đây.
 
 ### 12.4 Ví dụ (file mẫu của PO, từ vựng Goethe A1)
 
-| text | lang | pos | meaning | lesson | deck | example | highlight | gender | plural | infinitiv | praeteritum | partizip2 | tone | mode | register | nuance | dialect | note |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Adresse | de | Noun | address | Person | Goethe A1 | Können Sie mir seine Adresse sagen? | Adresse | die | Adressen | | | | | | | | | |
-| abfahren | de | Verb | to depart | Travel & Transport | Goethe A1 | Wir fahren um zwölf Uhr ab. | fahren … ab | | | abfahren | fuhr ab | ist abgefahren | | | | | | er/sie/es fährt ab; die Abfahrt |
-| groß | de | Adjective | tall, big | Person | Goethe A1 | Mein Bruder und ich sind gleich groß. | groß | | | | | | | | | | | größer – am größten; die Größe |
+| text | lang | pos | meaning | lesson | deck | example | highlight | gender | plural | infinitiv | praesens3sg | praeteritum | partizip2 | tone | mode | register | nuance | dialect | note |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Adresse | de | Noun | address | Person | Goethe A1 | Können Sie mir seine Adresse sagen? | Adresse | die | Adressen | | | | | | | | | | |
+| abfahren | de | Verb | to depart | Travel & Transport | Goethe A1 | Wir fahren um zwölf Uhr ab. | fahren … ab | | | abfahren | fährt ab | fuhr ab | ist abgefahren | | | | | | die Abfahrt |
+| groß | de | Adjective | tall, big | Person | Goethe A1 | Mein Bruder und ich sind gleich groß. | groß | | | | | | | | | | | | größer – am größten; die Größe |
 
 - Dòng 1 (*Adresse*): danh từ kèm giống `die` và số nhiều **đầy đủ** `Adressen` (bài giống/số nhiều hỏi đúng dạng này); `highlight` trùng `text` nên có thể bỏ trống.
-- Dòng 2 (*abfahren*): động từ tách (trennbar), ba dạng `infinitiv`/`praeteritum`/`partizip2` cho bài động từ bất quy tắc; dạng ngôi er/sie/es và danh từ gốc ghi ở `note`. `highlight` = `fahren … ab` là cụm tách: app tô sáng `fahren` và `ab` trong câu (xem 12.5).
+- Dòng 2 (*abfahren*): động từ tách (trennbar), bốn dạng `infinitiv`/`praesens3sg`/`praeteritum`/`partizip2` cho bài chia động từ và bài động từ bất quy tắc; danh từ gốc ghi ở `note`. `highlight` = `fahren … ab` là cụm tách: app tô sáng `fahren` và `ab` trong câu (xem 12.5).
 - Dòng 3 (*groß*): tính từ; so sánh hơn/nhất và danh từ gốc ghi ở `note`.
 - Cột nhãn TMRND để trống thì example chưa có nhãn (`empty`), PO gắn sau ở màn sửa example.
 

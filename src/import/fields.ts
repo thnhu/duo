@@ -14,6 +14,7 @@ export type ImportFieldId =
   | 'gender'
   | 'plural'
   | 'infinitiv'
+  | 'praesens3sg'
   | 'praeteritum'
   | 'partizip2'
   | 'tone'
@@ -43,6 +44,7 @@ export const importFields: ImportField[] = [
   { id: 'gender', label: 'Giống (gender)', aliases: ['gender', 'genus', 'artikel', 'article', 'giống'] },
   { id: 'plural', label: 'Số nhiều (plural)', aliases: ['plural', 'số nhiều'] },
   { id: 'infinitiv', label: 'Infinitiv', aliases: ['infinitiv', 'infinitive'] },
+  { id: 'praesens3sg', label: 'Präsens er/sie/es', aliases: ['praesens3sg', 'präsens3sg', 'praesens er/sie/es', 'präsens er/sie/es', 'er/sie/es', 'praesens 3sg', 'präsens 3sg', '3sg'] },
   { id: 'praeteritum', label: 'Präteritum', aliases: ['praeteritum', 'präteritum', 'preterite', 'past'] },
   { id: 'partizip2', label: 'Partizip II', aliases: ['partizip2', 'partizip ii', 'partizip 2', 'past participle'] },
   { id: 'tone', label: 'Tone', aliases: ['tone'] },

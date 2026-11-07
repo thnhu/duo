@@ -44,6 +44,7 @@ export function exportTable(concepts: Concept[], examples: Example[], sets: Word
         gender: concept.grammar?.gender,
         plural: concept.grammar?.plural,
         infinitiv: concept.grammar?.verbForms?.infinitiv,
+        praesens3sg: concept.grammar?.verbForms?.praesens3sg,
         praeteritum: concept.grammar?.verbForms?.praeteritum,
         partizip2: concept.grammar?.verbForms?.partizip2,
       };

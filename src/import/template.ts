@@ -24,6 +24,7 @@ const SAMPLE_ROWS: Record<string, string>[] = [
     deck: 'Deutsch A1',
     example: 'Wir gehen heute ins Kino.',
     infinitiv: 'gehen',
+    praesens3sg: 'geht',
     praeteritum: 'ging',
     partizip2: 'gegangen',
   },

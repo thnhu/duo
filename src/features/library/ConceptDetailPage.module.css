@@ -103,3 +103,9 @@
   color: var(--color-ink-muted);
 }
 
+
+.formsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}

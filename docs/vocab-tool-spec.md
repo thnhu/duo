@@ -161,7 +161,7 @@ Ghi chú:
 - C7. **Học cụm từ trong câu ví dụ bằng cách tô sáng (highlight)** **[CHỐT hướng, ĐỀ XUẤT chi tiết]:** khi PO nhập một câu nhưng chỉ muốn học **một cụm** trong đó, PO **tô sáng cụm đó**. Quy tắc:
   - **Cụm được tô sáng = concept cần học.** Phần còn lại của câu chỉ là **ngữ cảnh**, không bị kiểm tra.
   - Tool tạo concept mới từ cụm tô sáng, hoặc gắn vào một concept đã có (tìm bằng F3). Nếu cụm đã tồn tại, tool gợi ý gắn thay vì tạo trùng.
-  - **Một example có một cụm tô sáng.** Muốn học thêm cụm thứ hai trong cùng câu, dùng nút **"Học thêm cụm khác trong câu này"** để tạo thêm một example (cùng câu, tô sáng cụm khác).
+  - **Một example có một cụm tô sáng, nhưng cụm đó có thể gồm nhiều đoạn không liền nhau (v12):** động từ tách tiếng Đức (*Wir fahren um zwölf Uhr ab* -> `fahren` + `ab`) hoặc phrasal verb bị tách bởi tân ngữ (*look the word up*). Đoạn đầu lưu ở `highlight`, các đoạn sau ở `highlightExtra`; mọi đoạn cùng là một cụm cần học. Muốn học thêm một cụm **khác** trong cùng câu, dùng nút **"Học thêm cụm khác trong câu này"** để tạo thêm một example (cùng câu, tô sáng cụm khác).
   - Bài tập lấy phần tô sáng làm mục tiêu: ví dụ che cụm đó trong câu để PO điền hoặc chọn, hoặc hiện cụm và hỏi nghĩa. Bài nghe chép tiếng Đức mặc định chép **cụm tô sáng**, có tùy chọn chép cả câu (mục 5).
   - Một câu **chưa chọn cụm** vẫn lưu được ở dạng **"câu chưa gắn concept"** (tương tự "undecided example" của PVO), nằm trong Hộp chờ duyệt để tô sáng sau.
   - Cho phép tô sáng **cả câu** (concept là cả câu, dùng cho câu cố định hoặc idiom).
@@ -381,6 +381,7 @@ Example {                              // câu/cụm/đoạn thể hiện cách 
   id, dictionaryId, text,
   targetConceptId?,                    // concept của cụm tô sáng; rỗng = "câu chưa gắn concept"
   highlight?: { start, end },          // cụm cần học (một cụm mỗi example); phần còn lại là ngữ cảnh
+  highlightExtra?: { start, end }[],   // các đoạn tiếp theo của cùng cụm khi bị tách (động từ tách), theo thứ tự trong câu
   attributes: {                        // TMRND đã được PO chấp nhận; giá trị lấy từ bộ mặc định PVO
     tone, mode, register, nuance, dialect
   },
@@ -466,7 +467,7 @@ Ghi chú:
 
 ### 9.2 Còn mở
 1. ~~Gửi câu ví dụ tới AI~~ **Không còn áp dụng (v7: đã bỏ AI).**
-2. **Quy tắc tô sáng (C7):** "một example một cụm tô sáng, muốn thêm cụm thì tạo example mới" có ổn không, hay PO muốn một câu mang nhiều cụm cùng lúc?
+2. ~~Quy tắc tô sáng (C7)~~ **Đã chốt:** một example một cụm tô sáng; muốn học cụm khác trong cùng câu thì tạo example mới. **Bổ sung (v12, PO yêu cầu 2026-11-07):** một cụm được gồm nhiều đoạn không liền nhau để hỗ trợ động từ tách (`highlightExtra`).
 3. **Định dạng file nhập:** công cụ ngoài của PO xuất ra những cột nào? Cần vài dòng đầu của file thật để chốt bộ cột ở mục 6.4.
 4. **Liên kết trong file nhập:** có cần nhập liên kết concept/example từ file không? **[ĐỀ XUẤT]** chưa nhập liên kết từ file (PO giữ đề xuất; file nhập hiện chỉ có cột `deck` cho deck).
 5. **Thuật toán spaced repetition** (đơn vị là example): kiểu SM-2 đơn giản hay mới hơn?
@@ -580,6 +581,28 @@ Ngữ cảnh học thứ ba, bên cạnh example (một câu) và concept (một
 - **Cách ly:** example của lỗ chỉ dùng cho bài đoạn văn (`ExerciseModule.passage`, `acceptsExample`); các bài khác bỏ qua chúng, và chúng không tính là "cách diễn đạt" của concept Sâu và không vào chỉ mục cách nói của tìm kiếm.
 - **Chưa làm:** lọc đoạn theo deck, bài đục lỗ chọn từ ngân hàng, nghe đọc đoạn, nhập đoạn từ file.
 
+### Bản 7: Dữ liệu tiếng Đức đầy đủ, nhập tay và nhập file khớp nhau (v12, PO yêu cầu 2026-11-07)
+Lý do: file nhập tiếng Đức mang nhiều thông tin (giống, số nhiều, dạng động từ, câu ví dụ, ghi chú) nhưng màn hình không hiện hết hoặc không sửa được, và màn **Thêm word** không có chỗ nhập các thông tin đó. Mục tiêu: nhập tay và nhập file cho ra **cùng một dạng dữ liệu** (`Concept.grammar`, `Example`), và mọi thông tin từ file đều xem được, sửa được.
+
+**Đã chốt (PO accept):**
+- Loại từ ở màn **Thêm word** là **hộp chọn** (cả Anh và Đức), danh sách là cấu hình theo ngôn ngữ (`features/quick-add/posOptions.ts`). Đã làm.
+- Màn **Thêm word** chỉ **thêm ô khi chọn tiếng Đức**; tiếng Anh giữ 4 ô (deck, word, nghĩa, loại từ). Với tiếng Đức, ô hiện theo loại từ: **Noun** thêm giống (`der`/`die`/`das`) và số nhiều đầy đủ; **Verb** thêm Infinitiv (tự điền bằng chính word), Präsens er/sie/es, Präteritum, Partizip II; loại khác không thêm ô. Câu ví dụ và ghi chú thu gọn sẵn, mở khi cần. Chỉ Word là bắt buộc.
+- **Câu ví dụ nhập tay thay cho example tối thiểu:** có câu thì lưu example thật gắn vào word (tự tô sáng word trong câu, tô tay được, hỗ trợ cụm tách); không có câu thì vẫn tạo example tối thiểu (C4).
+- Cấu hình "ô nào hiện cho ngôn ngữ và loại từ nào" nằm trong một registry (`wordForms`), không viết cứng trong trang (nguyên tắc 3). Không cần migration.
+- Hiện trạng liên kết: nhập file gắn example vào word cùng dòng và tự tô sáng nếu tìm thấy word trong câu; không tìm thấy (vd cụm tách mà thiếu cột `highlight`) thì example vào Hộp chờ duyệt, chưa gắn vào word.
+
+**Các bước (mỗi phiên một bước, làm theo thứ tự):**
+
+| Bước | Nội dung | Xong khi |
+|---|---|---|
+| **M14a** Xem trước khi nhập file | Bước duyệt trong màn Nhập file hiện cho mỗi word: loại từ, deck, dòng ngữ pháp (`die · Pl. Adressen`, các dạng động từ), câu ví dụ có cụm tô sáng (cả cụm tách), nhãn TMRND và ghi chú. *Đã code, chưa commit, chờ PO kiểm.* | Nhập file mẫu Goethe A1: thấy đủ giống, số nhiều, dạng động từ, câu và ghi chú trước khi bấm Nạp |
+| **M14b** Chi tiết concept xem và sửa được | Loại từ là hộp chọn (nhận cả `Noun` viết hoa từ file); giống (hộp chọn), số nhiều, 4 dạng động từ sửa được và lưu vào `grammar`; hiện bài và nguồn (tên file, dòng); mỗi example hiện ghi chú và giá trị nhãn đã `verified` | Sửa số nhiều của một word đã nhập từ file, lưu, mở lại thấy đúng; bài giống/số nhiều dùng giá trị mới |
+| **M14c** Thêm word tiếng Đức: ô ngữ pháp | Registry `wordForms` (ngôn ngữ + loại từ -> danh sách ô); màn Thêm word hiện ô giống/số nhiều (Noun) hoặc dạng động từ (Verb) khi chọn tiếng Đức; lưu vào `grammar`; tiếng Anh không đổi | Thêm tay *die Adresse* với số nhiều *Adressen*, bài giống/số nhiều hỏi được; chuyển sang tiếng Anh thì chỉ còn 4 ô |
+| **M14d** Thêm word tiếng Đức: câu ví dụ và ghi chú | Khối thu gọn "Câu ví dụ" (dùng lại `ExampleFields`: tô sáng, tô thêm đoạn, nhãn) và "Ghi chú"; có câu thì lưu example thật gắn vào word và không tạo example tối thiểu; tự tô sáng word trong câu | Thêm tay một word kèm câu: word và example liên kết, example hiện ở chi tiết word, không có example tối thiểu thừa |
+| **M14e** Cột `praesens3sg` trong file (tùy chọn) | Thêm cột `praesens3sg` vào danh sách cột nhập, file mẫu và xuất xlsx (mục 12.2); bài chia động từ dùng được dạng er/sie/es từ file mà không chờ tra cứu | Nhập file có `praesens3sg`, bài chia động từ hỏi được động từ đổi thân (`fahren` -> `fährt`) |
+
+**Còn mở [MỞ]:** (1) ngữ pháp gõ tay hoặc từ file đặt `verified` hay `unverified` (hiện import đặt nội dung `unverified`); (2) có thêm nút "Tra cứu để điền" gender/số nhiều/dạng động từ từ Wiktionary ngay trong màn Thêm word (kết quả vẫn chỉ là gợi ý) hay không. Hỏi PO trước khi làm M14c.
+
 ### Quy ước phản hồi giao diện (v10, PO yêu cầu 2026-11-05) **[CHỐT]**
 - **Không dùng `confirm()`/`alert()` của trình duyệt.** Thông báo dùng **badge (toast)** ở đầu màn hình: nhỏ (cao ~38 px), tự tắt sau 2,5 s (4,5 s nếu có nút hoặc là lỗi), dừng khi rê chuột/focus, vẫn còn sau khi chuyển trang.
 - **Xóa phải có ô xác nhận** hiện ngay tại nút (panel trong trang, không phủ màn hình), nêu hậu quả bằng số, focus ở "Hủy", Esc để hủy; sau khi xóa vẫn có badge **"Hoàn tác"** (xóa mềm nên khôi phục được concept, ví dụ và mọi liên kết đi kèm).
@@ -610,11 +633,82 @@ Mở rộng chiều sâu cho tiếng Đức, ghi âm từ Wiktionary, nguồn tr
 - Đo **thời gian phản xạ** do lõi thực hiện thống nhất, không để từng module tự đo.
 - Ưu tiên giao diện mobile: thao tác ít, nút lớn, nhập liệu nhanh. Tác vụ nặng (nhập file lớn, tra cứu hàng loạt, đồng bộ) chạy nền, không làm đơ giao diện.
 
+## 12. Format input file
+
+Mô tả file mẫu (A1e) mà màn **Nhập từ file** tải về và đọc vào. Danh sách cột là cấu hình ở `src/import/fields.ts`; quy tắc xử lý ở `src/import/build.ts`; file mẫu sinh bởi `src/import/template.ts`. Mục 6.4 là nguyên tắc, mục này là định dạng cụ thể.
+
+### 12.1 Tệp
+- **Định dạng:** CSV (`.csv`) hoặc XLSX (`.xlsx`, đọc sheet đầu tiên, chọn được sheet khác).
+- **CSV:** dấu phân cách phẩy, chấm phẩy hoặc tab (tự nhận); mã hóa UTF-8 có hoặc không BOM (nếu lỗi thì thử windows-1252). File mẫu CSV là UTF-8 **có BOM** để Excel hiển thị đúng `ä ö ü ß`. Ô chứa dấu phân cách, dấu nháy kép hoặc xuống dòng thì bọc trong `"…"`, dấu `"` bên trong viết đôi `""`.
+- **Dòng đầu là tiêu đề cột**; mỗi dòng sau là **một concept** kèm tối đa một example. Muốn thêm example cho cùng concept thì thêm dòng có cùng `text` (app gộp nhờ phát hiện trùng, A1c).
+- Tiêu đề không phân biệt hoa/thường, bỏ dấu; có thể khác tên trong bảng dưới (xem cột "Tên nhận tự động"), nếu không nhận được thì PO chỉ cột tại bước ánh xạ (A1a, lưu lại cho lần sau). Cột thừa bị bỏ qua. Thứ tự cột tùy ý.
+- Mỗi ô được chuẩn hóa: Unicode NFC, gộp khoảng trắng liền nhau, cắt hai đầu; **giữ nguyên chữ hoa** (danh từ tiếng Đức). Dòng trống hoàn toàn được bỏ qua và chỉ đếm.
+
+### 12.2 Các cột
+Chỉ `text` bắt buộc. Cột mẫu theo đúng thứ tự dưới đây.
+
+| Cột | Bắt buộc | Nội dung | Tên nhận tự động |
+|---|---|---|---|
+| `text` | **Có** | Word hoặc cụm (concept). Thiếu thì dòng bị báo lỗi và bỏ qua | text, word, term, vocabulary, concept, wort, từ, từ vựng, cụm từ |
+| `lang` | Không | `en` hoặc `de`. Trống thì dùng ngôn ngữ PO chọn cho cả file (A4); giá trị khác bị báo lỗi | lang, language, ngôn ngữ, sprache |
+| `pos` | Không | Loại từ: `noun`, `verb`, `adj`… (chuỗi tự do) | pos, part of speech, wortart, loại từ, từ loại |
+| `meaning` | Không | Nghĩa (tiếng Anh hoặc tiếng Việt đều lưu được). Nhiều nghĩa cách nhau bằng `;` | meaning, meanings, definition, translation, bedeutung, nghĩa, dịch |
+| `lesson` | Không | Bài/chương nguồn, dùng để lọc ở bước duyệt (A1d) | lesson, chapter, unit, lektion, bài, chương |
+| `deck` | Không | Tên deck. Nhiều deck cách nhau bằng `;`. Tên chưa có thì tạo mới, khớp deck theo tên không phân biệt hoa/thường, trong cùng ngôn ngữ | deck, decks, set, sets, wordset, collection, topic, bộ, bộ từ, chủ đề |
+| `example` | Không | Câu hoặc cụm ví dụ. Trống thì app tạo example tối thiểu (chính `text`, C4) | example, sentence, beispiel, ví dụ, câu, câu ví dụ |
+| `highlight` | Không | Đoạn đúng trong `example` cần tô sáng, dùng khi dạng trong câu khác `text` (vd `swallowed` so với `swallow`). **Cụm bị tách (động từ tách) viết các đoạn cách nhau bằng `…` hoặc `...`**, theo thứ tự xuất hiện trong câu: `fahren … ab` | highlight, tô sáng |
+| `gender` | Không | Giống danh từ tiếng Đức: `der`/`die`/`das` hoặc `m`/`f`/`n` (cũng nhận masc, fem, neut…). Giá trị lạ bị báo lỗi | gender, genus, artikel, article, giống |
+| `plural` | Không | Dạng số nhiều **đầy đủ** của tiếng Đức (`Adressen`, `Äpfel`), không phải hậu tố (`-en`): bài giống/số nhiều lấy đúng chuỗi này làm đáp án | plural, số nhiều |
+| `infinitiv` | Không | Dạng nguyên mẫu (động từ Đức) | infinitiv, infinitive |
+| `praeteritum` | Không | Dạng Präteritum | praeteritum, präteritum, preterite, past |
+| `partizip2` | Không | Dạng Partizip II | partizip2, partizip ii, partizip 2, past participle |
+| `tone` | Không | Mức trang trọng, giá trị thuộc bộ PVO (mục 1.3) | tone |
+| `mode` | Không | Nói hay viết, thuộc bộ PVO | mode |
+| `register` | Không | Lĩnh vực, thuộc bộ PVO | register |
+| `nuance` | Không | Sắc thái, thuộc bộ PVO | nuance |
+| `dialect` | Không | Phương ngữ, thuộc bộ PVO | dialect |
+| `note` | Không | Ghi chú của example (vd ghi "slang" ở đây) | note, notes, ghi chú |
+
+### 12.3 Quy tắc kiểm tra và xử lý
+- **TMRND:** giá trị phải thuộc bộ đang cấu hình trong Cài đặt (mặc định là bộ PVO ở mục 1.3), không phân biệt hoa/thường; app ghi lại đúng chữ chuẩn. Giá trị lạ làm dòng đó **lỗi** (không tự thêm giá trị mới). Nhãn từ file đặt `verified` (PO đã tự soạn), nội dung từ và nghĩa vẫn `unverified`.
+- **Tô sáng:** nếu có `highlight` thì tìm nó trong `example` (không phân biệt hoa/thường); không thấy thì cảnh báo và quay về tìm `text`. Không thấy cả hai thì cảnh báo "cần tô sáng tay" và PO tô ở bước duyệt. Mỗi example một cụm tô sáng. **Cụm bị tách:** `highlight` có dấu `…`/`...` được cắt thành các đoạn; mỗi đoạn được tìm **sau đoạn trước** trong câu. Đoạn nào không thấy hoặc sai thứ tự thì cảnh báo "không có trong câu ví dụ theo đúng thứ tự" và dòng chuyển sang tô sáng tay.
+- **Lỗi so với cảnh báo:** *lỗi* (thiếu `text`, `lang` sai, nhãn ngoài bộ, `gender` lạ) loại dòng đó khỏi lần nhập và báo theo số dòng (dòng tiêu đề là dòng 1). *Cảnh báo* (không tìm thấy cụm để tô sáng) vẫn cho nhập.
+- **Trùng:** cùng ngôn ngữ + `text` (+ loại từ) với concept đã có thì chọn bỏ qua, gộp thêm example, hoặc cập nhật (A1c). Từ đã `acquired` tự ẩn ở bước duyệt (A6). Từ đã có vẫn được thêm vào `deck` của file kể cả khi chọn bỏ qua.
+- **Deck đích:** ngoài cột `deck`, PO có thể chọn một deck có sẵn (cùng ngôn ngữ) hoặc "+ Tạo deck mới…" để thêm cả file vào.
+- **Chưa có trong file:** liên kết concept–concept và example–concept (PO tạo trong app, mục 9.2 câu 4); câu thuộc đoạn văn đục lỗ; lịch ôn.
+- Lần nhập gần nhất hoàn tác được; app không lưu file gốc (A7).
+
+### 12.4 Ví dụ (file mẫu của PO, từ vựng Goethe A1)
+
+| text | lang | pos | meaning | lesson | deck | example | highlight | gender | plural | infinitiv | praeteritum | partizip2 | tone | mode | register | nuance | dialect | note |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Adresse | de | Noun | address | Person | Goethe A1 | Können Sie mir seine Adresse sagen? | Adresse | die | Adressen | | | | | | | | | |
+| abfahren | de | Verb | to depart | Travel & Transport | Goethe A1 | Wir fahren um zwölf Uhr ab. | fahren … ab | | | abfahren | fuhr ab | ist abgefahren | | | | | | er/sie/es fährt ab; die Abfahrt |
+| groß | de | Adjective | tall, big | Person | Goethe A1 | Mein Bruder und ich sind gleich groß. | groß | | | | | | | | | | | größer – am größten; die Größe |
+
+- Dòng 1 (*Adresse*): danh từ kèm giống `die` và số nhiều **đầy đủ** `Adressen` (bài giống/số nhiều hỏi đúng dạng này); `highlight` trùng `text` nên có thể bỏ trống.
+- Dòng 2 (*abfahren*): động từ tách (trennbar), ba dạng `infinitiv`/`praeteritum`/`partizip2` cho bài động từ bất quy tắc; dạng ngôi er/sie/es và danh từ gốc ghi ở `note`. `highlight` = `fahren … ab` là cụm tách: app tô sáng `fahren` và `ab` trong câu (xem 12.5).
+- Dòng 3 (*groß*): tính từ; so sánh hơn/nhất và danh từ gốc ghi ở `note`.
+- Cột nhãn TMRND để trống thì example chưa có nhãn (`empty`), PO gắn sau ở màn sửa example.
+
+### 12.5 Điểm cần lưu ý với file mẫu này
+- **Động từ tách (v12):** cột `highlight` ghi các đoạn của cụm cách nhau bằng `…` (hoặc `...`), theo đúng thứ tự trong câu: `fahren … ab` tô sáng `fahren` và `ab`. Trong app, ở màn sửa example và các màn thêm example: tô đoạn đầu, bấm **Tô thêm đoạn nữa** cho đoạn sau. Cụm tách chỉ là một cụm của một example (không thành hai example). Bài đang hỗ trợ: điền cụm vào câu tiếng Anh (`en.cloze`, mỗi đoạn một ô), nghe chép (chép các đoạn nối bằng khoảng trắng: `fahren ab`). Bài đục lỗ đoạn văn vẫn mỗi lỗ một đoạn liền.
+- **Số nhiều:** ghi **dạng đầy đủ** (`Adressen`), không ghi hậu tố (`-en`); app lưu nguyên chuỗi và dùng làm đáp án của bài giống/số nhiều. Vì vậy một ô `-en` sẽ bị coi là sai thay vì được suy ra.
+- **Nghĩa tiếng Anh:** với từ vựng tiếng Đức, cột `meaning` ghi tiếng Anh (`address`, `to depart`) là đúng ý; bài tiếng Đức không dùng cột này. Nghĩa chỉ là thông tin tham khảo, không phải đáp án.
+- **`pos`:** `Noun`/`Verb`/`Adjective` viết hoa vẫn được nhận (chuỗi tự do).
+- **Xuất xlsx dùng cùng bộ cột** (E3) để xuất rồi nhập lại được; riêng cột nhãn TMRND chỉ xuất nhãn đã `verified`.
+
 ---
 
-## 12. Lịch sử thay đổi
+## 13. Lịch sử thay đổi
 
-**v11 (bản này):**
+**v12 (bản này):**
+- **Mục 12 Format input file** (cột, quy tắc, ví dụ từ file mẫu Goethe A1 của PO).
+- **Cụm tô sáng nhiều đoạn** cho động từ tách (`Example.highlightExtra`, không cần migration): nhập file bằng `fahren … ab`, nút "Tô thêm đoạn nữa", bài điền cụm tiếng Anh và nghe chép, xuất xlsx giữ nguyên cách ghi (C7, 9.2 câu 2, mục 12).
+- **Kế hoạch Bản 7** (mục 10): nhập tay và nhập file tiếng Đức cho cùng dạng dữ liệu; màn hình hiện và sửa được mọi thông tin của file; loại từ ở màn Thêm word là hộp chọn.
+- **Bài điền đoạn văn phải làm lại khi dưới ngưỡng đạt** (mặc định 90%, tối đa 2 lần làm lại; chỉnh ở Cài đặt → Học).
+
+**v11:**
 - **Học theo đoạn văn đục lỗ** (Bản 6): bảng `passages` (schema v7), `Example.passageId`, bài `en/de.passage-cloze`, màn Thêm đoạn văn và Đoạn văn.
 - **Nút (+) tách ba thao tác** Thêm từ / Thêm example / Thêm concept (mục 1.4, A5, Bản 5); thêm `Concept.kind` (word/concept, tùy chọn, không migration). "Thêm concept" không còn tạo example tối thiểu.
 - **Deck General** mặc định và **Thư viện theo card deck → card con Word/Concept → danh sách**, chỉ tải khi bấm (C6, Bản 5).

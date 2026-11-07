@@ -56,6 +56,20 @@ describe('en.cloze', () => {
     expect(ex.detail).toContain('nuốt');
   });
 
+  it('hides every part of a split phrase and asks for each part', () => {
+    const lookUp = concept('lookup', 'look up', { pos: 'verb', meanings: ['tra cứu'] });
+    const split = example('e9', 'lookup', 'Look the word up now.', {
+      highlight: { start: 0, end: 4 },
+      highlightExtra: [{ start: 14, end: 16 }],
+    });
+    const ex = englishCloze.generate(lookUp, split, { rng: rng0, options: {} });
+    expect(ex.prompt).toBe('＿＿＿＿＿ the word ＿＿＿＿＿ now.');
+    expect(ex.fields.map((f) => f.key)).toEqual(['answer', 'answer2']);
+    expect(ex.expected).toEqual({ answer: ['Look'], answer2: ['up'] });
+    expect(englishCloze.grade({ answer: 'look', answer2: 'UP' }, ex).correct).toBe(true);
+    expect(englishCloze.grade({ answer: 'look', answer2: 'on' }, ex).correct).toBe(false);
+  });
+
   it('does not care about capital letters (but still about spelling)', () => {
     const ex = englishCloze.generate(swallow, swallowSentence, { rng: rng0, options: {} });
     expect(englishCloze.grade({ answer: 'Swallowed' }, ex).correct).toBe(true);

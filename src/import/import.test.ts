@@ -168,6 +168,25 @@ describe('buildRows', () => {
     expect(built.rows[0].example.highlight).toEqual({ start: 4, end: 13 });
   });
 
+  it('highlights a split phrase (separable verb) written with an ellipsis', () => {
+    const sentence = 'Wir fahren um zwölf Uhr ab.';
+    const table = [
+      ['text', 'example', 'highlight'],
+      ['abfahren', sentence, 'fahren … ab'],
+      ['abfahren', sentence, 'fahren ... ab'],
+      ['abfahren', sentence, 'ab … fahren'], // wrong order: not found
+    ];
+    const { mapping } = guessMapping(table[0], []);
+    const built = buildRows(table, resolveColumns(table[0], mapping), context);
+    for (const row of built.rows.slice(0, 2)) {
+      expect(row.example.highlight).toEqual({ start: 4, end: 10 });
+      expect(row.example.highlightExtra).toEqual([{ start: 24, end: 26 }]);
+      expect(row.example.needsHighlight).toBe(false);
+    }
+    expect(built.rows[2].example.needsHighlight).toBe(true);
+    expect(built.warnings.some((w) => w.rowNumber === 4 && /thứ tự/.test(w.message))).toBe(true);
+  });
+
   it('flags a sentence that does not contain the word for manual highlighting', () => {
     const table = [
       ['text', 'example'],

@@ -5,13 +5,16 @@ import fieldStyles from '../../ui/field.module.css';
 import { SETTINGS_ID, createDefaultAttributes } from '../../db/defaults';
 import { settingsRepository } from '../../db/repositories';
 import type { AttributeValueSets, ExampleAttributes } from '../../db/types';
-import { normalizeSelection, textForSelection, type Selection } from '../quick-add/highlight';
+import { addPart, splitByParts } from '../../core/highlights';
+import { normalizeSelection, type Selection } from '../quick-add/highlight';
 import styles from './ExampleFields.module.css';
 
 // What the PO has typed for one new example, before it is saved.
 export interface ExampleDraft {
   text: string;
   highlight: Selection | null;
+  // Other parts of a split phrase (separable verb: fahren + ab).
+  highlightExtra: Selection[];
   attributes: ExampleAttributes;
   // True once the PO touched a label; only then are the labels saved as chosen.
   labelsChosen: boolean;
@@ -19,7 +22,7 @@ export interface ExampleDraft {
 }
 
 export function emptyDraft(): ExampleDraft {
-  return { text: '', highlight: null, attributes: createDefaultAttributes(), labelsChosen: false, note: '' };
+  return { text: '', highlight: null, highlightExtra: [], attributes: createDefaultAttributes(), labelsChosen: false, note: '' };
 }
 
 // Same five labels as the example editor; the value lists come from Settings.
@@ -62,7 +65,24 @@ export function ExampleFields({ idPrefix, draft, onChange, sentenceLabel }: Exam
       return;
     }
     setHint('');
-    onChange({ ...draft, highlight: picked });
+    onChange({ ...draft, highlight: picked, highlightExtra: [] });
+  }
+
+  // A separable verb or phrasal verb: one more part of the same phrase.
+  function addHighlightPart() {
+    const textarea = textareaRef.current;
+    if (!textarea || !draft.highlight) return;
+    const picked = normalizeSelection(draft.text, {
+      start: textarea.selectionStart,
+      end: textarea.selectionEnd,
+    });
+    const next = picked ? addPart([draft.highlight, ...draft.highlightExtra], picked) : null;
+    if (!next) {
+      setHint('Hãy bôi đen một đoạn khác (không trùng đoạn đã tô) rồi bấm lại.');
+      return;
+    }
+    setHint('');
+    onChange({ ...draft, highlight: next[0], highlightExtra: next.slice(1) });
   }
 
   return (
@@ -78,7 +98,7 @@ export function ExampleFields({ idPrefix, draft, onChange, sentenceLabel }: Exam
           value={draft.text}
           onChange={(e) => {
             setHint('');
-            onChange({ ...draft, text: e.target.value, highlight: null });
+            onChange({ ...draft, text: e.target.value, highlight: null, highlightExtra: [] });
           }}
           placeholder="vd: I have a lot of houses."
         />
@@ -86,9 +106,11 @@ export function ExampleFields({ idPrefix, draft, onChange, sentenceLabel }: Exam
 
       {draft.highlight && (
         <p className={styles.preview}>
-          <span className={styles.context}>{draft.text.slice(0, draft.highlight.start)}</span>
-          <span className={styles.highlight}>{textForSelection(draft.text, draft.highlight)}</span>
-          <span className={styles.context}>{draft.text.slice(draft.highlight.end)}</span>
+          {splitByParts(draft.text, [draft.highlight, ...draft.highlightExtra]).map((piece, i) => (
+            <span key={i} className={piece.hit ? styles.highlight : styles.context}>
+              {piece.text}
+            </span>
+          ))}
         </p>
       )}
 
@@ -97,13 +119,18 @@ export function ExampleFields({ idPrefix, draft, onChange, sentenceLabel }: Exam
           {draft.highlight ? 'Tô lại cụm đã chọn' : 'Tô sáng cụm đã chọn'}
         </Button>
         {draft.highlight && (
-          <Button variant="ghost" onClick={() => onChange({ ...draft, highlight: null })}>
+          <Button variant="secondary" onClick={addHighlightPart}>
+            Tô thêm đoạn nữa
+          </Button>
+        )}
+        {draft.highlight && (
+          <Button variant="ghost" onClick={() => onChange({ ...draft, highlight: null, highlightExtra: [] })}>
             Bỏ tô sáng
           </Button>
         )}
       </ButtonRow>
       <p className={fieldStyles.hint}>
-        {hint || 'Bôi đen cụm cần học trong câu rồi bấm "Tô sáng". Phần còn lại của câu chỉ là ngữ cảnh. Không tô thì cả câu là cách diễn đạt.'}
+        {hint || 'Bôi đen cụm cần học trong câu rồi bấm "Tô sáng". Phần còn lại của câu chỉ là ngữ cảnh. Cụm bị ngắt quãng (động từ tách như fahren … ab): tô đoạn đầu rồi bấm "Tô thêm đoạn nữa" cho đoạn sau. Không tô thì cả câu là cách diễn đạt.'}
       </p>
 
       {valueSets && (

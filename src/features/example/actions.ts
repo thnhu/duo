@@ -1,4 +1,5 @@
 import { createId } from '../../core/id';
+import { toStored } from '../../core/highlights';
 import { createDefaultAttributes } from '../../db/defaults';
 import { exampleLinkRepository, exampleRepository } from '../../db/repositories';
 import { listLinksOfExample } from '../../depth';
@@ -8,6 +9,8 @@ import { normalizeSelection, type Selection } from '../quick-add/highlight';
 export interface ExampleEdits {
   // Re-highlight: the new phrase inside the same sentence. Undefined = keep.
   highlight?: Selection;
+  // Further parts of a split phrase (separable verb); only read with `highlight`.
+  highlightExtra?: Selection[];
   attributes: ExampleAttributes;
   note: string;
 }
@@ -28,7 +31,10 @@ export async function saveExampleEdits(
   if (edits.highlight) {
     const normalized = normalizeSelection(example.text, edits.highlight);
     if (!normalized) return null;
-    patch.highlight = normalized;
+    const extras = (edits.highlightExtra ?? [])
+      .map((s) => normalizeSelection(example.text, s))
+      .filter((s): s is Selection => s !== null);
+    Object.assign(patch, toStored([normalized, ...extras].sort((a, b) => a.start - b.start)));
   }
   await exampleRepository.update(example.id, patch);
   return (await exampleRepository.getById(example.id)) ?? null;

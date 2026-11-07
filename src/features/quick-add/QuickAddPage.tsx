@@ -9,6 +9,7 @@ import { dictionaryIdForLang } from '../../db/queries';
 import { conceptRepository } from '../../db/repositories';
 import { addConceptToSet } from '../../wordsets';
 import { DeckSelect } from '../sets/DeckSelect';
+import { posOptionsFor } from './posOptions';
 import { useLastLanguage } from './useLastLanguage';
 import { saveQuickWord } from './actions';
 import styles from './QuickAddPage.module.css';
@@ -128,13 +129,19 @@ export function QuickAddPage() {
           <label className={fieldStyles.label} htmlFor="quick-pos">
             Loại từ (không bắt buộc)
           </label>
-          <input
+          <select
             id="quick-pos"
             className={fieldStyles.input}
             value={wordPos}
             onChange={(e) => setWordPos(e.target.value)}
-            placeholder="vd: noun, verb"
-          />
+          >
+            <option value="">— chưa chọn —</option>
+            {posOptionsFor(lang).map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
         <ButtonRow>
           <Button type="submit" disabled={!wordText.trim()}>

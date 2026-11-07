@@ -1,3 +1,4 @@
+import { addPart, highlightParts, samePartsAs, splitByParts } from '../../core/highlights';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Button } from '../../ui/Button';
@@ -42,6 +43,8 @@ export function ExampleEditPage() {
   const [attributes, setAttributes] = useState<ExampleAttributes | null>(null);
   const [note, setNote] = useState('');
   const [highlight, setHighlight] = useState<Selection | null>(null);
+  // Other parts of a split phrase (separable verb).
+  const [extra, setExtra] = useState<Selection[]>([]);
   const [message, setMessage] = useState('');
   const [lang, setLang] = useState<Lang>('en');
   const [keep, setKeep] = useState(true);
@@ -54,6 +57,7 @@ export function ExampleEditPage() {
     setAttributes(found.attributes);
     setNote(found.note ?? '');
     setHighlight(found.highlight ?? null);
+    setExtra(found.highlightExtra ?? []);
     setConcept(
       found.targetConceptId ? ((await conceptRepository.getById(found.targetConceptId)) ?? null) : null,
     );
@@ -95,12 +99,32 @@ export function ExampleEditPage() {
       return;
     }
     setHighlight(picked);
+    setExtra([]);
+    setMessage('');
+  }
+
+  // One more part of the same phrase (separable verb: fahren + ab).
+  function handleAddPart() {
+    const textarea = textareaRef.current;
+    if (!textarea || !example || !highlight) return;
+    const picked = normalizeSelection(example.text, {
+      start: textarea.selectionStart,
+      end: textarea.selectionEnd,
+    });
+    const next = picked ? addPart([highlight, ...extra], picked) : null;
+    if (!next) {
+      setMessage('Hãy kéo chọn một đoạn khác (không trùng đoạn đã tô) rồi bấm lại.');
+      return;
+    }
+    setHighlight(next[0]);
+    setExtra(next.slice(1));
     setMessage('');
   }
 
   function handleHighlightAll() {
     if (!example) return;
     setHighlight(normalizeSelection(example.text, { start: 0, end: example.text.length }));
+    setExtra([]);
     setMessage('');
   }
 
@@ -108,11 +132,13 @@ export function ExampleEditPage() {
   async function persist(): Promise<boolean> {
     if (!example || !attributes) return false;
     const changedHighlight =
-      highlight &&
-      (highlight.start !== example.highlight?.start || highlight.end !== example.highlight?.end)
-        ? highlight
-        : undefined;
-    const saved = await saveExampleEdits(example, { highlight: changedHighlight, attributes, note });
+      highlight && !samePartsAs([highlight, ...extra], highlightParts(example)) ? highlight : undefined;
+    const saved = await saveExampleEdits(example, {
+      highlight: changedHighlight,
+      highlightExtra: extra,
+      attributes,
+      note,
+    });
     if (!saved) {
       setMessage('Không lưu được: cụm tô sáng không hợp lệ.');
       return false;
@@ -173,9 +199,11 @@ export function ExampleEditPage() {
         <p className={styles.sentence}>
           {highlight ? (
             <>
-              <span className={styles.context}>{example.text.slice(0, highlight.start)}</span>
-              <span className={styles.highlight}>{example.text.slice(highlight.start, highlight.end)}</span>
-              <span className={styles.context}>{example.text.slice(highlight.end)}</span>
+              {splitByParts(example.text, [highlight, ...extra]).map((piece, i) => (
+                <span key={i} className={piece.hit ? styles.highlight : styles.context}>
+                  {piece.text}
+                </span>
+              ))}
             </>
           ) : (
             example.text
@@ -198,12 +226,17 @@ export function ExampleEditPage() {
             <Button variant="secondary" onClick={handlePickHighlight}>
               Tô sáng cụm đã chọn
             </Button>
+            {highlight && (
+              <Button variant="secondary" onClick={handleAddPart}>
+                Tô thêm đoạn nữa
+              </Button>
+            )}
             <Button variant="ghost" onClick={handleHighlightAll}>
               Tô cả câu
             </Button>
           </ButtonRow>
           <p className={fieldStyles.hint}>
-            Chỉ cụm tô sáng được kiểm tra; phần còn lại là ngữ cảnh. Concept giữ nguyên, chỉ vị trí tô sáng đổi.
+            Chỉ cụm tô sáng được kiểm tra; phần còn lại là ngữ cảnh. Động từ tách (fahren … ab): tô đoạn đầu rồi bấm "Tô thêm đoạn nữa" cho đoạn sau. Concept giữ nguyên, chỉ vị trí tô sáng đổi.
           </p>
         </Card>
       )}

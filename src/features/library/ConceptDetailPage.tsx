@@ -1,3 +1,4 @@
+import { highlightParts, splitByParts } from '../../core/highlights';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Button } from '../../ui/Button';
@@ -9,7 +10,9 @@ import { listExamplesForConcept } from '../../db/queries';
 import { computeProgress, type AcquisitionProgress } from '../../acquisition';
 import { loadCriteria } from '../../acquisition/update';
 import { conceptRepository, reviewLogRepository } from '../../db/repositories';
-import type { AcquisitionCriteria, Concept, Example } from '../../db/types';
+import type { AcquisitionCriteria, Concept, ConceptGrammar, Example } from '../../db/types';
+import { matchPos, posOptionsFor } from '../quick-add/posOptions';
+import { labelChips } from './conceptInfo';
 import { InlineConfirm } from '../../ui/InlineConfirm';
 import { useToast } from '../../ui/Toast';
 import { deleteConceptCascade, deleteExample, restoreDeleted } from './actions';
@@ -31,6 +34,10 @@ export function ConceptDetailPage() {
   const [text, setText] = useState('');
   const [pos, setPos] = useState('');
   const [meanings, setMeanings] = useState('');
+  // German grammar (from a file import or typed here).
+  const [gender, setGender] = useState('');
+  const [plural, setPlural] = useState('');
+  const [forms, setForms] = useState({ infinitiv: '', praesens3sg: '', praeteritum: '', partizip2: '' });
   // What is waiting for a yes/no: the whole concept, or one example.
   const [confirm, setConfirm] = useState<{ kind: 'concept' } | { kind: 'example'; id: string } | null>(null);
 
@@ -39,7 +46,15 @@ export function ConceptDetailPage() {
     if (!found) return;
     setConcept(found);
     setText(found.text);
-    setPos(found.pos ?? '');
+    setPos(matchPos(found.lang, found.pos));
+    setGender(found.grammar?.gender ?? '');
+    setPlural(found.grammar?.plural ?? '');
+    setForms({
+      infinitiv: found.grammar?.verbForms?.infinitiv ?? '',
+      praesens3sg: found.grammar?.verbForms?.praesens3sg ?? '',
+      praeteritum: found.grammar?.verbForms?.praeteritum ?? '',
+      partizip2: found.grammar?.verbForms?.partizip2 ?? '',
+    });
     setMeanings(found.meanings.join('; '));
     setExamples(await listExamplesForConcept(id));
   }
@@ -62,7 +77,19 @@ export function ConceptDetailPage() {
       toast.show('Hãy nhập tên concept trước khi lưu.', { kind: 'error' });
       return;
     }
+    // Only filled boxes are stored; nothing filled = no grammar at all.
+    const verbForms = Object.fromEntries(
+      Object.entries(forms)
+        .map(([key, value]) => [key, value.trim()])
+        .filter(([, value]) => value),
+    ) as NonNullable<ConceptGrammar['verbForms']>;
+    const grammar: ConceptGrammar = {
+      ...(gender ? { gender } : {}),
+      ...(plural.trim() ? { plural: plural.trim() } : {}),
+      ...(Object.keys(verbForms).length > 0 ? { verbForms } : {}),
+    };
     await conceptRepository.update(concept.id, {
+      grammar: Object.keys(grammar).length > 0 ? grammar : undefined,
       text: text.trim(),
       pos: pos.trim() || undefined,
       meanings: meanings
@@ -117,6 +144,9 @@ export function ConceptDetailPage() {
     return <DepthConceptView concept={concept} onChanged={() => void load(concept.id)} />;
   }
 
+  // German words carry grammar; show the boxes too for any word that has some.
+  const showGrammar = concept.lang === 'de' || !!concept.grammar;
+
   return (
     <section className={styles.page}>
       <Link to="/library" className={styles.back}>
@@ -141,15 +171,93 @@ export function ConceptDetailPage() {
             <label className={fieldStyles.label} htmlFor="concept-pos">
               Loại từ
             </label>
-            <input
+            <select
               id="concept-pos"
               className={fieldStyles.input}
               value={pos}
               onChange={(e) => setPos(e.target.value)}
-              placeholder="vd: verb"
-            />
+            >
+              <option value="">— chưa chọn —</option>
+              {posOptionsFor(concept.lang).map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+              {pos && !posOptionsFor(concept.lang).some((o) => o.value === pos) && (
+                <option value={pos}>{pos}</option>
+              )}
+            </select>
           </div>
         </div>
+
+        {showGrammar && (
+          <>
+            <div className={styles.row}>
+              <div>
+                <label className={fieldStyles.label} htmlFor="concept-gender">
+                  Giống (gender)
+                </label>
+                <select
+                  id="concept-gender"
+                  className={fieldStyles.input}
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value)}
+                >
+                  <option value="">— không có —</option>
+                  {['der', 'die', 'das'].map((g) => (
+                    <option key={g} value={g}>
+                      {g}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={fieldStyles.label} htmlFor="concept-plural">
+                  Số nhiều (plural, dạng đầy đủ)
+                </label>
+                <input
+                  id="concept-plural"
+                  className={fieldStyles.input}
+                  value={plural}
+                  onChange={(e) => setPlural(e.target.value)}
+                  placeholder="vd: Adressen"
+                />
+              </div>
+            </div>
+            <div className={styles.formsGrid}>
+              {(
+                [
+                  ['infinitiv', 'Infinitiv'],
+                  ['praesens3sg', 'Präsens er/sie/es'],
+                  ['praeteritum', 'Präteritum'],
+                  ['partizip2', 'Partizip II'],
+                ] as const
+              ).map(([key, label]) => (
+                <div key={key}>
+                  <label className={fieldStyles.label} htmlFor={`concept-${key}`}>
+                    {label}
+                  </label>
+                  <input
+                    id={`concept-${key}`}
+                    className={fieldStyles.input}
+                    value={forms[key]}
+                    onChange={(e) => setForms({ ...forms, [key]: e.target.value })}
+                  />
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {(concept.source.lesson || concept.source.fileName) && (
+          <p className={styles.note}>
+            {concept.source.lesson ? `Bài: ${concept.source.lesson}` : ''}
+            {concept.source.lesson && concept.source.fileName ? ' · ' : ''}
+            {concept.source.fileName
+              ? `Từ file ${concept.source.fileName}${concept.source.row ? `, dòng ${concept.source.row}` : ''}`
+              : ''}
+          </p>
+        )}
 
         <div>
           <label className={fieldStyles.label} htmlFor="concept-meanings">
@@ -240,18 +348,28 @@ export function ConceptDetailPage() {
           {examples.map((example) => (
             <Card key={example.id} className={styles.example}>
               <p className={styles.exampleText}>
-                {example.highlight ? (
-                  <>
-                    {example.text.slice(0, example.highlight.start)}
-                    <span className={styles.highlight}>
-                      {example.text.slice(example.highlight.start, example.highlight.end)}
-                    </span>
-                    {example.text.slice(example.highlight.end)}
-                  </>
-                ) : (
-                  example.text
-                )}
+                {highlightParts(example).length > 0
+                  ? splitByParts(example.text, highlightParts(example)).map((piece, i) =>
+                      piece.hit ? (
+                        <span key={i} className={styles.highlight}>
+                          {piece.text}
+                        </span>
+                      ) : (
+                        piece.text
+                      ),
+                    )
+                  : example.text}
               </p>
+              {(example.note || (example.attributesStatus === 'verified' && labelChips(example.attributes).length > 0)) && (
+                <p className={styles.note}>
+                  {[
+                    ...(example.attributesStatus === 'verified' ? labelChips(example.attributes) : []),
+                    example.note ? `Ghi chú: ${example.note}` : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </p>
+              )}
               <div className={styles.exampleMeta}>
                 {example.isMinimal && <span className={styles.minimalTag}>Example tối thiểu</span>}
                 {example.attributesStatus === 'verified' && <span className={styles.minimalTag}>Đã gắn nhãn</span>}
@@ -330,20 +448,11 @@ function AcquisitionCard({ concept }: { concept: Concept }) {
 }
 
 function GrammarSummary({ concept }: { concept: Concept }) {
-  const g = concept.grammar;
-  const parts: string[] = [];
-  if (g?.gender) parts.push(g.gender);
-  if (g?.plural) parts.push(`Pl. ${g.plural}`);
-  if (g?.verbForms) {
-    const { infinitiv, praeteritum, partizip2 } = g.verbForms;
-    parts.push([infinitiv, praeteritum, partizip2].filter(Boolean).join(' · '));
-  }
   return (
     <div className={styles.summary}>
       <span className={concept.verification === 'verified' ? styles.verified : styles.unverified}>
         {concept.verification === 'verified' ? 'Đã duyệt' : 'Chưa duyệt'}
       </span>
-      {parts.length > 0 && <span className={styles.grammar}>{parts.join(' — ')}</span>}
     </div>
   );
 }

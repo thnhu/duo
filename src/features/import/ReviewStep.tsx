@@ -5,6 +5,8 @@ import { Card } from '../../ui/Card';
 import fieldStyles from '../../ui/field.module.css';
 import type { BuildResult, ExampleDraft } from '../../import/build';
 import type { DuplicateAction, ImportGroup } from '../../import/plan';
+import { highlightParts, splitByParts } from '../../core/highlights';
+import { grammarLines, labelChips } from '../library/conceptInfo';
 import { normalizeSelection } from '../quick-add/highlight';
 import styles from './ImportPage.module.css';
 
@@ -165,6 +167,43 @@ export function ReviewStep({
             {group.meanings.length > 0 && (
               <div className={styles.groupMeaning}>{group.meanings.join('; ')}</div>
             )}
+            <div className={styles.details}>
+              {group.pos && <span className={styles.badge}>{group.pos}</span>}
+              {group.setNames.map((name) => (
+                <span key={name} className={styles.badge}>
+                  Deck: {name}
+                </span>
+              ))}
+              {grammarLines(group.grammar).map((line) => (
+                <span key={line} className={styles.grammarLine}>
+                  {line}
+                </span>
+              ))}
+            </div>
+            {group.examples
+              .filter((e) => !e.isMinimal)
+              .map((example, index) => (
+                <div key={index} className={styles.exampleLine}>
+                  <span>
+                    {splitByParts(example.text, highlightParts(example)).map((piece, i) =>
+                      piece.hit ? (
+                        <mark key={i} className={styles.mark}>
+                          {piece.text}
+                        </mark>
+                      ) : (
+                        piece.text
+                      ),
+                    )}
+                  </span>
+                  {(labelChips(example.attributes).length > 0 || example.note) && (
+                    <span className={styles.exampleMeta}>
+                      {[...labelChips(example.attributes), example.note ? `Ghi chú: ${example.note}` : '']
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
+                  )}
+                </div>
+              ))}
             {group.examples.map((example, index) =>
               example.needsHighlight && !example.highlight ? (
                 <ManualHighlight

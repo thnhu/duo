@@ -1,3 +1,4 @@
+import { highlightParts, phraseForFile } from '../core/highlights';
 import { importFields, MEANING_SEPARATOR, type ImportFieldId } from '../import/fields';
 import type { Concept, Example, WordSet } from '../db/types';
 
@@ -48,9 +49,11 @@ export function exportTable(concepts: Concept[], examples: Example[], sets: Word
       };
       if (example) {
         cells.example = example.text;
-        if (example.highlight) {
-          const phrase = example.text.slice(example.highlight.start, example.highlight.end);
-          // Only needed when the sentence uses another form (swallowed/swallow).
+        const parts = highlightParts(example);
+        if (parts.length > 0) {
+          const phrase = phraseForFile(example.text, parts);
+          // Only needed when the sentence uses another form (swallowed/swallow),
+          // and always for a split phrase ("fahren … ab").
           if (phrase !== concept.text) cells.highlight = phrase;
         }
         // Labels only count once PO accepted them (verified); suggestions

@@ -1,4 +1,5 @@
-import type { Concept, Example } from '../../db/types';
+import { highlightParts, phraseOf, splitByParts } from '../../core/highlights';
+import type { Concept, Example, ExampleHighlight } from '../../db/types';
 import { gradeFields, normalizeAnswer } from '../grade';
 import { dictationTarget, stripEndPunctuation } from '../shared';
 import type { Exercise, ExerciseLibrary, ExerciseModule } from '../types';
@@ -46,13 +47,18 @@ function shuffled<T>(items: T[], rng: () => number): T[] {
 
 // ------------------------------------------------------------------- cloze
 
-function highlightedPhrase(example: Example): string | undefined {
-  if (!example.highlight || example.isMinimal) return undefined;
-  const { start, end } = example.highlight;
-  const phrase = example.text.slice(start, end);
+// The parts of the highlighted phrase (one, or several for a split phrase such
+// as a phrasal verb with its object in between), or undefined when the
+// example cannot be a cloze.
+function highlightedParts(example: Example): ExampleHighlight[] | undefined {
+  const parts = highlightParts(example);
+  if (parts.length === 0 || example.isMinimal) return undefined;
+  const hidden = parts.reduce((sum, p) => sum + (p.end - p.start), 0);
   // Highlighting the whole sentence would leave nothing to read as context.
-  if (!phrase.trim() || phrase.length >= example.text.trim().length) return undefined;
-  return phrase;
+  if (parts.some((p) => !example.text.slice(p.start, p.end).trim()) || hidden >= example.text.trim().length) {
+    return undefined;
+  }
+  return parts;
 }
 
 export const englishCloze: ExerciseModule = {
@@ -65,10 +71,10 @@ export const englishCloze: ExerciseModule = {
   unavailableHint:
     'Cần câu ví dụ có cụm được tô sáng. Ghi nhanh một câu rồi tô sáng cụm cần học, hoặc nhập file có cột example.',
   isEligible: (concept, example) =>
-    isEnglishWord(concept, example) && highlightedPhrase(example) !== undefined,
+    isEnglishWord(concept, example) && highlightedParts(example) !== undefined,
   generate(concept, example): Exercise {
-    const phrase = highlightedPhrase(example)!;
-    const { start, end } = example.highlight!;
+    const parts = highlightedParts(example)!;
+    const phrase = phraseOf(example.text, parts);
     const hints: string[] = [];
     // The sentence may use another form (swallowed / swallow): say which word.
     if (normalize(phrase) !== normalize(concept.text)) hints.push(`Word gốc: ${concept.text}`);
@@ -77,10 +83,19 @@ export const englishCloze: ExerciseModule = {
       ...base(concept, example),
       moduleId: 'en.cloze',
       title: 'Điền cụm vào câu',
-      prompt: example.text.slice(0, start) + BLANK + example.text.slice(end),
+      prompt: splitByParts(example.text, parts)
+        .map((piece) => (piece.hit ? BLANK : piece.text))
+        .join(''),
       detail: hints.join(' · ') || undefined,
-      fields: [{ key: 'answer', label: 'Cụm bị che', type: 'text' }],
-      expected: { answer: [phrase] },
+      // One box per hidden part; a single phrase keeps the key `answer`.
+      fields: parts.map((_, i) => ({
+        key: i === 0 ? 'answer' : `answer${i + 1}`,
+        label: parts.length === 1 ? 'Cụm bị che' : `Chỗ che ${i + 1}`,
+        type: 'text' as const,
+      })),
+      expected: Object.fromEntries(
+        parts.map((p, i) => [i === 0 ? 'answer' : `answer${i + 1}`, [example.text.slice(p.start, p.end)]]),
+      ),
     };
   },
   grade: (answer, exercise) => gradeFields(answer, exercise, normalize),

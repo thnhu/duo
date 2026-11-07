@@ -1,3 +1,4 @@
+import { highlightParts } from '../../core/highlights';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ButtonRow } from '../../ui/ButtonRow';
@@ -150,7 +151,7 @@ export function TreePage() {
                 {counts.get(shown)!.map((e) => (
                   <div key={e.id} className={styles.example}>
                     <span>
-                      <HighlightedText text={e.text} ranges={e.highlight ? [[e.highlight.start, e.highlight.end]] : []} />
+                      <HighlightedText text={e.text} ranges={highlightParts(e).map((h) => [h.start, h.end] as [number, number])} />
                     </span>
                     <LinkButton to={`/example/${e.id}`}>Sửa</LinkButton>
                   </div>

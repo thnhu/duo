@@ -179,6 +179,10 @@ export interface Example {
   text: string;
   targetConceptId?: string;
   highlight?: ExampleHighlight;
+  // Further parts of the same phrase when it is split in the sentence, e.g. a
+  // separable verb ("fahren … ab"). `highlight` is the first part. Optional,
+  // so older data needs no migration.
+  highlightExtra?: ExampleHighlight[];
   // Set when this example is one gap of a passage (see Passage).
   passageId?: string;
   attributes: ExampleAttributes;

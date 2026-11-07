@@ -50,6 +50,7 @@ function toExample(
     text: draft.isMinimal ? conceptText : draft.text,
     targetConceptId: conceptId,
     highlight: conceptId ? draft.highlight : undefined,
+    highlightExtra: conceptId ? draft.highlightExtra : undefined,
     attributes: { ...createDefaultAttributes(), ...draft.attributes },
     // The PO wrote these labels into their own file: treated as their own
     // decision. Content stays `unverified` until reviewed (principle 8).

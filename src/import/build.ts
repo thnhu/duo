@@ -5,6 +5,7 @@ import type {
   ExampleHighlight,
   Lang,
 } from '../db/types';
+import { PART_SEPARATOR } from '../core/highlights';
 import { MEANING_SEPARATOR, type ImportFieldId } from './fields';
 import type { FieldColumns } from './mapping';
 
@@ -25,6 +26,8 @@ export interface ExampleDraft {
   // text (spec C4).
   isMinimal: boolean;
   highlight?: ExampleHighlight;
+  // Further parts of a split phrase (separable verb): "fahren … ab".
+  highlightExtra?: ExampleHighlight[];
   // A sentence whose phrase could not be located: PO highlights by hand in
   // the review step (spec 6.4, `example` column).
   needsHighlight: boolean;
@@ -168,19 +171,43 @@ export function buildRows(
       let start = -1;
       let length = 0;
       if (highlightCell) {
-        start = findInsensitive(exampleText, highlightCell);
-        length = highlightCell.length;
-        if (start === -1) warnings.push(`Đoạn highlight "${highlightCell}" không có trong câu ví dụ.`);
+        // "fahren … ab": a split phrase (separable verb) is several parts,
+        // each found after the one before it.
+        const pieces = highlightCell.split(PART_SEPARATOR).filter(Boolean);
+        if (pieces.length > 1) {
+          const found: Array<{ start: number; end: number }> = [];
+          let from = 0;
+          for (const piece of pieces) {
+            const at = findInsensitive(exampleText.slice(from), piece);
+            if (at === -1) break;
+            found.push({ start: from + at, end: from + at + piece.length });
+            from += at + piece.length;
+          }
+          if (found.length === pieces.length) {
+            example.highlight = found[0];
+            if (found.length > 1) example.highlightExtra = found.slice(1);
+          } else {
+            warnings.push(`Đoạn highlight "${highlightCell}" không có trong câu ví dụ theo đúng thứ tự.`);
+          }
+        } else {
+          start = findInsensitive(exampleText, highlightCell);
+          length = highlightCell.length;
+          if (start === -1) warnings.push(`Đoạn highlight "${highlightCell}" không có trong câu ví dụ.`);
+        }
       }
-      if (start === -1) {
-        start = findInsensitive(exampleText, text);
-        length = text.length;
-      }
-      if (start === -1) {
-        example.needsHighlight = true;
-        warnings.push('Không tìm thấy cụm cần học trong câu ví dụ — cần tô sáng tay.');
-      } else {
-        example.highlight = { start, end: start + length };
+      // A split phrase was already placed above; otherwise fall back to the
+      // concept text.
+      if (!example.highlight) {
+        if (start === -1) {
+          start = findInsensitive(exampleText, text);
+          length = text.length;
+        }
+        if (start === -1) {
+          example.needsHighlight = true;
+          warnings.push('Không tìm thấy cụm cần học trong câu ví dụ — cần tô sáng tay.');
+        } else {
+          example.highlight = { start, end: start + length };
+        }
       }
     }
 

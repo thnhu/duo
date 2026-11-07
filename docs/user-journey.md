@@ -175,7 +175,7 @@ flowchart TD
 | 4 | Xem báo lỗi | Liệt kê lỗi theo dòng: thiếu `text`, giá trị thuộc tính không thuộc bộ PVO, ký tự lỗi mã hóa |
 | 5 | Chọn xử lý từ trùng | Với từ đã có: **bỏ qua**, **gộp thêm example**, hoặc **cập nhật** |
 | 6 | Chọn bài cần nạp (nếu file có nhiều bài) | Chỉ hiện các dòng của bài đã chọn |
-| 7 | Ở màn hình **Duyệt danh sách**, bỏ những từ không muốn học | Từ đã `acquired` **tự ẩn**; PO vẫn có thể bỏ thủ công từ mình đã biết mà tool chưa ghi nhận |
+| 7 | Ở màn hình **Duyệt danh sách** (Bản 7: hiện đủ thông tin file sẽ nạp: loại từ, deck, giống, số nhiều, dạng động từ, câu ví dụ có tô sáng, nhãn, ghi chú), bỏ những từ không muốn học | Từ đã `acquired` **tự ẩn**; PO vẫn có thể bỏ thủ công từ mình đã biết mà tool chưa ghi nhận |
 | 8 | Chọn **ngôn ngữ** (nếu file không có cột `lang`) và **chế độ** Rộng hoặc Sâu | Xác nhận đích đến |
 | 9 | Bấm xác nhận | Lưu concept ở trạng thái `loaded`; concept nào chưa có câu ví dụ thì tự tạo **example tối thiểu**; với dòng có câu ví dụ, tool **tự tô sáng** chính cụm đó trong câu; báo "đã nạp N từ, bỏ M, trùng K"; có nút **Hoàn tác lần nhập này** |
 | 10 | (Tùy chọn) Chấp nhận gợi ý "Tra cứu tự động cho các từ còn thiếu thông tin" | Chuyển sang J3 |
@@ -199,7 +199,7 @@ flowchart TD
 | # | PO làm | Hệ thống phản hồi |
 |---|---|---|
 | 1 | Bấm nút **(+)** (một chạm từ màn hình chính) | Màn **"Bạn muốn thêm gì?"** với ba thẻ lớn, mỗi thẻ có định nghĩa và ví dụ: **Thêm từ** (từ/cụm đứng riêng kèm nghĩa, hợp danh từ như "máy bay", "cửa sổ"), **Thêm example** (câu/cách diễn đạt, hợp động từ), **Thêm concept** (một ý, chưa có cách nói). Bấm một thẻ: ô nhập tự focus, ngôn ngữ và deck lấy theo lần dùng gần nhất |
-| 2a | **Thêm từ:** gõ từ/cụm, nghĩa, loại từ (nghĩa và loại từ không bắt buộc), chọn deck | Lưu concept `word` kèm example tối thiểu (chính nó); mặc định vào deck General; ô "Ở lại trang này" giữ form để nhập tiếp |
+| 2a | **Thêm từ:** chọn deck, gõ từ/cụm, nghĩa, chọn loại từ bằng hộp chọn (nghĩa và loại từ không bắt buộc). **Tiếng Đức (Bản 7):** chọn Noun thì có thêm giống và số nhiều; chọn Verb thì có thêm Infinitiv, Präsens er/sie/es, Präteritum, Partizip II; thêm khối thu gọn Câu ví dụ (tự tô sáng word) và Ghi chú. Có câu thì lưu example thật gắn vào word, không tạo example tối thiểu | Lưu concept `word` kèm example tối thiểu (chính nó); mặc định vào deck General; ô "Ở lại trang này" giữ form để nhập tiếp |
 | 2b | **Thêm example:** gõ hoặc dán **cả câu**, **tô sáng đúng cụm muốn học**, chọn nhãn TMRND và **chọn concept** mà example thuộc về (tìm hoặc tạo mới tại chỗ). Có thể mở **Thêm concept** rồi nhập luôn nhiều example ngay dưới tên concept | Tạo concept từ cụm tô sáng (hoặc gợi ý concept đã có nếu cụm đã tồn tại); lưu câu làm example; **phần còn lại của câu chỉ là ngữ cảnh** |
 | 2c | **Thêm example, chưa tô sáng:** lưu câu mà chưa tô sáng | Câu vào **Hộp chờ duyệt** ở dạng "câu chưa gắn concept", tô sáng sau (J10) |
 | 3 | Quay lại xem phim | Mục vừa lưu nằm trong Hộp chờ duyệt với trạng thái `unverified` |

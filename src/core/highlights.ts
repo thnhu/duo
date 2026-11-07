@@ -63,3 +63,14 @@ export function toStored(parts: ExampleHighlight[]): Pick<Example, 'highlight' |
 export function samePartsAs(a: ExampleHighlight[], b: ExampleHighlight[]): boolean {
   return a.length === b.length && a.every((p, i) => p.start === b[i].start && p.end === b[i].end);
 }
+
+// Finds a word inside a sentence (not case-sensitive) to highlight it
+// automatically; undefined when it is not there in that exact form.
+export function findPhrase(sentence: string, word: string): ExampleHighlight | undefined {
+  const s = sentence.toLowerCase();
+  const w = word.trim().toLowerCase();
+  // Case folding that changes the length would shift the offsets.
+  if (!w || s.length !== sentence.length || w.length !== word.trim().length) return undefined;
+  const start = s.indexOf(w);
+  return start === -1 ? undefined : { start, end: start + w.length };
+}

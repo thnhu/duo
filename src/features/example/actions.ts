@@ -110,6 +110,8 @@ export interface NewExampleInput {
   dictionaryId: string;
   text: string;
   highlight?: Selection | null;
+  // Further parts of a split phrase (separable verb).
+  highlightExtra?: Selection[];
   attributes?: ExampleAttributes;
   labelsChosen?: boolean;
   note?: string;
@@ -122,6 +124,12 @@ export async function createExample(input: NewExampleInput): Promise<Example | n
   // The selection was made on the untrimmed text, so normalise against that.
   const highlight = input.highlight ? normalizeSelection(input.text, input.highlight) : null;
   const shift = input.text.length - input.text.trimStart().length;
+  const inside = (s: Selection) => s.start - shift >= 0 && s.end - shift <= text.length;
+  const moved = (s: Selection) => ({ start: s.start - shift, end: s.end - shift });
+  const extras = (input.highlightExtra ?? [])
+    .map((s) => normalizeSelection(input.text, s))
+    .filter((s): s is Selection => s !== null && inside(s))
+    .map(moved);
   const now = Date.now();
   const labelled = input.labelsChosen === true && input.attributes !== undefined;
   const example: Example = {
@@ -129,8 +137,8 @@ export async function createExample(input: NewExampleInput): Promise<Example | n
     dictionaryId: input.dictionaryId,
     text,
     targetConceptId: input.conceptId,
-    ...(highlight && highlight.start - shift >= 0 && highlight.end - shift <= text.length
-      ? { highlight: { start: highlight.start - shift, end: highlight.end - shift } }
+    ...(highlight && inside(highlight)
+      ? toStored([moved(highlight), ...extras].sort((a, b) => a.start - b.start))
       : {}),
     attributes: labelled ? { ...input.attributes! } : createDefaultAttributes(),
     attributesStatus: labelled ? 'verified' : 'empty',

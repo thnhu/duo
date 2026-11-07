@@ -133,3 +133,36 @@ describe('createExample (add example / examples under add concept)', () => {
     expect(await createExample({ dictionaryId: 'dict-en', text: '   ' })).toBeNull();
   });
 });
+
+describe('split phrases (separable verb)', () => {
+  it('createExample keeps every part of the highlight, shifted past leading spaces', async () => {
+    const { createExample } = await import('./actions');
+    const text = '  Wir fahren um zwölf Uhr ab. ';
+    const created = await createExample({
+      dictionaryId: 'dict-de',
+      text,
+      highlight: { start: 6, end: 12 }, // fahren
+      highlightExtra: [{ start: 26, end: 28 }], // ab
+    });
+    expect(created?.text).toBe('Wir fahren um zwölf Uhr ab.');
+    expect(created?.highlight).toEqual({ start: 4, end: 10 });
+    expect(created?.highlightExtra).toEqual([{ start: 24, end: 26 }]);
+  });
+
+  it('saveExampleEdits replaces the parts, and clears the extra part when only one is given', async () => {
+    const { createExample } = await import('./actions');
+    const example = (await createExample({
+      dictionaryId: 'dict-de',
+      text: 'Wir fahren um zwölf Uhr ab.',
+      highlight: { start: 4, end: 10 },
+      highlightExtra: [{ start: 24, end: 26 }],
+    }))!;
+    const saved = await saveExampleEdits(example, {
+      highlight: { start: 4, end: 10 },
+      highlightExtra: [],
+      attributes: example.attributes,
+      note: '',
+    });
+    expect(saved?.highlightExtra).toBeUndefined();
+  });
+});

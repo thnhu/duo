@@ -106,3 +106,21 @@
   grid-template-columns: 1fr 1fr;
   gap: var(--space-3);
 }
+
+.optional {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+}
+
+.optional > summary {
+  cursor: pointer;
+  font-weight: 600;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+}
+
+.optional[open] > summary {
+  margin-bottom: var(--space-3);
+}

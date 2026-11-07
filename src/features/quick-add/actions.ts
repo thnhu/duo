@@ -50,6 +50,9 @@ export async function saveQuickWord(
   dictionaryId: string,
   lang: Lang,
   text: string,
+  // False when the caller adds a real sentence for the word right after: that
+  // example then stands in for the minimal one (spec C4).
+  options: { minimalExample?: boolean } = {},
 ): Promise<{ outcome: SaveOutcome; concept: Concept }> {
   const trimmed = text.trim();
   const existing = await findConceptByExactText(dictionaryId, trimmed);
@@ -60,11 +63,13 @@ export async function saveQuickWord(
   const concept = newConcept(dictionaryId, lang, trimmed);
   await conceptRepository.add(concept);
 
-  const minimalExample = newExample(dictionaryId, trimmed, {
-    targetConceptId: concept.id,
-    isMinimal: true,
-  });
-  await exampleRepository.add(minimalExample);
+  if (options.minimalExample !== false) {
+    const minimalExample = newExample(dictionaryId, trimmed, {
+      targetConceptId: concept.id,
+      isMinimal: true,
+    });
+    await exampleRepository.add(minimalExample);
+  }
 
   return { outcome: 'created', concept };
 }

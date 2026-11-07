@@ -19,6 +19,9 @@ import {
   type GrammarValues,
 } from './wordForms';
 import { useLastLanguage } from './useLastLanguage';
+import { findPhrase } from '../../core/highlights';
+import { createExample } from '../example/actions';
+import { ExampleFields, emptyDraft, type ExampleDraft } from '../example/ExampleFields';
 import { saveQuickWord } from './actions';
 import styles from './QuickAddPage.module.css';
 
@@ -48,6 +51,8 @@ export function QuickAddPage() {
   // German grammar boxes (shown by language + part of speech, see wordForms).
   const [grammar, setGrammar] = useState<GrammarValues>(emptyGrammarValues);
   const [looking, setLooking] = useState(false);
+  // German: an optional sentence (with its phrase, labels and note) for the word.
+  const [exampleDraft, setExampleDraft] = useState<ExampleDraft>(emptyDraft);
   const [lookupNote, setLookupNote] = useState('');
   const grammarFields = grammarFieldsFor(lang, wordPos);
 
@@ -93,7 +98,11 @@ export function QuickAddPage() {
     if (!trimmed) return;
 
     const dictionaryId = await dictionaryIdForLang(lang);
-    const { outcome, concept } = await saveQuickWord(dictionaryId, lang, trimmed);
+    // A real sentence replaces the minimal example (the word on its own).
+    const sentence = lang === 'de' ? exampleDraft.text.trim() : '';
+    const { outcome, concept } = await saveQuickWord(dictionaryId, lang, trimmed, {
+      minimalExample: !sentence,
+    });
 
     // Also for a word that already exists: that is how one word ends up in
     // several decks without a second copy.
@@ -111,12 +120,29 @@ export function QuickAddPage() {
       });
     }
 
+    // The sentence is linked to the word (also an existing one). Without a
+    // chosen phrase the word is highlighted in it when it appears as typed.
+    if (sentence) {
+      const chosen = exampleDraft.highlight !== null;
+      await createExample({
+        dictionaryId,
+        text: chosen ? exampleDraft.text : sentence,
+        highlight: chosen ? exampleDraft.highlight : (findPhrase(sentence, trimmed) ?? null),
+        highlightExtra: chosen ? exampleDraft.highlightExtra : [],
+        attributes: exampleDraft.attributes,
+        labelsChosen: exampleDraft.labelsChosen,
+        note: exampleDraft.note,
+        conceptId: concept.id,
+      });
+    }
+
     setWordText('');
+    setExampleDraft(emptyDraft());
     setWordDescription('');
     setWordPos('');
     setGrammar(emptyGrammarValues());
     setLookupNote('');
-    const inDeck = setId ? ' Đã thêm vào deck đã chọn.' : '';
+    const inDeck = `${setId ? ' Đã thêm vào deck đã chọn.' : ''}${sentence ? ' Đã lưu kèm câu ví dụ.' : ''}`;
     if (outcome === 'created') {
       toast.show(`Đã thêm word "${concept.text}".${inDeck}`);
     } else {
@@ -248,6 +274,17 @@ export function QuickAddPage() {
                   : 'Chỉ tra cứu được một từ đơn (không gửi cụm nhiều từ ra ngoài).')}
             </p>
           </div>
+        )}
+        {lang === 'de' && (
+          <details className={styles.optional}>
+            <summary>Câu ví dụ và ghi chú (không bắt buộc)</summary>
+            <ExampleFields
+              idPrefix="quick-ex"
+              draft={exampleDraft}
+              onChange={setExampleDraft}
+              sentenceLabel="Câu ví dụ tiếng Đức"
+            />
+          </details>
         )}
         <ButtonRow>
           <Button type="submit" disabled={!wordText.trim()}>

@@ -111,3 +111,17 @@ describe('inbox flow', () => {
     expect(inbox).toHaveLength(0);
   });
 });
+
+describe('saveQuickWord without a minimal example', () => {
+  it('creates only the word when a real sentence will stand in for the minimal example', async () => {
+    const { saveQuickWord } = await import('./actions');
+    const { db } = await import('../../db/schema');
+    const { concept } = await saveQuickWord('dict-de', 'de', 'Adresse', { minimalExample: false });
+    const examples = (await db.examples.toArray()).filter((e) => e.targetConceptId === concept.id);
+    expect(examples).toHaveLength(0);
+    const other = await saveQuickWord('dict-de', 'de', 'Haus');
+    const minimal = (await db.examples.toArray()).filter((e) => e.targetConceptId === other.concept.id);
+    expect(minimal).toHaveLength(1);
+    expect(minimal[0].isMinimal).toBe(true);
+  });
+});

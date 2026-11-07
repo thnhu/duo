@@ -9,7 +9,15 @@ import { dictionaryIdForLang } from '../../db/queries';
 import { conceptRepository } from '../../db/repositories';
 import { addConceptToSet } from '../../wordsets';
 import { DeckSelect } from '../sets/DeckSelect';
-import { posOptionsFor } from './posOptions';
+import { getLookupProvider, isSingleWord } from '../../lookup';
+import { matchPos, posOptionsFor } from './posOptions';
+import {
+  emptyGrammarValues,
+  grammarFieldsFor,
+  grammarFromValues,
+  valuesFromGrammar,
+  type GrammarValues,
+} from './wordForms';
 import { useLastLanguage } from './useLastLanguage';
 import { saveQuickWord } from './actions';
 import styles from './QuickAddPage.module.css';
@@ -37,6 +45,48 @@ export function QuickAddPage() {
   const [wordText, setWordText] = useState('');
   const [wordDescription, setWordDescription] = useState('');
   const [wordPos, setWordPos] = useState('');
+  // German grammar boxes (shown by language + part of speech, see wordForms).
+  const [grammar, setGrammar] = useState<GrammarValues>(emptyGrammarValues);
+  const [looking, setLooking] = useState(false);
+  const [lookupNote, setLookupNote] = useState('');
+  const grammarFields = grammarFieldsFor(lang, wordPos);
+
+  // "Tra cứu để điền": asks the dictionary for this one word and fills the
+  // empty boxes. It is only a suggestion; PO checks it before saving.
+  async function handleLookup() {
+    const word = wordText.trim();
+    const provider = getLookupProvider(lang);
+    if (!word || !provider) return;
+    setLooking(true);
+    setLookupNote('');
+    try {
+      const result = await provider.lookup(word);
+      const entries = result.entries;
+      // Prefer the entry for the part of speech already chosen.
+      const entry =
+        (wordPos && entries.find((e) => matchPos(lang, e.pos) === wordPos)) || entries[0];
+      if (result.status !== 'found' || !entry) {
+        setLookupNote('Từ điển không có mục từ này, hãy tự nhập.');
+        return;
+      }
+      if (!wordPos && entry.pos) setWordPos(matchPos(lang, entry.pos));
+      if (!wordDescription.trim() && entry.definitions[0]) setWordDescription(entry.definitions[0].text);
+      const found = valuesFromGrammar(entry.grammar);
+      // Never overwrite what PO already typed.
+      setGrammar((now) =>
+        Object.fromEntries(
+          (Object.keys(now) as Array<keyof GrammarValues>).map((k) => [k, now[k].trim() ? now[k] : found[k]]),
+        ) as GrammarValues,
+      );
+      setLookupNote(
+        `Gợi ý từ ${result.sourceName ?? 'từ điển'}${result.license ? ` (${result.license.name})` : ''}: kiểm tra lại trước khi lưu.`,
+      );
+    } catch (error) {
+      toast.show(error instanceof Error ? error.message : 'Không tra cứu được.', { kind: 'error' });
+    } finally {
+      setLooking(false);
+    }
+  }
 
   async function handleSaveWord() {
     const trimmed = wordText.trim();
@@ -51,16 +101,21 @@ export function QuickAddPage() {
     // The description is the word's meaning; an existing word keeps its own.
     const description = wordDescription.trim();
     const pos = wordPos.trim();
-    if (outcome === 'created' && (description || pos)) {
+    // Typed by hand is still `unverified`, like data from a file or a lookup.
+    const grammarToSave = grammarFromValues(grammar, grammarFields, trimmed);
+    if (outcome === 'created' && (description || pos || grammarToSave)) {
       await conceptRepository.update(concept.id, {
         ...(description ? { meanings: [description] } : {}),
         ...(pos ? { pos } : {}),
+        ...(grammarToSave ? { grammar: grammarToSave } : {}),
       });
     }
 
     setWordText('');
     setWordDescription('');
     setWordPos('');
+    setGrammar(emptyGrammarValues());
+    setLookupNote('');
     const inDeck = setId ? ' Đã thêm vào deck đã chọn.' : '';
     if (outcome === 'created') {
       toast.show(`Đã thêm word "${concept.text}".${inDeck}`);
@@ -143,6 +198,57 @@ export function QuickAddPage() {
             ))}
           </select>
         </div>
+        {grammarFields.length > 0 && (
+          <div className={styles.grammarGrid}>
+            {grammarFields.map((field) => (
+              <div key={field.key}>
+                <label className={fieldStyles.label} htmlFor={`quick-${field.key}`}>
+                  {field.label}
+                </label>
+                {field.kind === 'choice' ? (
+                  <select
+                    id={`quick-${field.key}`}
+                    className={fieldStyles.input}
+                    value={grammar[field.key]}
+                    onChange={(e) => setGrammar({ ...grammar, [field.key]: e.target.value })}
+                  >
+                    <option value="">— không có —</option>
+                    {field.options?.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    id={`quick-${field.key}`}
+                    className={fieldStyles.input}
+                    value={grammar[field.key]}
+                    placeholder={field.placeholder}
+                    onChange={(e) => setGrammar({ ...grammar, [field.key]: e.target.value })}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        {lang === 'de' && (
+          <div>
+            <Button
+              variant="secondary"
+              disabled={!isSingleWord(wordText) || looking}
+              onClick={() => void handleLookup()}
+            >
+              {looking ? 'Đang tra cứu…' : 'Tra cứu để điền'}
+            </Button>
+            <p className={fieldStyles.hint}>
+              {lookupNote ||
+                (isSingleWord(wordText)
+                  ? 'Điền sẵn loại từ, nghĩa, giống, số nhiều, dạng động từ từ từ điển; bạn kiểm tra lại rồi lưu.'
+                  : 'Chỉ tra cứu được một từ đơn (không gửi cụm nhiều từ ra ngoài).')}
+            </p>
+          </div>
+        )}
         <ButtonRow>
           <Button type="submit" disabled={!wordText.trim()}>
             Lưu word

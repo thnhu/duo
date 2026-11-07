@@ -186,6 +186,7 @@ export async function createPassage(input: PassageInput): Promise<PassageResult>
     lang: input.lang,
     title: input.title?.trim() || undefined,
     text: body,
+    ...(input.setId ? { setId: input.setId } : {}),
     updatedAt: now,
   };
   await passageRepository.add(passage);
@@ -283,11 +284,63 @@ export async function listPassages(lang: Lang): Promise<Passage[]> {
   return all.filter((p) => p.lang === lang).sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
+// The Passages screen opens on deck cards and reads a deck's passages only
+// when its card is opened (undefined = the General deck).
+
+// How many passages each deck has, as numbers only: the rows are walked but
+// none is kept. A passage of a deck that no longer exists counts as General.
+export async function countPassagesByDeck(
+  lang: Lang,
+  liveDeckIds: string[],
+): Promise<{ general: number; bySet: Map<string, number> }> {
+  const live = new Set(liveDeckIds);
+  const bySet = new Map<string, number>(liveDeckIds.map((id) => [id, 0]));
+  let general = 0;
+  await db.passages
+    .where('lang')
+    .equals(lang)
+    .each((p) => {
+      if (p.deletedAt !== undefined) return;
+      if (p.setId && live.has(p.setId)) bySet.set(p.setId, (bySet.get(p.setId) ?? 0) + 1);
+      else general++;
+    });
+  return { general, bySet };
+}
+
+// The passages of ONE deck, newest first.
+export async function listPassagesOfDeck(
+  lang: Lang,
+  setId: string | undefined,
+  liveDeckIds: string[],
+): Promise<Passage[]> {
+  const live = new Set(liveDeckIds);
+  const rows = await db.passages
+    .where('lang')
+    .equals(lang)
+    .filter((p) => p.deletedAt === undefined)
+    .toArray();
+  return rows
+    .filter((p) => (setId ? p.setId === setId : !p.setId || !live.has(p.setId)))
+    .sort((a, b) => b.updatedAt - a.updatedAt);
+}
+
+// How many gaps each of these passages has (looked up by the passage, not by
+// reading every example).
+export async function countGapsOf(passageIds: string[]): Promise<Map<string, number>> {
+  const counts = await Promise.all(
+    passageIds.map(
+      async (id) =>
+        [id, await db.examples.where('passageId').equals(id).filter((e) => e.deletedAt === undefined).count()] as const,
+    ),
+  );
+  return new Map(counts);
+}
+
 // The gap examples of one passage, in reading order.
 export async function listGaps(passageId: string): Promise<Example[]> {
-  const rows = await db.examples.toArray();
+  const rows = await db.examples.where('passageId').equals(passageId).toArray();
   return rows
-    .filter((e) => e.passageId === passageId && e.deletedAt === undefined)
+    .filter((e) => e.deletedAt === undefined)
     .sort((a, b) => (a.highlight?.start ?? 0) - (b.highlight?.start ?? 0));
 }
 

@@ -120,7 +120,7 @@ describe('schema v8 upgrade', () => {
     expect(c1?.source.lesson).toBe('Family'); // the record of the file stays
     expect((await v8.concepts.get('c2'))?.lessonId).toBe(lessons[0].id);
     expect((await v8.concepts.get('c3'))?.lessonId).toBeUndefined();
-    expect((await v8.settings.get('default'))?.schemaVersion).toBe(8);
+    expect((await v8.settings.get('default'))?.schemaVersion).toBe(9);
     v8.close();
     await Dexie.delete(name);
   });

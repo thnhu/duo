@@ -51,6 +51,10 @@ export interface Passage {
   lang: Lang;
   title?: string;
   text: string;
+  // The deck the passage was added to (undefined = General, and the passages
+  // made before decks were remembered). The Passages screen shows one deck at
+  // a time.
+  setId?: string;
   updatedAt: number;
   deletedAt?: number;
 }

@@ -204,3 +204,48 @@ describe('gap view helpers', () => {
     expect(toggleGap(T, withId, 0, 14)).toEqual([]);
   });
 });
+
+describe('passages by deck (read only when a deck is opened)', () => {
+  it('remembers the deck, counts per deck without reading texts into the screen, and lists one deck', async () => {
+    const { countPassagesByDeck, listPassagesOfDeck, countGapsOf } = await import('./index');
+    const { createWordSet } = await import('../wordsets');
+    const it1 = await createWordSet('en', 'IT');
+    const films = await createWordSet('en', 'Films');
+    if (!it1.ok || !films.ok) throw new Error('decks');
+    const mk = async (text: string, setId?: string) => {
+      const start = TEXT.indexOf('towel');
+      const r = await createPassage({ dictionaryId: DICT, lang: 'en', text: TEXT, gaps: [{ start, end: start + 5 }], title: text, setId });
+      if (!r.ok) throw new Error('passage');
+      return r.passage;
+    };
+    const a = await mk('general one');
+    const b = await mk('it one', it1.set.id);
+    await mk('it two', it1.set.id);
+    expect(b.setId).toBe(it1.set.id);
+    expect(a.setId).toBeUndefined();
+
+    const ids = [it1.set.id, films.set.id];
+    const counts = await countPassagesByDeck('en', ids);
+    expect(counts.general).toBe(1);
+    expect(counts.bySet.get(it1.set.id)).toBe(2);
+    expect(counts.bySet.get(films.set.id)).toBe(0);
+    expect(await countPassagesByDeck('de', ids)).toEqual({ general: 0, bySet: new Map(ids.map((id) => [id, 0])) });
+
+    expect((await listPassagesOfDeck('en', it1.set.id, ids)).map((p) => p.title).sort()).toEqual(['it one', 'it two']);
+    expect((await listPassagesOfDeck('en', undefined, ids)).map((p) => p.title)).toEqual(['general one']);
+    expect(await listPassagesOfDeck('en', films.set.id, ids)).toEqual([]);
+
+    // A passage whose deck is gone is counted and listed under General.
+    expect((await countPassagesByDeck('en', [films.set.id])).general).toBe(3);
+    expect((await listPassagesOfDeck('en', undefined, [films.set.id])).length).toBe(3);
+
+    // Gap counts are looked up per passage, deleted gaps not counted.
+    const gapCounts = await countGapsOf([a.id, b.id]);
+    expect(gapCounts.get(a.id)).toBe(1);
+    await deletePassage(a.id);
+    expect((await countGapsOf([a.id])).get(a.id)).toBe(0);
+    expect((await listGaps(b.id)).length).toBe(1);
+    // A deleted passage is not counted.
+    expect((await countPassagesByDeck('en', ids)).general).toBe(0);
+  });
+});

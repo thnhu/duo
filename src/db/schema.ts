@@ -137,6 +137,19 @@ export class DuoDB extends Dexie {
             row.schemaVersion = 8;
           });
       });
+    // v9: an index on examples.passageId, so the gaps of one passage (and how
+    // many there are) are looked up without reading every example. Rows are
+    // untouched; Dexie builds the index.
+    this.version(9)
+      .stores({ examples: 'id, dictionaryId, targetConceptId, passageId, attributesStatus, updatedAt, deletedAt' })
+      .upgrade(async (tx) => {
+        await tx
+          .table('settings')
+          .toCollection()
+          .modify((row: { schemaVersion?: number }) => {
+            row.schemaVersion = 9;
+          });
+      });
   }
 }
 

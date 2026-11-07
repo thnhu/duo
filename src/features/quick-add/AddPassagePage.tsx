@@ -37,6 +37,7 @@ export function AddPassagePage() {
       toast.show(
         `Đã thêm đoạn văn: ${result.gaps} lỗ, ${result.createdWords} word mới. Ôn ở Học → Điền vào đoạn văn.`,
       );
+      // Back to the deck cards: they only count, the passages are read when a card is opened.
       navigate('/passages');
     } finally {
       setSaving(false);

@@ -41,6 +41,9 @@ export function EditPassagePage() {
     );
   }
 
+  // Back to the list of the deck this passage is in (not every passage).
+  const backTo = `/passages?deck=${passage.setId ?? 'general'}`;
+
   async function handleSave() {
     if (!passageId || !draft || saving) return;
     setSaving(true);
@@ -53,7 +56,7 @@ export function EditPassagePage() {
       toast.show(
         `Đã lưu đoạn văn: giữ ${result.kept} lỗ, thêm ${result.added}, bỏ ${result.removed}.`,
       );
-      navigate('/passages');
+      navigate(backTo);
     } finally {
       setSaving(false);
     }
@@ -61,7 +64,7 @@ export function EditPassagePage() {
 
   return (
     <section className={styles.page}>
-      <Link to="/passages">← Đoạn văn</Link>
+      <Link to={backTo}>← Đoạn văn</Link>
       <h1>Sửa đoạn văn</h1>
       <p className={fieldStyles.hint}>
         Sửa chữ thì các lỗ đi theo. Lỗ giữ lại vẫn giữ lịch ôn và lịch sử; lỗ bị bỏ sẽ bị xóa.
@@ -76,7 +79,7 @@ export function EditPassagePage() {
         <Button disabled={!draft.text.trim() || draft.gaps.length === 0 || saving} onClick={() => void handleSave()}>
           Lưu thay đổi
         </Button>
-        <Button variant="ghost" onClick={() => navigate('/passages')}>
+        <Button variant="ghost" onClick={() => navigate(backTo)}>
           Hủy
         </Button>
       </ButtonRow>

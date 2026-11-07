@@ -51,12 +51,21 @@ export async function findOrCreateLesson(
   setId: string | undefined,
   name: string,
 ): Promise<Lesson | null> {
+  return (await ensureLesson(lang, setId, name))?.lesson ?? null;
+}
+
+// Same, and says whether the lesson was made just now (the import's undo needs it).
+export async function ensureLesson(
+  lang: Lang,
+  setId: string | undefined,
+  name: string,
+): Promise<{ lesson: Lesson; created: boolean } | null> {
   const trimmed = clean(name);
   if (!trimmed) return null;
   const found = (await listLessons(lang, setId)).find((l) => sameName(l.name, trimmed));
-  if (found) return found;
+  if (found) return { lesson: found, created: false };
   const created = await createLesson(lang, setId, trimmed);
-  return created.ok ? created.lesson : null;
+  return created.ok ? { lesson: created.lesson, created: true } : null;
 }
 
 // Renames in one place: every word of the lesson follows, as they only point at it.

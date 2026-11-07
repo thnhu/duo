@@ -488,6 +488,12 @@ export function ImportPage() {
                 <ul className={styles.summary}>
                   <li>{result.createdConcepts} concept mới</li>
                   {result.addedToSets > 0 && <li>{result.addedToSets} concept đã có được thêm vào deck</li>}
+                  {result.lessonsAssigned > 0 && (
+                    <li>
+                      {result.lessonsAssigned} concept được xếp vào bài
+                      {result.lessonsCreated > 0 ? ` (tạo ${result.lessonsCreated} bài mới)` : ''}
+                    </li>
+                  )}
                   {result.mergedConcepts > 0 && <li>{result.mergedConcepts} concept đã có được gộp thêm</li>}
                   {result.updatedConcepts > 0 && <li>{result.updatedConcepts} concept đã có được cập nhật</li>}
                   <li>{result.skippedDuplicates} concept trùng/không đổi (bỏ qua)</li>

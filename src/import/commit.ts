@@ -4,6 +4,7 @@ import { dictionaryIdForLang } from '../db/queries';
 import { db } from '../db/schema';
 import type { Concept, ConceptGrammar, Example, ImportBatch, Lang, StudyMode } from '../db/types';
 import { wordSetRepository } from '../db/repositories';
+import { ensureLesson } from '../lessons';
 import { createWordSet, listWordSets } from '../wordsets';
 import type { ExampleDraft } from './build';
 import type { DuplicateAction, ImportGroup } from './plan';
@@ -31,6 +32,9 @@ export interface CommitResult {
   inboxExamples: number;
   // Existing words that gained a word set label.
   addedToSets: number;
+  // Lessons the file made, and words put in a lesson (new or existing).
+  lessonsCreated: number;
+  lessonsAssigned: number;
 }
 
 function lower(s: string): string {
@@ -78,6 +82,8 @@ export async function commitImport(
     examplesAdded: 0,
     inboxExamples: 0,
     addedToSets: 0,
+    lessonsCreated: 0,
+    lessonsAssigned: 0,
   };
 
   const selected = groups.filter((g) => g.included);
@@ -115,11 +121,30 @@ export async function commitImport(
     return [...new Set(ids)];
   };
 
+  // Lessons named in the file (`lesson` column): the lesson of that name in the
+  // word's first deck (General when it has none), found or made, in file order.
+  // A word picks no lesson when it is skipped as a duplicate.
+  const liveDecks = new Set((await wordSetRepository.listActive()).map((s) => s.id));
+  const lessonOf = new Map<ImportGroup, string>();
+  const createdLessonIds: string[] = [];
+  for (const group of selected) {
+    const name = group.lesson?.trim();
+    if (!name) continue;
+    if (group.existing && options.duplicateAction === 'skip') continue;
+    const decks = [...(group.existing?.setIds ?? []), ...groupSetIds(group)].filter((id) => liveDecks.has(id));
+    const ensured = await ensureLesson(group.lang, decks[0], name);
+    if (!ensured) continue;
+    lessonOf.set(group, ensured.lesson.id);
+    if (ensured.created) createdLessonIds.push(ensured.lesson.id);
+  }
+  result.lessonsCreated = createdLessonIds.length;
+
   const batch: ImportBatch = {
     id: createId(),
     fileName: options.fileName,
     createdConceptIds: [],
     createdExampleIds: [],
+    createdLessonIds,
     updatedConcepts: [],
     createdAt: Date.now(),
     updatedAt: Date.now(),
@@ -155,6 +180,7 @@ export async function commitImport(
           // Spec 5.1/5.2: German has Rộng only for now.
           mode: group.lang === 'de' ? 'breadth' : options.mode,
           setIds: groupSetIds(group).length > 0 ? groupSetIds(group) : undefined,
+          lessonId: lessonOf.get(group),
           verification: 'unverified',
           source: {
             type: 'import',
@@ -169,6 +195,7 @@ export async function commitImport(
         await db.concepts.add(concept);
         batch.createdConceptIds.push(concept.id);
         result.createdConcepts++;
+        if (concept.lessonId) result.lessonsAssigned++;
 
         let linked = 0;
         for (const draft of group.examples) {
@@ -220,6 +247,11 @@ export async function commitImport(
           result.addedToSets++;
         }
         const overwrite = options.duplicateAction === 'update';
+        const wantedLesson = lessonOf.get(group);
+        if (wantedLesson && existing.lessonId !== wantedLesson && (overwrite || !existing.lessonId)) {
+          patch.lessonId = wantedLesson;
+          result.lessonsAssigned++;
+        }
         if (group.pos && (overwrite || !existing.pos) && group.pos !== existing.pos) {
           patch.pos = group.pos;
         }
@@ -298,7 +330,7 @@ export async function undoImport(batchId: string): Promise<boolean> {
   if (!latest || latest.id !== batchId) return false;
   const now = Date.now();
 
-  await db.transaction('rw', [db.concepts, db.examples, db.importBatches], async () => {
+  await db.transaction('rw', [db.concepts, db.examples, db.importBatches, db.lessons], async () => {
     for (const id of latest.createdExampleIds) {
       await db.examples.update(id, { deletedAt: now, updatedAt: now });
     }
@@ -307,6 +339,12 @@ export async function undoImport(batchId: string): Promise<boolean> {
     }
     for (const { id, before } of latest.updatedConcepts) {
       await db.concepts.update(id, { ...before, updatedAt: now });
+    }
+    // Lessons this import made go too; a word put in one since then leaves it.
+    for (const id of latest.createdLessonIds ?? []) {
+      const members = await db.concepts.filter((c) => c.lessonId === id).toArray();
+      for (const c of members) await db.concepts.update(c.id, { lessonId: undefined, updatedAt: now });
+      await db.lessons.update(id, { deletedAt: now, updatedAt: now });
     }
     await db.importBatches.update(latest.id, { undoneAt: now, updatedAt: now });
   });

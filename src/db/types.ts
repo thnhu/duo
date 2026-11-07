@@ -288,6 +288,8 @@ export interface ImportBatch {
   fileName: string;
   createdConceptIds: string[];
   createdExampleIds: string[];
+  // Lessons this import made (Bản 8), taken away again by the undo.
+  createdLessonIds?: string[];
   // Previous values of concepts changed by a merge/update.
   updatedConcepts: Array<{ id: string; before: Partial<Concept> }>;
   createdAt: number;

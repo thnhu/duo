@@ -1,6 +1,6 @@
 import { highlightParts, phraseForFile } from '../core/highlights';
 import { importFields, MEANING_SEPARATOR, type ImportFieldId } from '../import/fields';
-import type { Concept, Example, WordSet } from '../db/types';
+import type { Concept, Example, Lesson, WordSet } from '../db/types';
 
 // xlsx export (spec E3): the columns are exactly the import columns
 // (importFields, the same list the template uses), so an exported file can
@@ -11,7 +11,13 @@ import type { Concept, Example, WordSet } from '../db/types';
 // concept and details that have no import column (dictionary-lookup data,
 // schedules, review history) are only in the JSON backup.
 
-export function exportTable(concepts: Concept[], examples: Example[], sets: WordSet[] = []): string[][] {
+export function exportTable(
+  concepts: Concept[],
+  examples: Example[],
+  sets: WordSet[] = [],
+  lessons: Lesson[] = [],
+): string[][] {
+  const lessonName = new Map(lessons.filter((l) => l.deletedAt === undefined).map((l) => [l.id, l.name]));
   const setName = new Map(sets.filter((s) => s.deletedAt === undefined).map((s) => [s.id, s.name]));
   const header = importFields.map((f) => f.id as string);
   const byConcept = new Map<string, Example[]>();
@@ -35,7 +41,8 @@ export function exportTable(concepts: Concept[], examples: Example[], sets: Word
         lang: concept.lang,
         pos: concept.pos,
         meaning: concept.meanings.join(`${MEANING_SEPARATOR} `),
-        lesson: concept.source.lesson,
+        // The lesson as it is now; the file's old text only when the word has none.
+        lesson: (concept.lessonId ? lessonName.get(concept.lessonId) : undefined) ?? concept.source.lesson,
         // Decks by name, in the same `a; b` form the import reads.
         deck: (concept.setIds ?? [])
           .map((id) => setName.get(id))
@@ -74,8 +81,13 @@ export function exportTable(concepts: Concept[], examples: Example[], sets: Word
   return [header, ...rows];
 }
 
-export async function exportXlsx(concepts: Concept[], examples: Example[], sets: WordSet[] = []): Promise<Blob> {
+export async function exportXlsx(
+  concepts: Concept[],
+  examples: Example[],
+  sets: WordSet[] = [],
+  lessons: Lesson[] = [],
+): Promise<Blob> {
   const { default: writeXlsxFile } = await import('write-excel-file/universal');
-  const data = exportTable(concepts, examples, sets).map((row) => row.map((value) => ({ value })));
+  const data = exportTable(concepts, examples, sets, lessons).map((row) => row.map((value) => ({ value })));
   return writeXlsxFile(data).toBlob();
 }

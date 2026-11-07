@@ -495,3 +495,89 @@ describe('schema v2 migration', () => {
     await Dexie.delete(name);
   });
 });
+
+describe('lessons from the lesson column (M15c)', () => {
+  beforeEach(async () => {
+    await db.lessons.clear();
+  });
+
+  const FILE = [
+    'text,lang,lesson,deck',
+    'Mutter,de,Family,Goethe A1',
+    'Vater,de,Family,Goethe A1',
+    'aufstehen,de,Daily activities,Goethe A1',
+    'Haus,de,Home,',
+  ].join('\n');
+
+  async function lessonNames(setId: string | undefined) {
+    const { listLessons } = await import('../lessons');
+    return (await listLessons('de', setId)).map((l) => l.name);
+  }
+
+  it('makes the lessons in the deck of the word, in file order, and puts the words in them', async () => {
+    const { result } = await importCsv(FILE);
+    const [deck] = await listWordSets('de');
+    expect(await lessonNames(deck.id)).toEqual(['Family', 'Daily activities']);
+    expect(await lessonNames(undefined)).toEqual(['Home']); // no deck: General
+    expect(result).toMatchObject({ lessonsCreated: 3, lessonsAssigned: 4 });
+
+    const byText = Object.fromEntries((await conceptRepository.listActive()).map((c) => [c.text, c]));
+    expect(byText.Mutter.lessonId).toBe(byText.Vater.lessonId);
+    expect(byText.Mutter.lessonId).not.toBe(byText.aufstehen.lessonId);
+    expect(byText.Mutter.source.lesson).toBe('Family'); // the file's text is kept
+  });
+
+  it('importing the same file again does not repeat the lessons', async () => {
+    await importCsv(FILE);
+    const again = await importCsv(FILE);
+    const [deck] = await listWordSets('de');
+    expect(await lessonNames(deck.id)).toEqual(['Family', 'Daily activities']);
+    expect(again.result.lessonsCreated).toBe(0);
+    expect(await db.lessons.count()).toBe(3);
+  });
+
+  it('merge fills an empty lesson but keeps a set one; update replaces it; skip leaves it', async () => {
+    await importCsv('text,lang,deck\nMutter,de,Goethe A1');
+    const [deck] = await listWordSets('de');
+    const lessonOfMutter = async () => (await conceptRepository.listActive())[0].lessonId;
+
+    await importCsv('text,lang,deck,lesson\nMutter,de,Goethe A1,Family', 'skip');
+    expect(await lessonOfMutter()).toBeUndefined();
+
+    await importCsv('text,lang,deck,lesson\nMutter,de,Goethe A1,Family', 'merge');
+    const family = await lessonOfMutter();
+    expect(family).toBeDefined();
+
+    await importCsv('text,lang,deck,lesson\nMutter,de,Goethe A1,Travel', 'merge');
+    expect(await lessonOfMutter()).toBe(family);
+
+    await importCsv('text,lang,deck,lesson\nMutter,de,Goethe A1,Travel', 'update');
+    expect(await lessonOfMutter()).not.toBe(family);
+    expect(await lessonNames(deck.id)).toEqual(['Family', 'Travel']);
+  });
+
+  it('undoing the import takes away the lessons it made and restores the old lesson', async () => {
+    const first = await importCsv('text,lang,deck,lesson\nMutter,de,Goethe A1,Family', 'merge');
+    const second = await importCsv('text,lang,deck,lesson\nMutter,de,Goethe A1,Travel\nVater,de,Goethe A1,Travel', 'update');
+    const [deck] = await listWordSets('de');
+    expect(await lessonNames(deck.id)).toEqual(['Family', 'Travel']);
+
+    expect(await undoImport(second.result.batchId!)).toBe(true);
+    expect(await lessonNames(deck.id)).toEqual(['Family']);
+    const mutter = (await conceptRepository.listActive()).find((c) => c.text === 'Mutter');
+    const familyId = (await db.lessons.filter((l) => l.name === 'Family').toArray())[0].id;
+    expect(mutter?.lessonId).toBe(familyId);
+    expect((await conceptRepository.listActive()).map((c) => c.text)).toEqual(['Mutter']);
+    expect(first.result.lessonsCreated).toBe(1);
+  });
+
+  it('the xlsx export writes the lesson name, and the file can be imported again', async () => {
+    const { exportTable } = await import('../backup/table');
+    await importCsv(FILE);
+    const lessons = await db.lessons.toArray();
+    const sets = await listWordSets('de');
+    const [header, ...rows] = exportTable(await conceptRepository.listActive(), [], sets, lessons);
+    const at = header.indexOf('lesson');
+    expect(rows.map((r) => r[at]).sort()).toEqual(['Daily activities', 'Family', 'Family', 'Home']);
+  });
+});

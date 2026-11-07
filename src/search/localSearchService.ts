@@ -114,7 +114,7 @@ export class LocalSearchService implements SearchService {
   constructor(db: DuoDB = defaultDb) {
     this.db = db;
     const touch = () => this.invalidate();
-    for (const table of [db.concepts, db.examples, db.exampleLinks, db.dictionaries, db.wordSets]) {
+    for (const table of [db.concepts, db.examples, db.exampleLinks, db.dictionaries, db.wordSets, db.lessons]) {
       // Dexie hooks: invalidate immediately, and again after commit so a
       // rebuild that started mid-transaction can't leave the index stale.
       table.hook('creating', function () {
@@ -154,13 +154,17 @@ export class LocalSearchService implements SearchService {
   }
 
   private async build(): Promise<void> {
-    const [dictionaries, concepts, examples, exampleLinks, wordSets] = await Promise.all([
+    const [dictionaries, concepts, examples, exampleLinks, wordSets, lessonRows] = await Promise.all([
       this.db.dictionaries.toArray(),
       this.db.concepts.toArray(),
       this.db.examples.toArray(),
       this.db.exampleLinks.toArray(),
       this.db.wordSets.toArray(),
+      this.db.lessons.toArray(),
     ]);
+    // The lesson of a word is its Bản 8 lesson (a named topic in a deck).
+    const lessonName = new Map(lessonRows.filter((l) => l.deletedAt === undefined).map((l) => [l.id, l.name]));
+    const lessonOf = (c: Concept | undefined) => (c?.lessonId ? lessonName.get(c.lessonId) : undefined);
     const liveSets = wordSets.filter((s) => s.deletedAt === undefined);
     const liveSetIds = new Set(liveSets.map((s) => s.id));
     const setsOf = (c: Concept | undefined) => (c?.setIds ?? []).filter((id) => liveSetIds.has(id));
@@ -202,9 +206,10 @@ export class LocalSearchService implements SearchService {
       for (const text of expressions ?? []) {
         fields.push(makeField('expression', FIELD_WEIGHT.expression, text));
       }
-      if (c.source.lesson) {
-        fields.push(makeField('lesson', FIELD_WEIGHT.lesson, c.source.lesson));
-        lessons.add(c.source.lesson);
+      const lesson = lessonOf(c);
+      if (lesson) {
+        fields.push(makeField('lesson', FIELD_WEIGHT.lesson, lesson));
+        lessons.add(lesson);
       }
       docs.push({
         kind: 'concept',
@@ -216,7 +221,7 @@ export class LocalSearchService implements SearchService {
         fields,
         status: c.status,
         verification: c.verification,
-        lesson: c.source.lesson,
+        lesson,
         setIds: setsOf(c),
         sourceType: c.source.type,
         unlinked: false,
@@ -245,7 +250,7 @@ export class LocalSearchService implements SearchService {
         fields,
         status: concept?.status,
         verification: e.verification,
-        lesson: concept?.source.lesson,
+        lesson: lessonOf(concept),
         setIds: setsOf(concept),
         sourceType: concept?.source.type,
         attributes: e.attributes,

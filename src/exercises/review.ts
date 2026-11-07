@@ -1,3 +1,4 @@
+import { inSelectedLessons } from '../lessons/rules';
 import { reviewLogRepository } from '../db/repositories';
 import type { Concept, Example, Lang, ReviewLog } from '../db/types';
 import { listDue } from '../scheduling/store';
@@ -19,6 +20,8 @@ export interface ReviewRequest {
   lang?: Lang;
   // Only words in one of these word sets (M13); empty/undefined = all.
   setIds?: string[];
+  // Only words in one of these lessons (Bản 8); empty/undefined = all.
+  lessonIds?: string[];
   now?: number;
   rng?: () => number;
 }
@@ -63,7 +66,7 @@ async function latestLogs(): Promise<Map<string, ReviewLog>> {
 // review: words that have an example due now (most overdue first).
 // flash: any word that can be drilled, due or not, for quick-fire practice.
 export async function loadReviewItems(request: ReviewRequest): Promise<SessionItem[]> {
-  const { kind, count, lang, setIds, now = Date.now(), rng = Math.random } = request;
+  const { kind, count, lang, setIds, lessonIds, now = Date.now(), rng = Math.random } = request;
   const [library, logs, due] = await Promise.all([loadLibrary(), latestLogs(), listDue(now)]);
   const { concepts, examples } = { concepts: library.concepts, examples: library.examples! };
   const dueAt = new Map(due.map((s) => [s.exampleId, s.due]));
@@ -80,6 +83,7 @@ export async function loadReviewItems(request: ReviewRequest): Promise<SessionIt
   for (const concept of concepts) {
     if (lang && concept.lang !== lang) continue;
     if (!inSelectedSets(concept, setIds)) continue;
+    if (!inSelectedLessons(concept, lessonIds)) continue;
     const all = byConcept.get(concept.id) ?? [];
     const dueExamples = all.filter((e) => dueAt.has(e.id));
     if (kind === 'review' && dueExamples.length === 0) continue;
@@ -108,6 +112,10 @@ export async function loadReviewItems(request: ReviewRequest): Promise<SessionIt
 
 // How many words can be reviewed right now (Today screen, J7): counted
 // through the same selection as the session, so the number is never a lie.
-export async function countDueWords(now: number = Date.now(), setIds?: string[]): Promise<number> {
-  return (await loadReviewItems({ kind: 'review', count: Infinity, now, setIds })).length;
+export async function countDueWords(
+  now: number = Date.now(),
+  setIds?: string[],
+  lessonIds?: string[],
+): Promise<number> {
+  return (await loadReviewItems({ kind: 'review', count: Infinity, now, setIds, lessonIds })).length;
 }

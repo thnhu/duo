@@ -1,3 +1,4 @@
+import { inSelectedLessons } from '../lessons/rules';
 import { refreshAcquisition, type StatusChange } from '../acquisition/update';
 import { createId } from '../core/id';
 import { loadLibrary } from './library';
@@ -33,8 +34,8 @@ export function defaultOptions(module: ExerciseModule): Record<string, string> {
 
 export interface PairFilter {
   lang: Lang;
-  // Only words of this lesson (spec A1d), if set.
-  lesson?: string;
+  // Only words in one of these lessons (Bản 8); empty/undefined = all.
+  lessonIds?: string[];
   // Only words in one of these word sets (M13); empty/undefined = all.
   setIds?: string[];
 }
@@ -62,7 +63,7 @@ export async function loadPairs(
     if (!module.languages.includes(concept.lang) || concept.lang !== filter.lang) continue;
     if ((concept.mode ?? 'breadth') !== module.mode) continue;
     if (concept.status === 'acquired') continue;
-    if (filter.lesson && concept.source.lesson !== filter.lesson) continue;
+    if (!inSelectedLessons(concept, filter.lessonIds)) continue;
     if (!inSelectedSets(concept, filter.setIds)) continue;
     const usable = (byConcept.get(concept.id) ?? []).filter(
       (e) => acceptsExample(module, e) && module.isEligible(concept, e, library),

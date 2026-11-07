@@ -152,6 +152,31 @@ describe('word sets in search, study and export', () => {
     expect(inSelectedSets(a, ['other'])).toBe(false);
   });
 
+  it('review/flash only picks words in the chosen lessons, together with the deck choice', async () => {
+    const { loadReviewItems, countDueWords } = await import('../exercises/review');
+    const { createLesson, assignLesson } = await import('../lessons');
+    const it1 = await createWordSet('en', 'IT');
+    if (!it1.ok) throw new Error('setup');
+    const lesson = await createLesson('en', it1.set.id, 'Hardware');
+    if (!lesson.ok) throw new Error('lesson');
+    const cache = await word('cache');
+    const router = await word('router');
+    const ball = await word('ball');
+    for (const c of [cache, router]) await setConceptSets(c.id, [it1.set.id]);
+    await assignLesson(cache.id, lesson.lesson.id);
+
+    const byLesson = await loadReviewItems({ kind: 'flash', count: 10, lessonIds: [lesson.lesson.id] });
+    expect(byLesson.map((i) => i.concept.text)).toEqual(['cache']);
+    // Deck and lesson both apply: the deck's other word and a word outside it are out.
+    const both = await loadReviewItems({ kind: 'flash', count: 10, setIds: [it1.set.id], lessonIds: [lesson.lesson.id] });
+    expect(both.map((i) => i.concept.text)).toEqual(['cache']);
+    const wrongDeck = await loadReviewItems({ kind: 'flash', count: 10, setIds: ['other'], lessonIds: [lesson.lesson.id] });
+    expect(wrongDeck).toEqual([]);
+    expect((await loadReviewItems({ kind: 'flash', count: 10, lessonIds: [] })).length).toBe(3);
+    expect(await countDueWords(Date.now(), [], [lesson.lesson.id])).toBe(0);
+    expect(ball.id).toBeDefined();
+  });
+
   it('exports the set names in the set column, in the import form', async () => {
     const { exportTable } = await import('../backup/table');
     const { importFields } = await import('../import/fields');

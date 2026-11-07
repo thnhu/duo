@@ -363,3 +363,46 @@ describe('library by lesson (M15e)', () => {
     expect(await listLessonConcepts('de', lesson.lesson.id)).toEqual([]);
   });
 });
+
+describe('choosing lessons to study (M15f)', () => {
+  beforeEach(async () => {
+    await db.delete();
+    await db.open();
+  });
+
+  it('no lessons ticked means no restriction; ticked lessons narrow to their words', async () => {
+    const { inSelectedLessons } = await import('./rules');
+    expect(inSelectedLessons({ lessonId: 'a' }, undefined)).toBe(true);
+    expect(inSelectedLessons({}, [])).toBe(true);
+    expect(inSelectedLessons({ lessonId: 'a' }, ['a', 'b'])).toBe(true);
+    expect(inSelectedLessons({ lessonId: 'c' }, ['a', 'b'])).toBe(false);
+    expect(inSelectedLessons({}, ['a'])).toBe(false); // a word in no lesson is out
+  });
+
+  it('offers the lessons of the ticked decks, or of every deck when none is ticked', async () => {
+    const { createLesson, listLessonGroups, effectiveLessonIds } = await import('./index');
+    const a1 = await createWordSet('de', 'A1');
+    const a2 = await createWordSet('de', 'A2');
+    if (!a1.ok || !a2.ok) throw new Error('decks');
+    const family = await createLesson('de', a1.set.id, 'Family');
+    const travel = await createLesson('de', a2.set.id, 'Travel');
+    const misc = await createLesson('de', undefined, 'Misc');
+    if (!family.ok || !travel.ok || !misc.ok) throw new Error('lessons');
+    const decks = [a1.set, a2.set];
+
+    const all = await listLessonGroups(['de'], [], decks);
+    expect(all.map((g) => [g.label, g.lessons.map((l) => l.name)])).toEqual([
+      ['General', ['Misc']],
+      ['A1', ['Family']],
+      ['A2', ['Travel']],
+    ]);
+    const onlyA1 = await listLessonGroups(['de'], [a1.set.id], decks);
+    expect(onlyA1.map((g) => g.label)).toEqual(['A1']);
+    expect(await listLessonGroups(['en'], [], decks)).toEqual([]);
+
+    // A lesson ticked earlier but no longer offered (deck unticked) is ignored.
+    const picked = [family.lesson.id, travel.lesson.id];
+    expect(effectiveLessonIds(picked, onlyA1)).toEqual([family.lesson.id]);
+    expect(effectiveLessonIds(picked, all)).toEqual(picked);
+  });
+});

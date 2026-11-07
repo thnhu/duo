@@ -4,9 +4,10 @@ import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
 import { LangToggle } from '../../ui/LangToggle';
 import fieldStyles from '../../ui/field.module.css';
-import { conceptRepository } from '../../db/repositories';
 import type { Lang, WordSet } from '../../db/types';
+import { effectiveLessonIds, listLessonGroups, type LessonGroup } from '../../lessons';
 import { listWordSets, readStudySets, writeStudySets } from '../../wordsets';
+import { LessonChips } from '../lessons/LessonChips';
 import { SetChips } from '../sets/SetChips';
 import { exerciseModules, modulesForLanguage, type ExerciseModule } from '../../exercises';
 import { hasVoiceFor, isSpeechSupported } from '../../exercises/speech';
@@ -21,7 +22,8 @@ export interface SessionConfig {
   kind?: 'drill' | 'review' | 'flash';
   moduleId?: string;
   lang?: Lang;
-  lesson?: string;
+  // Only words in one of these lessons (Bản 8); empty/undefined = all.
+  lessonIds?: string[];
   // Only words in one of these word sets (M13); empty/undefined = all.
   setIds?: string[];
   count: number;
@@ -38,10 +40,10 @@ function countChoices(preferred: number): number[] {
 export function LearnPage() {
   const navigate = useNavigate();
   const [lang, setLang] = useState<Lang>('de');
-  const [lesson, setLesson] = useState('');
+  const [pickedLessons, setPickedLessons] = useState<string[]>([]);
+  const [lessonGroups, setLessonGroups] = useState<LessonGroup[]>([]);
   const [count, setCount] = useState(10);
   const [preferredCount, setPreferredCount] = useState(10);
-  const [lessons, setLessons] = useState<string[]>([]);
   const [sets, setSets] = useState<WordSet[]>([]);
   const [setIds, setSetIdsState] = useState<string[]>([]);
   const [available, setAvailable] = useState<Record<string, number>>({});
@@ -70,26 +72,34 @@ export function LearnPage() {
     setSetIdsState(ids);
   }
 
+  // Lessons offered: those of the ticked decks (or of every deck of the language).
+  // Remembered per language on this device.
   useEffect(() => {
     let current = true;
-    void conceptRepository.listActive().then((concepts) => {
+    void listLessonGroups([lang], setIds, sets).then((groups) => {
       if (!current) return;
-      const set = new Set(
-        concepts.filter((c) => c.lang === lang && c.source.lesson).map((c) => c.source.lesson!),
-      );
-      setLessons([...set].sort());
+      setLessonGroups(groups);
+      setPickedLessons(readStudySets(`duo:learn-lessons:${lang}`));
     });
     return () => {
       current = false;
     };
-  }, [lang]);
+  }, [lang, setIds, sets]);
+
+  function chooseLessons(ids: string[]) {
+    writeStudySets(`duo:learn-lessons:${lang}`, ids);
+    setPickedLessons(ids);
+  }
+
+  // A tick whose lesson is no longer offered (deck changed) does not filter.
+  const lessonIds = effectiveLessonIds(pickedLessons, lessonGroups);
 
   // How many words each drill can use right now.
   useEffect(() => {
     let current = true;
     void Promise.all(
       exerciseModules.list().map(async (m) => {
-        const pairs = await loadPairs(m, { lang, lesson: lesson || undefined, setIds });
+        const pairs = await loadPairs(m, { lang, lessonIds, setIds });
         return [m.id, pairs.length] as const;
       }),
     ).then((entries) => {
@@ -98,7 +108,7 @@ export function LearnPage() {
     return () => {
       current = false;
     };
-  }, [lang, lesson, setIds]);
+  }, [lang, lessonIds.join(','), setIds]);
 
   useEffect(() => {
     void loadStudy().then((study) => {
@@ -127,7 +137,7 @@ export function LearnPage() {
     const config: SessionConfig = {
       moduleId: module.id,
       lang,
-      lesson: lesson || undefined,
+      lessonIds,
       setIds,
       count,
       options,
@@ -167,24 +177,10 @@ export function LearnPage() {
             <SetChips sets={sets} selected={setIds} onChange={chooseSets} />
           </div>
         )}
-        {lessons.length > 0 && (
+        {lessonGroups.length > 0 && (
           <div>
-            <label className={fieldStyles.label} htmlFor="learn-lesson">
-              Phạm vi
-            </label>
-            <select
-              id="learn-lesson"
-              className={fieldStyles.input}
-              value={lesson}
-              onChange={(e) => setLesson(e.target.value)}
-            >
-              <option value="">Tất cả concept đã nạp</option>
-              {lessons.map((l) => (
-                <option key={l} value={l}>
-                  {l}
-                </option>
-              ))}
-            </select>
+            <label className={fieldStyles.label}>Bài</label>
+            <LessonChips groups={lessonGroups} selected={pickedLessons} onChange={chooseLessons} />
           </div>
         )}
       </Card>

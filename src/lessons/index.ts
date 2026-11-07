@@ -195,3 +195,44 @@ export async function listUnassignedConcepts(
     .filter((c) => !c.lessonId || !lessonIds.has(c.lessonId))
     .sort((a, b) => a.createdAt - b.createdAt || (a.source.row ?? 0) - (b.source.row ?? 0));
 }
+
+// ---- Choosing lessons to study (Learn, Review) ----
+
+export interface LessonGroup {
+  key: string;
+  label: string;
+  lang: Lang;
+  lessons: Lesson[];
+}
+
+// The lessons PO can pick for a study session, grouped by deck. With decks
+// chosen only their lessons are offered; with none chosen, every deck of the
+// languages (General included) that has lessons.
+export async function listLessonGroups(
+  langs: Lang[],
+  deckIds: string[],
+  decks: WordSet[],
+): Promise<LessonGroup[]> {
+  const all = (await lessonRepository.listActive()).filter((l) => langs.includes(l.lang));
+  const groups: LessonGroup[] = [];
+  const add = (key: string, label: string, lang: Lang, setId: string | undefined) => {
+    const lessons = all
+      .filter((l) => l.lang === lang && l.setId === setId)
+      .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+    if (lessons.length > 0) groups.push({ key, label, lang, lessons });
+  };
+  if (deckIds.length === 0) {
+    for (const lang of langs) add(`general-${lang}`, 'General', lang, undefined);
+    for (const deck of decks.filter((d) => langs.includes(d.lang))) add(deck.id, deck.name, deck.lang, deck.id);
+  } else {
+    for (const deck of decks.filter((d) => deckIds.includes(d.id))) add(deck.id, deck.name, deck.lang, deck.id);
+  }
+  return groups;
+}
+
+// What was ticked, minus lessons that are no longer on offer (deck changed or
+// lesson deleted): a hidden tick must not keep filtering.
+export function effectiveLessonIds(selected: string[], groups: LessonGroup[]): string[] {
+  const offered = new Set(groups.flatMap((g) => g.lessons.map((l) => l.id)));
+  return selected.filter((id) => offered.has(id));
+}

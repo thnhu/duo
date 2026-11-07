@@ -246,8 +246,8 @@ describe('sessions', () => {
   });
 
   async function seed() {
-    await conceptRepository.add(concept('apfel', 'Apfel', { grammar: { gender: 'der', plural: 'Äpfel' }, source: { type: 'import', lesson: 'L1' } }));
-    await conceptRepository.add(concept('haus', 'Haus', { grammar: { gender: 'das', plural: 'Häuser' }, source: { type: 'import', lesson: 'L2' } }));
+    await conceptRepository.add(concept('apfel', 'Apfel', { grammar: { gender: 'der', plural: 'Äpfel' }, source: { type: 'import', lesson: 'L1' }, lessonId: 'l1' }));
+    await conceptRepository.add(concept('haus', 'Haus', { grammar: { gender: 'das', plural: 'Häuser' }, source: { type: 'import', lesson: 'L2' }, lessonId: 'l2' }));
     await conceptRepository.add(concept('kuh', 'Kuh', { grammar: { gender: 'die' }, status: 'acquired' }));
     await conceptRepository.add(concept('tisch', 'Tisch')); // no gender
     await conceptRepository.add(concept('swallow', 'swallow', { lang: 'en', dictionaryId: 'dict-en', grammar: { gender: 'der' } }));
@@ -266,7 +266,7 @@ describe('sessions', () => {
 
   it('filters by lesson', async () => {
     await seed();
-    const pairs = await loadPairs(germanNounGenderPlural, { lang: 'de', lesson: 'L2' }, rngFirst);
+    const pairs = await loadPairs(germanNounGenderPlural, { lang: 'de', lessonIds: ['l2'] }, rngFirst);
     expect(pairs.map((p) => p.concept.id)).toEqual(['haus']);
   });
 
@@ -289,7 +289,7 @@ describe('sessions', () => {
 
   it('records each answer with result, drill type, example and reaction time', async () => {
     await seed();
-    const [pair] = await loadPairs(germanNounGenderPlural, { lang: 'de', lesson: 'L2' }, rngFirst);
+    const [pair] = await loadPairs(germanNounGenderPlural, { lang: 'de', lessonIds: ['l2'] }, rngFirst);
     const ex = germanNounGenderPlural.generate(pair.concept, pair.example, { rng: rngFirst, options: {} });
 
     const right = await recordAnswer(germanNounGenderPlural, ex, { gender: 'das', plural: 'Häuser' }, 1850, () => 5000);

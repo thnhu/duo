@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '../db/schema';
-import { conceptRepository, exampleRepository } from '../db/repositories';
+import { conceptRepository, exampleRepository, lessonRepository } from '../db/repositories';
 import { createDefaultAttributes } from '../db/defaults';
 import type { Concept, Example } from '../db/types';
 import { LocalSearchService } from './localSearchService';
@@ -44,6 +44,7 @@ beforeEach(async () => {
   await db.concepts.clear();
   await db.examples.clear();
   await db.exampleLinks.clear();
+  await db.lessons.clear();
   await db.dictionaries.clear();
   await db.dictionaries.bulkAdd([
     { id: 'dict-en', name: 'English', lang: 'en', updatedAt: 0 },
@@ -125,8 +126,17 @@ describe('LocalSearchService', () => {
 
   describe('filters', () => {
     beforeEach(async () => {
+      // The lesson filter reads the word's lesson (Bản 8), not the file's old text.
+      await lessonRepository.add({ id: 'lesson-l1', lang: 'en', name: 'L1', order: 0, updatedAt: 1 });
       await conceptRepository.add(
-        concept({ id: 'en1', text: 'hello', lang: 'en', status: 'loaded', source: { type: 'import', lesson: 'L1' } }),
+        concept({
+          id: 'en1',
+          text: 'hello',
+          lang: 'en',
+          status: 'loaded',
+          source: { type: 'import', lesson: 'L1' },
+          lessonId: 'lesson-l1',
+        }),
       );
       await conceptRepository.add(
         concept({

@@ -490,8 +490,8 @@ export function ImportPage() {
                   {result.addedToSets > 0 && <li>{result.addedToSets} concept đã có được thêm vào deck</li>}
                   {result.lessonsAssigned > 0 && (
                     <li>
-                      {result.lessonsAssigned} concept được xếp vào bài
-                      {result.lessonsCreated > 0 ? ` (tạo ${result.lessonsCreated} bài mới)` : ''}
+                      {result.lessonsAssigned} concept được xếp vào lesson
+                      {result.lessonsCreated > 0 ? ` (tạo ${result.lessonsCreated} lesson mới)` : ''}
                     </li>
                   )}
                   {result.mergedConcepts > 0 && <li>{result.mergedConcepts} concept đã có được gộp thêm</li>}

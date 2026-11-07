@@ -27,9 +27,9 @@ interface LessonSelectProps {
 const NEW = '__new__';
 
 // "Bài": the lesson of a word, picked from a list (never typed on the word, so
-// one topic cannot split into two by a typo). "+ Tạo bài mới…" makes one in
+// one topic cannot split into two by a typo). "+ Tạo lesson mới…" makes one in
 // the deck on the spot.
-export function LessonSelect({ id, lang, decks, value, onChange, label = 'Bài' }: LessonSelectProps) {
+export function LessonSelect({ id, lang, decks, value, onChange, label = 'Lesson' }: LessonSelectProps) {
   const [groups, setGroups] = useState<Array<{ deck: LessonDeck; lessons: Lesson[] }>>([]);
   const [making, setMaking] = useState(false);
   const [draft, setDraft] = useState('');
@@ -59,7 +59,7 @@ export function LessonSelect({ id, lang, decks, value, onChange, label = 'Bài' 
     setError('');
     const result = await createLesson(lang, decks[0]?.setId, draft);
     if (!result.ok) {
-      setError(result.reason === 'duplicate' ? 'Deck này đã có bài cùng tên.' : 'Hãy nhập tên bài.');
+      setError(result.reason === 'duplicate' ? 'Deck này đã có lesson cùng tên.' : 'Hãy nhập tên lesson.');
       return;
     }
     setMaking(false);
@@ -86,7 +86,7 @@ export function LessonSelect({ id, lang, decks, value, onChange, label = 'Bài' 
           }
         }}
       >
-        <option value="">— không có bài —</option>
+        <option value="">— không có lesson —</option>
         {groups.map(({ deck, lessons }) =>
           decks.length > 1 ? (
             <optgroup key={deck.setId ?? 'general'} label={deck.label}>
@@ -104,13 +104,13 @@ export function LessonSelect({ id, lang, decks, value, onChange, label = 'Bài' 
             ))
           ),
         )}
-        {canMake && <option value={NEW}>+ Tạo bài mới…</option>}
+        {canMake && <option value={NEW}>+ Tạo lesson mới…</option>}
       </select>
       {making && (
         <>
           <input
             className={fieldStyles.input}
-            aria-label="Tên bài mới"
+            aria-label="Tên lesson mới"
             value={draft}
             autoFocus
             placeholder="vd: Family"
@@ -125,7 +125,7 @@ export function LessonSelect({ id, lang, decks, value, onChange, label = 'Bài' 
           {error && <p className={fieldStyles.error}>{error}</p>}
           <ButtonRow>
             <Button variant="secondary" disabled={!draft.trim()} onClick={() => void handleCreate()}>
-              Tạo bài
+              Tạo lesson
             </Button>
             <Button variant="ghost" onClick={() => setMaking(false)}>
               Hủy
@@ -135,7 +135,7 @@ export function LessonSelect({ id, lang, decks, value, onChange, label = 'Bài' 
       )}
       {!canMake && decks.length > 1 && (
         <p className={fieldStyles.hint}>
-          Từ nằm trong nhiều deck: chọn bài của một deck, hoặc tạo bài ở <Link to="/lessons">Quản lý bài</Link>.
+          Từ nằm trong nhiều deck: chọn lesson của một deck, hoặc tạo lesson ở <Link to="/lessons">Quản lý lesson</Link>.
         </p>
       )}
     </div>

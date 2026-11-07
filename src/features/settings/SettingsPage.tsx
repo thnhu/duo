@@ -60,7 +60,7 @@ export function SettingsPage() {
         setLastBackup(backup.exportedAt);
         return `Đã xuất bản sao lưu đầy đủ (${backup.tables.concepts.length} concept). Hãy cất file ở nơi an toàn.`;
       }
-      return `Đã xuất bản sao lưu một phần (${backup.scope!.label}): ${backup.scope!.conceptCount} concept cùng example, bài, đoạn văn, lịch ôn của chúng. Nạp lại ở Khôi phục sẽ về đúng deck, bài. Bản đầy đủ là xuất khi không chọn phạm vi.`;
+      return `Đã xuất bản sao lưu một phần (${backup.scope!.label}): ${backup.scope!.conceptCount} concept cùng example, lesson, đoạn văn, lịch ôn của chúng. Nạp lại ở Khôi phục sẽ về đúng deck, lesson. Bản đầy đủ là xuất khi không chọn phạm vi.`;
     });
 
   const handleExportXlsx = () =>
@@ -131,8 +131,8 @@ export function SettingsPage() {
         </p>
         <ul className={styles.note}>
           <li>
-            <strong>JSON</strong>: để sao lưu và khôi phục. Có đủ example, liên kết, đoạn văn, bài, lịch ôn và lịch sử
-            trả lời; nạp lại tự về đúng deck, bài.
+            <strong>JSON</strong>: để sao lưu và khôi phục. Có đủ example, liên kết, đoạn văn, lesson, lịch ôn và lịch sử
+            trả lời; nạp lại tự về đúng deck, lesson.
           </li>
           <li>
             <strong>xlsx</strong>: để đọc và sửa hàng loạt trong Excel. Chỉ có từ vựng (không có liên kết, đoạn văn,

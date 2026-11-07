@@ -28,26 +28,26 @@ export function ConceptLessonCard({ concept, onChanged }: { concept: Concept; on
   async function handleChange(lessonId: string) {
     const result = await assignLesson(concept.id, lessonId || undefined);
     if (!result.ok) {
-      toast.show('Bài này không thuộc deck nào của concept.', { kind: 'error' });
+      toast.show('Lesson này không thuộc deck nào của concept.', { kind: 'error' });
       return;
     }
-    toast.show(lessonId ? 'Đã xếp concept vào bài.' : 'Đã đưa concept ra khỏi bài.', { kind: 'info' });
+    toast.show(lessonId ? 'Đã xếp concept vào lesson.' : 'Đã đưa concept ra khỏi lesson.', { kind: 'info' });
     onChanged();
   }
 
   return (
     <Card className={styles.card}>
-      <h2>Bài</h2>
+      <h2>Lesson</h2>
       <LessonSelect
         id="concept-lesson"
         lang={concept.lang}
         decks={options}
         value={concept.lessonId ?? ''}
         onChange={(id) => void handleChange(id)}
-        label="Bài của concept"
+        label="Lesson của concept"
       />
       <p className={styles.hint}>
-        Một concept thuộc một bài, và bài nằm trong một deck của concept. <Link to="/lessons">Quản lý bài</Link>
+        Một concept thuộc một lesson, và lesson nằm trong một deck của concept. <Link to="/lessons">Quản lý lesson</Link>
       </p>
     </Card>
   );

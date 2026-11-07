@@ -58,7 +58,7 @@ export function ExportScopeCard({ scope, onChange }: ExportScopeCardProps) {
     <Card className={styles.card}>
       <h2>Phạm vi xuất</h2>
       <p className={styles.note}>
-        Chọn ngôn ngữ, rồi deck, rồi bài để file nhỏ và dễ đọc. Không chọn gì thì xuất tất cả.
+        Chọn ngôn ngữ, rồi deck, rồi lesson để file nhỏ và dễ đọc. Không chọn gì thì xuất tất cả.
       </p>
       <div>
         <label className={fieldStyles.label} htmlFor="scope-lang">
@@ -99,7 +99,7 @@ export function ExportScopeCard({ scope, onChange }: ExportScopeCardProps) {
       {s.deck && (
         <div>
           <label className={fieldStyles.label} htmlFor="scope-lesson">
-            Bài
+            Lesson
           </label>
           <select
             id="scope-lesson"
@@ -107,7 +107,7 @@ export function ExportScopeCard({ scope, onChange }: ExportScopeCardProps) {
             value={s.lessonId ?? ''}
             onChange={(e) => onChange(normalizeScope({ ...s, lessonId: e.target.value || undefined }))}
           >
-            <option value="">Tất cả bài</option>
+            <option value="">Tất cả lesson</option>
             {lessons.map((l) => (
               <option key={l.id} value={l.id}>
                 {l.name}

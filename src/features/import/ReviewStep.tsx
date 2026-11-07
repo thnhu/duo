@@ -109,13 +109,13 @@ export function ReviewStep({
         <Card className={styles.card}>
           {lessons.length > 0 && (
             <div>
-              <label className={fieldStyles.label}>Chỉ nạp một bài</label>
+              <label className={fieldStyles.label}>Chỉ nạp một lesson</label>
               <select
                 className={fieldStyles.input}
                 defaultValue=""
                 onChange={(e) => onlyLesson(e.target.value === '' ? null : e.target.value)}
               >
-                <option value="">Tất cả các bài</option>
+                <option value="">Tất cả lesson</option>
                 {lessons.map((l) => (
                   <option key={l} value={l}>
                     {l}

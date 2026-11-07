@@ -37,7 +37,7 @@ export const importFields: ImportField[] = [
   { id: 'lang', label: 'Ngôn ngữ (lang)', aliases: ['lang', 'language', 'ngôn ngữ', 'sprache'] },
   { id: 'pos', label: 'Loại từ (pos)', aliases: ['pos', 'part of speech', 'wortart', 'loại từ', 'từ loại'] },
   { id: 'meaning', label: 'Nghĩa (meaning)', aliases: ['meaning', 'meanings', 'definition', 'translation', 'bedeutung', 'nghĩa', 'dịch'] },
-  { id: 'lesson', label: 'Bài (lesson)', aliases: ['lesson', 'chapter', 'unit', 'lektion', 'bài', 'chương'] },
+  { id: 'lesson', label: 'Lesson', aliases: ['lesson', 'chapter', 'unit', 'lektion', 'bài', 'chương'] },
   { id: 'deck', label: 'Deck (nhiều deck cách nhau bằng ;)', aliases: ['deck', 'decks', 'set', 'sets', 'wordset', 'word set', 'collection', 'topic', 'bộ', 'bộ từ', 'chủ đề'] },
   { id: 'example', label: 'Câu ví dụ (example)', aliases: ['example', 'sentence', 'beispiel', 'ví dụ', 'câu', 'câu ví dụ'] },
   { id: 'highlight', label: 'Đoạn tô sáng (highlight)', aliases: ['highlight', 'tô sáng'] },

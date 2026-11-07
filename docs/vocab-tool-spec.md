@@ -756,6 +756,7 @@ Chỉ `text` bắt buộc. Cột mẫu theo đúng thứ tự dưới đây.
 ## 13. Lịch sử thay đổi
 
 **v12 (bản này):**
+- **Nhãn UI "Lesson"**: màn hình gọi bài là Lesson (như Deck, Concept, Word); chữ "bài" trong các mục Bản 8 và Bản 9 là cách viết cũ cho lesson, "bài" còn lại trong giao diện chỉ là bài tập.
 - **Màn Đoạn văn theo deck** (Bản 6): card deck trước, đọc danh sách đoạn văn khi bấm card; `Passage.setId`; schema v9 (chỉ mục `examples.passageId`); v10 gán deck cho đoạn văn cũ; sửa đoạn văn đổi được deck.
 - **Mục 12 Format input file** (cột, quy tắc, ví dụ từ file mẫu Goethe A1 của PO).
 - **Cụm tô sáng nhiều đoạn** cho động từ tách (`Example.highlightExtra`, không cần migration): nhập file bằng `fahren … ab`, nút "Tô thêm đoạn nữa", bài điền cụm tiếng Anh và nghe chép, xuất xlsx giữ nguyên cách ghi (C7, 9.2 câu 2, mục 12).

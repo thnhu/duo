@@ -252,7 +252,7 @@ export function ConceptDetailPage() {
 
         {(concept.source.lesson || concept.source.fileName) && (
           <p className={styles.note}>
-            {concept.source.lesson ? `Bài: ${concept.source.lesson}` : ''}
+            {concept.source.lesson ? `Lesson: ${concept.source.lesson}` : ''}
             {concept.source.lesson && concept.source.fileName ? ' · ' : ''}
             {concept.source.fileName
               ? `Từ file ${concept.source.fileName}${concept.source.row ? `, dòng ${concept.source.row}` : ''}`

@@ -148,7 +148,7 @@ export function QuickAddPage() {
     setWordPos('');
     setGrammar(emptyGrammarValues());
     setLookupNote('');
-    const inDeck = `${setId ? ' Đã thêm vào deck đã chọn.' : ''}${lessonPlaced ? ' Đã xếp vào bài.' : ''}${sentence ? ' Đã lưu kèm câu ví dụ.' : ''}`;
+    const inDeck = `${setId ? ' Đã thêm vào deck đã chọn.' : ''}${lessonPlaced ? ' Đã xếp vào lesson.' : ''}${sentence ? ' Đã lưu kèm câu ví dụ.' : ''}`;
     if (outcome === 'created') {
       toast.show(`Đã thêm word "${concept.text}".${inDeck}`);
     } else {

@@ -107,7 +107,7 @@ export function TodayPage() {
 
       {lessonGroups.length > 0 && setIds !== null && (
         <Card className={styles.card}>
-          <h2>Bài cần ôn</h2>
+          <h2>Lesson cần ôn</h2>
           <LessonChips groups={lessonGroups} selected={pickedLessons} onChange={chooseLessons} showLang />
         </Card>
       )}
@@ -126,7 +126,7 @@ export function TodayPage() {
         ) : (
           <p>
             {(setIds && setIds.length > 0) || lessonIds.length > 0
-              ? 'Hôm nay không có concept nào trong các deck và bài đã chọn cần ôn.'
+              ? 'Hôm nay không có concept nào trong các deck và lesson đã chọn cần ôn.'
               : 'Hôm nay không có gì cần ôn. Học bài mới hoặc luyện phản xạ chớp nhoáng nhé.'}
           </p>
         )}

@@ -71,17 +71,17 @@ export function LessonsPage() {
 
   const reasonText = (reason: 'empty' | 'duplicate' | 'missing') =>
     reason === 'duplicate'
-      ? 'Deck này đã có bài cùng tên.'
+      ? 'Deck này đã có lesson cùng tên.'
       : reason === 'empty'
-        ? 'Hãy nhập tên bài.'
-        : 'Không tìm thấy bài này.';
+        ? 'Hãy nhập tên lesson.'
+        : 'Không tìm thấy lesson này.';
 
   async function handleCreate() {
     setError('');
     const result = await createLesson(lang, setId, draft);
     if (!result.ok) return setError(reasonText(result.reason));
     setDraft('');
-    toast.show(`Đã tạo bài "${result.lesson.name}".`);
+    toast.show(`Đã tạo lesson "${result.lesson.name}".`);
     await load();
   }
 
@@ -91,7 +91,7 @@ export function LessonsPage() {
     const result = await renameLesson(editing.id, editing.name);
     if (!result.ok) return setError(reasonText(result.reason));
     setEditing(null);
-    toast.show('Đã đổi tên bài. Mọi từ trong bài đổi theo.');
+    toast.show('Đã đổi tên lesson. Mọi từ trong lesson đổi theo.');
     await load();
   }
 
@@ -107,7 +107,7 @@ export function LessonsPage() {
   async function handleDelete(lesson: Lesson) {
     const undo = await deleteLesson(lesson.id);
     setConfirming(null);
-    toast.show(`Đã xóa bài "${lesson.name}". ${undo.conceptIds.length} từ vẫn còn trong deck.`, {
+    toast.show(`Đã xóa lesson "${lesson.name}". ${undo.conceptIds.length} từ vẫn còn trong deck.`, {
       action: {
         label: 'Hoàn tác',
         onClick: () => {
@@ -124,7 +124,7 @@ export function LessonsPage() {
         ← Thư viện
       </Link>
       <div className={styles.header}>
-        <h1>Bài</h1>
+        <h1>Lesson</h1>
         <LangToggle
           value={lang}
           onChange={(next) => {
@@ -134,8 +134,8 @@ export function LessonsPage() {
         />
       </div>
       <p className={styles.hint}>
-        Bài là một chủ đề có tên trong deck (ví dụ Family, Daily activities), khoảng 20 từ. Một từ thuộc một bài.
-        Xóa bài chỉ đưa các từ ra khỏi bài, không xóa từ.
+        Lesson là một chủ đề có tên trong deck (ví dụ Family, Daily activities), khoảng 20 từ. Một từ thuộc một lesson.
+        Xóa lesson chỉ đưa các từ ra khỏi lesson, không xóa từ.
       </p>
 
       <div>
@@ -165,7 +165,7 @@ export function LessonsPage() {
 
       <Card className={styles.card}>
         <label className={fieldStyles.label} htmlFor="new-lesson">
-          Tạo bài mới
+          Tạo lesson mới
         </label>
         <input
           id="new-lesson"
@@ -179,12 +179,12 @@ export function LessonsPage() {
         />
         <ButtonRow>
           <Button disabled={!draft.trim()} onClick={() => void handleCreate()}>
-            Tạo bài
+            Tạo lesson
           </Button>
         </ButtonRow>
       </Card>
 
-      {lessons.length === 0 && <p className={styles.hint}>Deck này chưa có bài nào.</p>}
+      {lessons.length === 0 && <p className={styles.hint}>Deck này chưa có lesson nào.</p>}
 
       {lessons.map((lesson, index) => (
         <Card key={lesson.id} className={styles.setRow}>
@@ -192,7 +192,7 @@ export function LessonsPage() {
             <>
               <input
                 className={fieldStyles.input}
-                aria-label="Tên bài"
+                aria-label="Tên lesson"
                 value={editing.name}
                 onChange={(e) => setEditing({ id: lesson.id, name: e.target.value })}
                 onKeyDown={(e) => {
@@ -215,7 +215,7 @@ export function LessonsPage() {
               <ButtonRow>
                 <Button
                   variant="secondary"
-                  aria-label={`Đưa bài ${lesson.name} lên`}
+                  aria-label={`Đưa lesson ${lesson.name} lên`}
                   disabled={index === 0}
                   onClick={() => void handleMove(lesson, -1)}
                 >
@@ -223,7 +223,7 @@ export function LessonsPage() {
                 </Button>
                 <Button
                   variant="secondary"
-                  aria-label={`Đưa bài ${lesson.name} xuống`}
+                  aria-label={`Đưa lesson ${lesson.name} xuống`}
                   disabled={index === lessons.length - 1}
                   onClick={() => void handleMove(lesson, 1)}
                 >
@@ -233,19 +233,19 @@ export function LessonsPage() {
                   Đổi tên
                 </Button>
                 <Button variant="ghost" onClick={() => void askDelete(lesson)}>
-                  Xóa bài
+                  Xóa lesson
                 </Button>
               </ButtonRow>
               {confirming?.id === lesson.id && (
                 <InlineConfirm
-                  confirmLabel="Xóa bài"
+                  confirmLabel="Xóa lesson"
                   onCancel={() => setConfirming(null)}
                   onConfirm={() => void handleDelete(lesson)}
                 >
-                  Xóa bài "{lesson.name}"?{' '}
+                  Xóa lesson "{lesson.name}"?{' '}
                   {confirming.concepts > 0
-                    ? `${confirming.concepts} từ sẽ ra khỏi bài (không bị xóa). Có thể Hoàn tác ngay sau đó.`
-                    : 'Bài đang trống.'}
+                    ? `${confirming.concepts} từ sẽ ra khỏi lesson (không bị xóa). Có thể Hoàn tác ngay sau đó.`
+                    : 'Lesson đang trống.'}
                 </InlineConfirm>
               )}
             </>

@@ -68,7 +68,7 @@ export function scopeLabel(scope: ExportScope, names: ScopeNames = {}): string {
   const parts: string[] = [];
   if (s.lang) parts.push(s.lang === 'de' ? 'tiếng Đức' : 'tiếng Anh');
   if (s.deck) parts.push(s.deck === GENERAL_SCOPE_DECK ? 'General' : (names.deckName ?? 'deck'));
-  if (s.lessonId) parts.push(names.lessonName ?? 'bài');
+  if (s.lessonId) parts.push(names.lessonName ?? 'lesson');
   return parts.join(' · ');
 }
 

@@ -41,7 +41,7 @@ const SOURCES: Array<{ value: ConceptSource['type']; label: string }> = [
 const FIELD_LABEL: Record<string, string> = {
   meaning: 'Nghĩa',
   note: 'Ghi chú',
-  lesson: 'Bài',
+  lesson: 'Lesson',
   expression: 'Cách nói',
 };
 
@@ -207,7 +207,7 @@ export function SearchPage() {
           )}
           {facets.lessons.length > 0 && (
             <FilterSelect
-              label="Bài"
+              label="Lesson"
               value={filters.lesson ?? ''}
               onChange={(v) => setFilter({ lesson: v || undefined })}
               options={facets.lessons.map((l) => ({ value: l, label: l }))}

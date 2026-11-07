@@ -179,7 +179,7 @@ export function LearnPage() {
         )}
         {lessonGroups.length > 0 && (
           <div>
-            <label className={fieldStyles.label}>Bài</label>
+            <label className={fieldStyles.label}>Lesson</label>
             <LessonChips groups={lessonGroups} selected={pickedLessons} onChange={chooseLessons} />
           </div>
         )}

@@ -76,19 +76,19 @@ export function LessonBrowser({ lang, filter, sets, lessonKey, onOpen }: LessonB
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang, filterKey, lessonKey, sets]);
 
-  if (!deck.ok) return <p className={styles.empty}>Chọn một deck để xem các bài của nó.</p>;
+  if (!deck.ok) return <p className={styles.empty}>Chọn một deck để xem các lesson của nó.</p>;
   if (!lessons) return null;
 
   if (lessonKey) {
-    const name = lessonKey === NO_LESSON ? 'Chưa xếp bài' : lessons.find((l) => l.id === lessonKey)?.name;
-    if (name === undefined) return <p className={styles.empty}>Không tìm thấy bài này.</p>;
+    const name = lessonKey === NO_LESSON ? 'Chưa xếp lesson' : lessons.find((l) => l.id === lessonKey)?.name;
+    if (name === undefined) return <p className={styles.empty}>Không tìm thấy lesson này.</p>;
     return (
       <>
         <p className={styles.empty}>
           <strong>{name}</strong>
           {words ? ` · ${words.length} từ` : ''}
         </p>
-        {words && words.length === 0 && <p className={styles.empty}>Bài này còn trống.</p>}
+        {words && words.length === 0 && <p className={styles.empty}>Lesson này còn trống.</p>}
         <div className={styles.list}>
           {words?.map((concept) => (
             <ConceptRow key={concept.id} concept={concept} />
@@ -100,14 +100,14 @@ export function LessonBrowser({ lang, filter, sets, lessonKey, onOpen }: LessonB
 
   const cards = [
     ...lessons.map((l) => ({ key: l.id, label: l.name, n: counts.get(l.id) ?? 0 })),
-    ...(unassigned > 0 ? [{ key: NO_LESSON, label: 'Chưa xếp bài', n: unassigned }] : []),
+    ...(unassigned > 0 ? [{ key: NO_LESSON, label: 'Chưa xếp lesson', n: unassigned }] : []),
   ];
   return (
     <>
       {cards.length === 0 && (
-        <p className={styles.empty}>Deck này chưa có bài nào. Tạo ở "Quản lý bài" hoặc nhập file có cột lesson.</p>
+        <p className={styles.empty}>Deck này chưa có lesson nào. Tạo ở "Quản lý lesson" hoặc nhập file có cột lesson.</p>
       )}
-      <div className={styles.deckGrid} role="list" aria-label="Bài">
+      <div className={styles.deckGrid} role="list" aria-label="Lesson">
         {cards.map((card) => (
           <button
             key={card.key}

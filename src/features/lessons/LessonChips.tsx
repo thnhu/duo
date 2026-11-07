@@ -22,7 +22,7 @@ export function LessonChips({ groups, selected, onChange, showLang }: LessonChip
     onChange(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
   const chip = (on: boolean) => [styles.chip, on ? styles.chipOn : ''].filter(Boolean).join(' ');
   return (
-    <div className={groupStyles.groups} role="group" aria-label="Chọn bài">
+    <div className={groupStyles.groups} role="group" aria-label="Chọn lesson">
       <div className={styles.chips}>
         <button
           type="button"
@@ -30,7 +30,7 @@ export function LessonChips({ groups, selected, onChange, showLang }: LessonChip
           aria-pressed={selected.length === 0}
           onClick={() => onChange([])}
         >
-          Tất cả bài
+          Tất cả lesson
         </button>
       </div>
       {groups.map((group) => (

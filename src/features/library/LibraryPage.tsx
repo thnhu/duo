@@ -121,7 +121,7 @@ export function LibraryPage() {
     { key: 'concept', label: `Concept ${deckName}`, hint: 'Các ý; bấm một ý để xem example của nó' },
     { key: 'word', label: `Word ${deckName}`, hint: 'Các word đứng riêng (từ hoặc cụm)' },
     ...(activeFilter && activeFilter.kind !== 'all'
-      ? [{ key: 'lesson' as const, label: `Bài ${deckName}`, hint: 'Các bài (chủ đề) của deck; bấm một bài để xem các từ của nó' }]
+      ? [{ key: 'lesson' as const, label: `Lesson ${deckName}`, hint: 'Các lesson (chủ đề) của deck; bấm một lesson để xem các từ của nó' }]
       : []),
   ];
   const cards: Array<{ key: string; label: string; n: number }> = counts
@@ -153,13 +153,13 @@ export function LibraryPage() {
             }
           >
             {inLessons && lessonParam
-              ? `← Bài ${deckName}`
+              ? `← Lesson ${deckName}`
               : activeSub || inLessons
                 ? `← ${deckName}`
                 : '← Các deck'}
           </LinkButton>
           <strong>
-            {inLessons ? `Bài ${deckName}` : activeSub ? `${SUB_LABEL[activeSub]} ${deckName}` : deckName}
+            {inLessons ? `Lesson ${deckName}` : activeSub ? `${SUB_LABEL[activeSub]} ${deckName}` : deckName}
           </strong>
         </div>
       ) : (
@@ -185,7 +185,7 @@ export function LibraryPage() {
               </button>
             )}
             <LinkButton to="/sets">Quản lý deck</LinkButton>
-            <LinkButton to="/lessons">Quản lý bài</LinkButton>
+            <LinkButton to="/lessons">Quản lý lesson</LinkButton>
           </div>
         </>
       )}
@@ -205,7 +205,7 @@ export function LibraryPage() {
                 {card.key === 'lesson'
                   ? lessonTotal === null
                     ? '…'
-                    : `${lessonTotal} bài`
+                    : `${lessonTotal} lesson`
                   : subCounts
                     ? `${subCounts[card.key]} mục`
                     : '…'}

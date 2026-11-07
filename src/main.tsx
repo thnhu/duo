@@ -31,6 +31,7 @@ import { ConceptDetailPage } from './features/library/ConceptDetailPage'
 import { NewDepthConceptPage } from './features/library/NewDepthConceptPage'
 import { AssociationPage } from './features/association/AssociationPage';
 import { SetsPage } from './features/sets/SetsPage';
+import { LessonsPage } from './features/lessons/LessonsPage';
 import { LinkEditorPage } from './features/links/LinkEditorPage';
 import { TreePage } from './features/tree/TreePage'
 import { ExampleEditPage } from './features/example/ExampleEditPage'
@@ -79,6 +80,7 @@ async function bootstrap() {
             <Route path="association" element={<AssociationPage />} />
             <Route path="association/:conceptId" element={<AssociationPage />} />
             <Route path="sets" element={<SetsPage />} />
+            <Route path="lessons" element={<LessonsPage />} />
             <Route path="links" element={<LinkEditorPage />} />
             <Route path="links/:conceptId" element={<LinkEditorPage />} />
             <Route path="tree" element={<TreePage />} />

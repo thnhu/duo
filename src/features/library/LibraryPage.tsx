@@ -155,6 +155,7 @@ export function LibraryPage() {
               </button>
             )}
             <LinkButton to="/sets">Quản lý deck</LinkButton>
+            <LinkButton to="/lessons">Quản lý bài</LinkButton>
           </div>
         </>
       )}

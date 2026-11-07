@@ -192,3 +192,125 @@ describe('lessons stay with their deck', () => {
     expect(SYNC_TABLES.map(([name]) => name)).toContain('lessons');
   });
 });
+
+describe('lesson module (M15b)', () => {
+  beforeEach(async () => {
+    await db.delete();
+    await db.open();
+  });
+
+  async function twoDecks() {
+    const { createLesson } = await import('./index');
+    const a1 = await createWordSet('de', 'A1');
+    const a2 = await createWordSet('de', 'A2');
+    if (!a1.ok || !a2.ok) throw new Error('decks');
+    return { a1: a1.set, a2: a2.set, createLesson };
+  }
+
+  it('creates lessons in order; a name is unique inside a deck, ignoring case and spaces', async () => {
+    const { a1, a2, createLesson } = await twoDecks();
+    const { listLessons } = await import('./index');
+    const family = await createLesson('de', a1.id, '  Family ');
+    expect(family.ok && family.lesson.name).toBe('Family');
+    expect(await createLesson('de', a1.id, 'family')).toEqual({ ok: false, reason: 'duplicate' });
+    expect(await createLesson('de', a1.id, '  ')).toEqual({ ok: false, reason: 'empty' });
+    await createLesson('de', a1.id, 'Daily   activities');
+    // The same name in another deck, or in General, is a different lesson.
+    expect((await createLesson('de', a2.id, 'Family')).ok).toBe(true);
+    expect((await createLesson('de', undefined, 'Family')).ok).toBe(true);
+    expect((await listLessons('de', a1.id)).map((l) => [l.name, l.order])).toEqual([
+      ['Family', 0],
+      ['Daily activities', 1],
+    ]);
+    expect((await listLessons('de', undefined)).map((l) => l.name)).toEqual(['Family']);
+    expect(await listLessons('en', a1.id)).toEqual([]);
+  });
+
+  it('findOrCreateLesson reuses the lesson of that name', async () => {
+    const { a1 } = await twoDecks();
+    const { findOrCreateLesson, listLessons } = await import('./index');
+    const first = await findOrCreateLesson('de', a1.id, 'Travel');
+    const again = await findOrCreateLesson('de', a1.id, ' travel ');
+    expect(again?.id).toBe(first?.id);
+    expect(await listLessons('de', a1.id)).toHaveLength(1);
+    expect(await findOrCreateLesson('de', a1.id, '   ')).toBeNull();
+  });
+
+  it('renames in one place (the words follow) and refuses a taken name', async () => {
+    const { a1, createLesson } = await twoDecks();
+    const { renameLesson, assignLesson } = await import('./index');
+    const family = await createLesson('de', a1.id, 'Family');
+    const travel = await createLesson('de', a1.id, 'Travel');
+    if (!family.ok || !travel.ok) throw new Error('lessons');
+    const word = (await saveQuickWord('dict-de', 'de', 'Mutter')).concept;
+    await setConceptSets(word.id, [a1.id]);
+    expect(await assignLesson(word.id, family.lesson.id)).toEqual({ ok: true });
+
+    expect(await renameLesson(family.lesson.id, 'travel')).toEqual({ ok: false, reason: 'duplicate' });
+    const renamed = await renameLesson(family.lesson.id, 'Familie');
+    expect(renamed.ok).toBe(true);
+    expect((await db.lessons.get(family.lesson.id))?.name).toBe('Familie');
+    expect((await db.concepts.get(word.id))?.lessonId).toBe(family.lesson.id);
+  });
+
+  it('moves a lesson up and down and keeps the order tidy', async () => {
+    const { a1, createLesson } = await twoDecks();
+    const { moveLesson, listLessons } = await import('./index');
+    for (const name of ['A', 'B', 'C']) await createLesson('de', a1.id, name);
+    const ids = (await listLessons('de', a1.id)).map((l) => l.id);
+    await moveLesson(ids[2], -1);
+    expect((await listLessons('de', a1.id)).map((l) => l.name)).toEqual(['A', 'C', 'B']);
+    await moveLesson(ids[0], -1); // already first: nothing happens
+    await moveLesson(ids[1], 1); // B is already last
+    expect((await listLessons('de', a1.id)).map((l) => [l.name, l.order])).toEqual([
+      ['A', 0],
+      ['C', 1],
+      ['B', 2],
+    ]);
+  });
+
+  it('assigns a word only to a lesson of one of its decks', async () => {
+    const { a1, a2, createLesson } = await twoDecks();
+    const { assignLesson, countByLesson, listLessons } = await import('./index');
+    const inA1 = await createLesson('de', a1.id, 'Family');
+    const inGeneral = await createLesson('de', undefined, 'Misc');
+    if (!inA1.ok || !inGeneral.ok) throw new Error('lessons');
+    const word = (await saveQuickWord('dict-de', 'de', 'Mutter')).concept;
+
+    // In General for now: only a General lesson fits.
+    expect(await assignLesson(word.id, inA1.lesson.id)).toEqual({ ok: false, reason: 'other-deck' });
+    expect(await assignLesson(word.id, inGeneral.lesson.id)).toEqual({ ok: true });
+    // Moving to A1 drops the General lesson; then the A1 lesson fits.
+    await setConceptSets(word.id, [a1.id]);
+    expect((await db.concepts.get(word.id))?.lessonId).toBeUndefined();
+    expect(await assignLesson(word.id, inA1.lesson.id)).toEqual({ ok: true });
+    expect((await countByLesson('de', a1.id)).get(inA1.lesson.id)).toBe(1);
+    // A lesson of a deck the word is not in, and a missing lesson, are refused.
+    await setConceptSets(word.id, [a1.id, a2.id]);
+    expect(await assignLesson(word.id, 'nope')).toEqual({ ok: false, reason: 'missing' });
+    // Taking it out of the lesson.
+    expect(await assignLesson(word.id, undefined)).toEqual({ ok: true });
+    expect((await db.concepts.get(word.id))?.lessonId).toBeUndefined();
+    expect((await listLessons('de', a1.id)).map((l) => l.name)).toEqual(['Family']);
+  });
+
+  it('deleting a lesson keeps the words, and undo puts them back', async () => {
+    const { a1, createLesson } = await twoDecks();
+    const { assignLesson, deleteLesson, previewLessonDelete, restoreLesson, listLessons } = await import('./index');
+    const family = await createLesson('de', a1.id, 'Family');
+    if (!family.ok) throw new Error('lesson');
+    const word = (await saveQuickWord('dict-de', 'de', 'Mutter')).concept;
+    await setConceptSets(word.id, [a1.id]);
+    await assignLesson(word.id, family.lesson.id);
+
+    expect(await previewLessonDelete(family.lesson.id)).toEqual({ concepts: 1 });
+    const undo = await deleteLesson(family.lesson.id);
+    expect(await listLessons('de', a1.id)).toEqual([]);
+    expect((await db.concepts.get(word.id))?.deletedAt).toBeUndefined();
+    expect((await db.concepts.get(word.id))?.lessonId).toBeUndefined();
+
+    await restoreLesson(undo);
+    expect((await listLessons('de', a1.id)).map((l) => l.name)).toEqual(['Family']);
+    expect((await db.concepts.get(word.id))?.lessonId).toBe(family.lesson.id);
+  });
+});

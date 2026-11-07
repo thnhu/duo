@@ -67,3 +67,17 @@ describe('export scope', () => {
     expect(fileSlug('Hoạt động hằng ngày / Đi chơi')).toBe('Hoat-dong-hang-ngay-di-choi');
   });
 });
+
+describe('xlsx file name', () => {
+  it('names the file after the scope', async () => {
+    const { xlsxFileName } = await import('./scope');
+    expect(xlsxFileName({}, {}, '2026-11-07')).toBe('duo-words-2026-11-07.xlsx');
+    expect(xlsxFileName({ lang: 'de', deck: 'A1' }, { deckName: 'Goethe A1' }, '2026-11-07')).toBe(
+      'duo-de-Goethe-A1-2026-11-07.xlsx',
+    );
+    expect(
+      xlsxFileName({ lang: 'de', deck: 'A1', lessonId: 'f' }, { deckName: 'Goethe A1', lessonName: 'Family' }, '2026-11-07'),
+    ).toBe('duo-de-Goethe-A1-Family-2026-11-07.xlsx');
+    expect(xlsxFileName({ lang: 'en' }, {}, '2026-11-07')).toBe('duo-en-2026-11-07.xlsx');
+  });
+});

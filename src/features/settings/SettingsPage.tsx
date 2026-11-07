@@ -5,7 +5,7 @@ import { Card } from '../../ui/Card';
 import { BackupError, exportBackup, restoreBackup } from '../../backup/json';
 import { dateStamp, downloadBlob, getLastBackupAt, setLastBackupAt } from '../../backup/download';
 import { exportXlsx } from '../../backup/table';
-import { conceptsInScope, isWholeKit, type ExportScope } from '../../backup/scope';
+import { conceptsInScope, isWholeKit, scopeLabel, xlsxFileName, type ExportScope } from '../../backup/scope';
 import { ExportScopeCard } from './ExportScopeCard';
 import { conceptRepository, exampleRepository, lessonRepository, wordSetRepository } from '../../db/repositories';
 import { useToast } from '../../ui/Toast';
@@ -63,8 +63,14 @@ export function SettingsPage() {
       ]);
       // Only the concepts inside the chosen scope.
       const inScope = conceptsInScope(concepts, scope, new Set(sets.map((d) => d.id)));
-      downloadBlob(await exportXlsx(inScope, examples, sets, lessons), `duo-words-${dateStamp()}.xlsx`);
-      return `Đã xuất ${inScope.length} concept ra file xlsx (cùng cột với file mẫu nhập). File này để đọc/lưu trữ; sao lưu đầy đủ là file JSON.`;
+      const names = {
+        deckName: sets.find((d) => d.id === scope.deck)?.name,
+        lessonName: lessons.find((l) => l.id === scope.lessonId)?.name,
+      };
+      // Nothing to put in the file: say so instead of downloading an empty one.
+      if (inScope.length === 0) throw new BackupError(`Phạm vi "${scopeLabel(scope, names)}" chưa có concept nào để xuất.`);
+      downloadBlob(await exportXlsx(inScope, examples, sets, lessons), xlsxFileName(scope, names, dateStamp()));
+      return `Đã xuất ${inScope.length} concept (${scopeLabel(scope, names)}) ra file xlsx. File này để đọc và sửa hàng loạt, nhập lại bằng Nhập từ file; không có liên kết, đoạn văn, lịch ôn. Sao lưu đầy đủ là file JSON.`;
     });
 
   const handleImportJson = (file: File) =>

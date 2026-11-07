@@ -581,3 +581,61 @@ describe('lessons from the lesson column (M15c)', () => {
     expect(rows.map((r) => r[at]).sort()).toEqual(['Daily activities', 'Family', 'Family', 'Home']);
   });
 });
+
+describe('exporting a scope and importing it again (M16b)', () => {
+  it('a scope exported to xlsx lands in the right language, deck and lesson in an empty library', async () => {
+    const { exportTable } = await import('../backup/table');
+    const { conceptsInScope } = await import('../backup/scope');
+    const { createLesson, assignLesson, listLessons } = await import('../lessons');
+    const { createWordSet, setConceptSets } = await import('../wordsets');
+    const { saveQuickWord } = await import('../features/quick-add/actions');
+    await db.lessons.clear();
+
+    const a1 = await createWordSet('de', 'Goethe A1');
+    const a2 = await createWordSet('de', 'Goethe A2');
+    if (!a1.ok || !a2.ok) throw new Error('decks');
+    const family = await createLesson('de', a1.set.id, 'Family');
+    const home = await createLesson('de', a2.set.id, 'Home');
+    if (!family.ok || !home.ok) throw new Error('lessons');
+    const make = async (text: string, decks: string[], lessonId?: string) => {
+      const c = (await saveQuickWord('dict-de', 'de', text)).concept;
+      await setConceptSets(c.id, decks);
+      if (lessonId) await assignLesson(c.id, lessonId);
+      return c;
+    };
+    await make('Mutter', [a1.set.id], family.lesson.id);
+    // In both decks; its lesson is the one of the SECOND deck.
+    await make('Haus', [a1.set.id, a2.set.id], home.lesson.id);
+    await make('Tisch', []);
+    await saveQuickWord('dict-en', 'en', 'hello');
+
+    const sets = await listWordSets('de');
+    const lessons = await db.lessons.toArray();
+    const concepts = await conceptRepository.listActive();
+    const examples = await exampleRepository.listActive();
+    const inScope = conceptsInScope(concepts, { lang: 'de', deck: a2.set.id }, new Set(sets.map((s) => s.id)));
+    expect(inScope.map((c) => c.text)).toEqual(['Haus']);
+    const table = exportTable(inScope, examples, sets, lessons);
+    // The deck of the lesson comes first in the file.
+    const header = table[0];
+    expect(table[1][header.indexOf('deck')]).toBe('Goethe A2; Goethe A1');
+    expect(table[1][header.indexOf('lesson')]).toBe('Home');
+
+    // A new library: import the file.
+    await db.concepts.clear();
+    await db.examples.clear();
+    await db.wordSets.clear();
+    await db.lessons.clear();
+    const { mapping } = guessMapping(header, []);
+    const built = buildRows(table, resolveColumns(header, mapping), context);
+    await commitImport(planGroups(built.rows, []), { fileName: 'scope.xlsx', mode: 'breadth', duplicateAction: 'merge' });
+
+    const [haus] = await conceptRepository.listActive();
+    expect(haus.lang).toBe('de');
+    const decks = await listWordSets('de');
+    expect(decks.map((d) => d.name).sort()).toEqual(['Goethe A1', 'Goethe A2']);
+    const a2New = decks.find((d) => d.name === 'Goethe A2')!;
+    expect((await listLessons('de', a2New.id)).map((l) => l.name)).toEqual(['Home']);
+    expect(haus.lessonId).toBe((await listLessons('de', a2New.id))[0].id);
+  });
+});

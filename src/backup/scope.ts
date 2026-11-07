@@ -81,3 +81,9 @@ export function scopeSlug(scope: ExportScope, names: ScopeNames = {}): string {
   if (s.lessonId) parts.push(fileSlug(names.lessonName ?? 'lesson'));
   return parts.filter(Boolean).join('-');
 }
+
+// File name of an xlsx export: `duo-words-2026-11-07.xlsx` for everything,
+// `duo-de-Goethe-A1-2026-11-07.xlsx` for a scope.
+export function xlsxFileName(scope: ExportScope, names: ScopeNames, date: string): string {
+  return isWholeKit(scope) ? `duo-words-${date}.xlsx` : `duo-${scopeSlug(scope, names)}-${date}.xlsx`;
+}

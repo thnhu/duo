@@ -11,13 +11,20 @@ import type { Concept, Example, Lesson, WordSet } from '../db/types';
 // concept and details that have no import column (dictionary-lookup data,
 // schedules, review history) are only in the JSON backup.
 
+// Deck ids with `first` (when it is one of them) moved to the front.
+function orderedDecks(ids: string[], first: string | undefined): string[] {
+  return first && ids.includes(first) ? [first, ...ids.filter((id) => id !== first)] : ids;
+}
+
 export function exportTable(
   concepts: Concept[],
   examples: Example[],
   sets: WordSet[] = [],
   lessons: Lesson[] = [],
 ): string[][] {
-  const lessonName = new Map(lessons.filter((l) => l.deletedAt === undefined).map((l) => [l.id, l.name]));
+  const liveLessons = lessons.filter((l) => l.deletedAt === undefined);
+  const lessonName = new Map(liveLessons.map((l) => [l.id, l.name]));
+  const lessonDeck = new Map(liveLessons.map((l) => [l.id, l.setId]));
   const setName = new Map(sets.filter((s) => s.deletedAt === undefined).map((s) => [s.id, s.name]));
   const header = importFields.map((f) => f.id as string);
   const byConcept = new Map<string, Example[]>();
@@ -44,7 +51,9 @@ export function exportTable(
         // The lesson as it is now; the file's old text only when the word has none.
         lesson: (concept.lessonId ? lessonName.get(concept.lessonId) : undefined) ?? concept.source.lesson,
         // Decks by name, in the same `a; b` form the import reads.
-        deck: (concept.setIds ?? [])
+        // The deck of the word's lesson goes first: the import puts the lesson in
+        // the first deck, so the file puts it back where it was.
+        deck: orderedDecks(concept.setIds ?? [], concept.lessonId ? lessonDeck.get(concept.lessonId) : undefined)
           .map((id) => setName.get(id))
           .filter((n): n is string => !!n)
           .join(`${MEANING_SEPARATOR} `),

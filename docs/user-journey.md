@@ -346,7 +346,7 @@ flowchart TD
 | 1 | Học trên điện thoại | Lưu cục bộ trước, **tự đồng bộ nền** khi có mạng |
 | 2 | Mở máy tính | Thấy dữ liệu mới nhất, không cần thao tác |
 | 3 | Học khi mất mạng | Vẫn học bình thường; khi có mạng lại thì tự đồng bộ; nếu hai thiết bị cùng sửa một bản ghi thì **bản mới hơn thắng** |
-| 4 | Vào **Cài đặt → Sao lưu** | **Xuất JSON** (đầy đủ), **xuất xlsx** (cùng bộ cột với file mẫu nhập) |
+| 4 | Vào **Cài đặt → Sao lưu** | **Xuất JSON** (đầy đủ, dùng để khôi phục) hoặc **xuất xlsx** (cùng bộ cột với file mẫu nhập, dùng để đọc và sửa hàng loạt). **Bản 9:** chọn phạm vi trước khi xuất (ngôn ngữ, deck, bài) để file nhỏ và dễ dùng; JSON một phần nạp lại tự về đúng deck, bài |
 | 5 | Vào **Cài đặt → Ngưỡng thụ đắc** | Chỉnh số lần đúng, số example, số ngày, thời gian phản xạ tối đa |
 
 - **Ngoại lệ:** dịch vụ đồng bộ hết hạn mức → dừng đồng bộ, báo rõ, app vẫn dùng đầy đủ trên từng thiết bị; PO dùng sao lưu JSON làm phương án thay thế.

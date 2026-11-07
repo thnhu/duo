@@ -636,6 +636,25 @@ Lý do: PO học tiếng Đức A1 theo giáo trình có danh sách từ chia th
 | **M15e** Thư viện theo bài (*đã làm*) | Card "Bài" (thẻ thứ ba cạnh Concept và Word, có ở General và từng deck, không có ở "Xem tất cả") → danh sách bài kèm số từ, thêm thẻ "Chưa xếp bài" cho các từ của deck chưa thuộc bài nào → danh sách từ của bài theo thứ tự nhập (chỉ tải khi bấm); địa chỉ `/library?deck=…&sub=lesson&lesson=<id|none>` | Từ deck A1 vào được bài Family và thấy đúng khoảng 20 từ |
 | **M15f** Học và ôn theo bài (*đã làm*) | Chọn deck rồi tick nhiều bài ở Học, Ôn tập, Phản xạ chớp nhoáng và Hôm nay (thay ô chọn một chuỗi bài của màn Học); bài hiện nhóm theo deck, chỉ gồm bài của các deck đã tick (không tick deck nào thì bài của mọi deck, kể cả General); deck và bài cùng áp dụng; lựa chọn nhớ riêng từng thiết bị; tick bài của deck đã bỏ tick thì không còn lọc; số từ đến hạn đếm theo bài đã chọn; bộ lọc Bài và chỉ mục tìm kiếm dùng tên bài mới (`Concept.lessonId`) thay cho chuỗi `source.lesson`. **Bản 8 xong** | Ôn tập chỉ ra các từ của hai bài đã tick; số từ đến hạn khớp |
 
+### Bản 9: Xuất và sao lưu theo phạm vi (v12, PO yêu cầu 2026-11-07)
+Lý do: xuất JSON và xlsx hiện ghi **toàn bộ kho** (cả Anh và Đức, mọi deck) vào một file. Với khoảng 10000 từ, một sheet xlsx rất khó tra cứu và sửa, và muốn khôi phục riêng một phần cũng không được. Hiện trạng: JSON nạp lại khớp theo id nên mọi thứ về đúng chỗ (deck, bài, đoạn văn, liên kết, lịch ôn); xlsx có cột `lang`, `deck`, `lesson` nên Nhập file đưa concept về đúng ngôn ngữ, deck, bài, nhưng không có liên kết, đoạn văn, lịch ôn và lịch sử trả lời.
+
+**Đã chốt (PO, 2026-11-07):**
+- **Chọn phạm vi khi xuất** (Cài đặt → Sao lưu): **ngôn ngữ** (Anh / Đức / cả hai), rồi tùy chọn **deck** (General hoặc một deck) và **bài** (chỉ chọn được khi đã chọn deck). Hiện số concept trong phạm vi trước khi xuất.
+- **xlsx theo phạm vi:** một file cho mỗi lần xuất, không chia sheet theo deck (Nhập file mỗi lần đọc một sheet). Tên file ghi phạm vi, ví dụ `duo-de-Goethe-A1-2026-11-07.xlsx`. Cột giữ nguyên như file mẫu nhập.
+- **JSON theo phạm vi:** gồm các concept trong phạm vi và dữ liệu đi kèm (example, liên kết giữa hai concept cùng trong phạm vi, lịch ôn, lịch sử trả lời, định nghĩa deck và bài của chúng, đoạn văn của phạm vi cùng các lỗ và word ở lỗ). Không gồm Cài đặt (để nạp một phần không ghi đè ngưỡng thụ đắc). Nạp lại khớp theo id nên tự về đúng deck, bài. Header ghi `scope` để app biết đây là bản một phần.
+- **Xuất tất cả vẫn có**, là bản sao lưu đầy đủ.
+- **Vai trò hai loại file ghi rõ trên màn hình:** JSON để sao lưu và khôi phục (đầy đủ); xlsx để đọc và sửa hàng loạt (chỉ từ vựng, không có liên kết, đoạn văn, lịch ôn). xlsx không được mở rộng để khôi phục toàn bộ.
+
+**Các bước (mỗi phiên một bước, theo thứ tự):**
+
+| Bước | Nội dung | Xong khi |
+|---|---|---|
+| **M16a** Phạm vi xuất | Hàm thuần chọn concept theo phạm vi (ngôn ngữ, deck/General, bài); thẻ chọn phạm vi ở Cài đặt → Sao lưu (hộp chọn ngôn ngữ, deck, bài; bài chỉ hiện khi đã chọn deck) kèm số concept trong phạm vi; dùng chung cho xlsx và JSON | Chọn Đức + Goethe A1 + bài Family thì thấy đúng số từ của bài; chọn lại deck thì bài bị bỏ chọn |
+| **M16b** xlsx theo phạm vi | Xuất xlsx chỉ concept trong phạm vi; tên file ghi phạm vi; báo khi phạm vi trống; xuất rồi nhập lại vào kho trống thì về đúng ngôn ngữ, deck, bài | Xuất deck A1 của tiếng Đức ra file chỉ có từ của deck đó; nhập vào kho trống ra đúng deck và bài |
+| **M16c** JSON theo phạm vi | `exportBackup` nhận phạm vi: chọn bảng và dòng liên quan như trên, header `scope`, không có Cài đặt | Xuất một deck rồi nạp vào kho trống: concept, example, lịch ôn, bài, đoạn văn của deck đó về đúng chỗ, không có gì của deck khác |
+| **M16d** Nạp bản một phần và nhãn vai trò | Nạp JSON báo rõ "bản sao lưu một phần (phạm vi …)" và số dòng thêm/cập nhật; ghi chú vai trò JSON/xlsx ở Cài đặt; cập nhật hành trình J9 | Nạp bản một phần vào kho đang có dữ liệu thì gộp (mới hơn thắng), không xóa gì |
+
 ### Quy ước phản hồi giao diện (v10, PO yêu cầu 2026-11-05) **[CHỐT]**
 - **Không dùng `confirm()`/`alert()` của trình duyệt.** Thông báo dùng **badge (toast)** ở đầu màn hình: nhỏ (cao ~38 px), tự tắt sau 2,5 s (4,5 s nếu có nút hoặc là lỗi), dừng khi rê chuột/focus, vẫn còn sau khi chuyển trang.
 - **Xóa phải có ô xác nhận** hiện ngay tại nút (panel trong trang, không phủ màn hình), nêu hậu quả bằng số, focus ở "Hủy", Esc để hủy; sau khi xóa vẫn có badge **"Hoàn tác"** (xóa mềm nên khôi phục được concept, ví dụ và mọi liên kết đi kèm).
@@ -740,6 +759,7 @@ Chỉ `text` bắt buộc. Cột mẫu theo đúng thứ tự dưới đây.
 - **Màn Đoạn văn theo deck** (Bản 6): card deck trước, đọc danh sách đoạn văn khi bấm card; `Passage.setId`; schema v9 (chỉ mục `examples.passageId`); v10 gán deck cho đoạn văn cũ; sửa đoạn văn đổi được deck.
 - **Mục 12 Format input file** (cột, quy tắc, ví dụ từ file mẫu Goethe A1 của PO).
 - **Cụm tô sáng nhiều đoạn** cho động từ tách (`Example.highlightExtra`, không cần migration): nhập file bằng `fahren … ab`, nút "Tô thêm đoạn nữa", bài điền cụm tiếng Anh và nghe chép, xuất xlsx giữ nguyên cách ghi (C7, 9.2 câu 2, mục 12).
+- **Kế hoạch Bản 9** (mục 10): xuất và sao lưu theo phạm vi (ngôn ngữ, deck, bài); JSON một phần khôi phục đúng chỗ, xlsx để sửa hàng loạt; các bước M16a–M16d.
 - **Kế hoạch Bản 8** (mục 10): bài (lesson) là đối tượng có tên nằm trong deck, chọn bằng hộp chọn; ôn tập, học và Thư viện theo bài; các bước M15a–M15f.
 - **Kế hoạch Bản 7** (mục 10): nhập tay và nhập file tiếng Đức cho cùng dạng dữ liệu; màn hình hiện và sửa được mọi thông tin của file; loại từ ở màn Thêm word là hộp chọn.
 - **Bài điền đoạn văn phải làm lại khi dưới ngưỡng đạt** (mặc định 90%, tối đa 2 lần làm lại; chỉnh ở Cài đặt → Học).

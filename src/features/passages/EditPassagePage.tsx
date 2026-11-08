@@ -6,8 +6,9 @@ import { useToast } from '../../ui/Toast';
 import fieldStyles from '../../ui/field.module.css';
 import type { Passage } from '../../db/types';
 import { addItemsToSet } from '../../choicesets';
-import type { ChoiceSet } from '../../db/types';
+import type { AnswerMode, ChoiceSet } from '../../db/types';
 import { loadPassageForEdit, updatePassage } from '../../passages';
+import { AnswerModeSelect } from '../choicesets/AnswerModeSelect';
 import { ChoiceSetSelect } from '../choicesets/ChoiceSetSelect';
 import { LessonSelect } from '../lessons/LessonSelect';
 import { DeckSelect } from '../sets/DeckSelect';
@@ -28,6 +29,7 @@ export function EditPassagePage() {
   const [tiles, setTiles] = useState<ChoiceSet | null>(null);
   const [tilesId, setTilesId] = useState('');
   const [tilesKey, setTilesKey] = useState(0);
+  const [answerMode, setAnswerMode] = useState<AnswerMode>('tiles');
   const [missing, setMissing] = useState<string[]>([]);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -40,6 +42,7 @@ export function EditPassagePage() {
       setSetId(loaded.passage.setId ?? '');
       setLessonId(loaded.passage.lessonId ?? '');
       setTilesId(loaded.passage.choiceSetId ?? '');
+      setAnswerMode(loaded.passage.answerMode ?? 'tiles');
       setDraft({ title: loaded.passage.title ?? '', text: loaded.passage.text, gaps: loaded.gaps });
     });
   }, [passageId]);
@@ -68,7 +71,7 @@ export function EditPassagePage() {
     if (!passageId || !draft || saving) return;
     setSaving(true);
     try {
-      const result = await updatePassage(passageId, { title: draft.title, text: draft.text, gaps: draft.gaps, setId, lessonId, ...(passage?.grammar ? { choiceSetId: tilesId } : {}) });
+      const result = await updatePassage(passageId, { title: draft.title, text: draft.text, gaps: draft.gaps, setId, lessonId, ...(passage?.grammar ? { choiceSetId: tilesId, answerMode } : {}) });
       if (!result.ok && result.reason === 'missing-choices') {
         setMissing(result.missing);
         setError(`Bộ thẻ thiếu: ${result.missing.join(', ')}.`);
@@ -111,6 +114,7 @@ export function EditPassagePage() {
               setError('');
             }}
           />
+          {tilesId && <AnswerModeSelect id="passage-answer-mode" value={answerMode} onChange={setAnswerMode} />}
         </>
       )}
 

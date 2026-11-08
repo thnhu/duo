@@ -4,7 +4,7 @@ import { findConceptByExactText } from '../db/queries';
 import { choiceSetRepository, conceptRepository, exampleRepository, lessonRepository, passageRepository } from '../db/repositories';
 import { missingFromSet } from '../choicesets';
 import { db } from '../db/schema';
-import type { Concept, Example, Lang, Passage } from '../db/types';
+import type { AnswerMode, Concept, Example, Lang, Passage } from '../db/types';
 import { normalizeSelection, textForSelection, type Selection } from '../features/quick-add/highlight';
 import { addConceptToSet } from '../wordsets';
 
@@ -31,6 +31,8 @@ export interface PassageInput {
   grammar?: boolean;
   // The tiles it is answered with; every gap's answer must be among them.
   choiceSetId?: string;
+  // Default 'tiles' when the passage has a set.
+  answerMode?: AnswerMode;
 }
 
 export type PassageResult =
@@ -253,7 +255,9 @@ export async function createPassage(input: PassageInput): Promise<PassageResult>
     ...(input.setId ? { setId: input.setId } : {}),
     ...(input.lessonId ? { lessonId: input.lessonId } : {}),
     ...(input.grammar ? { grammar: true } : {}),
-    ...(input.grammar && input.choiceSetId ? { choiceSetId: input.choiceSetId } : {}),
+    ...(input.grammar && input.choiceSetId
+      ? { choiceSetId: input.choiceSetId, answerMode: input.answerMode ?? 'tiles' }
+      : {}),
     updatedAt: now,
   };
   await passageRepository.add(passage);
@@ -305,6 +309,8 @@ export interface PassageEdit {
   lessonId?: string;
   // Left out = unchanged; '' = no tile set.
   choiceSetId?: string;
+  // Left out = unchanged.
+  answerMode?: AnswerMode;
 }
 
 export type PassageUpdateResult =
@@ -332,7 +338,12 @@ export async function updatePassage(passageId: string, edit: PassageEdit): Promi
 
   // `setId` moves the passage to that deck ('' = General); left out = unchanged.
   await passageRepository.update(passageId, {
-    ...(current.grammar ? { choiceSetId: nextChoiceSetId } : {}),
+    ...(current.grammar
+      ? {
+          choiceSetId: nextChoiceSetId,
+          answerMode: nextChoiceSetId ? (edit.answerMode ?? current.answerMode ?? 'tiles') : undefined,
+        }
+      : {}),
     text: body,
     title: edit.title?.trim() || undefined,
     ...(edit.setId !== undefined ? { setId: edit.setId || undefined } : {}),

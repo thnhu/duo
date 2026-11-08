@@ -45,6 +45,8 @@ export interface Lesson {
 // words to learn, the drill hides them and asks for them back. Each gap is an
 // Example (text = this passage, highlight = the gap, passageId = this row) so
 // schedule, review log and acquisition keep working per example.
+export type AnswerMode = 'type' | 'tiles';
+
 export interface Passage {
   id: string;
   dictionaryId: string;
@@ -65,6 +67,9 @@ export interface Passage {
   grammar?: boolean;
   // The set of answer tiles (ChoiceSet) the passage is answered with.
   choiceSetId?: string;
+  // How a grammar passage is answered: tap the tiles of its set (default when
+  // it has one) or type. Per passage (M17c).
+  answerMode?: AnswerMode;
   updatedAt: number;
   deletedAt?: number;
 }

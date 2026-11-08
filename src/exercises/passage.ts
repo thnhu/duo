@@ -72,6 +72,19 @@ function makePassageModule(lang: Lang, label: string, input: ExerciseModule['inp
       prompt += text.slice(cursor);
       if (cursor < text.length) segments.push({ text: text.slice(cursor) });
 
+      // A grammar passage answered with tiles shows its set; any expected answer
+      // missing from it (the set was edited since) is added so it stays answerable.
+      const passage = library?.passages?.find((p) => p.id === example.passageId);
+      const set = passage?.choiceSetId ? library?.choiceSets?.find((s) => s.id === passage.choiceSetId) : undefined;
+      let tiles: string[] | undefined;
+      if (passage?.answerMode === 'tiles' && set && set.items.length > 0) {
+        tiles = [...set.items];
+        for (const key of Object.keys(expected)) {
+          const answer = expected[key][0];
+          if (!tiles.some((t) => t.toLowerCase() === answer.toLowerCase())) tiles.push(answer);
+        }
+      }
+
       return {
         moduleId: `${lang}.passage-cloze`,
         conceptId: concept.id,
@@ -83,6 +96,7 @@ function makePassageModule(lang: Lang, label: string, input: ExerciseModule['inp
         expected,
         parts,
         segments,
+        ...(tiles ? { tiles } : {}),
       };
     },
 

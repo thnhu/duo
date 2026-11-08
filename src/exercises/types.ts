@@ -1,5 +1,5 @@
 import type { RegistrableModule } from '../core/registry';
-import type { AttributeValueSets, Concept, Example, ExampleLink, Lang, StudyMode } from '../db/types';
+import type { AttributeValueSets, ChoiceSet, Concept, Example, ExampleLink, Lang, Passage, StudyMode } from '../db/types';
 
 // ExerciseModule (spec section 7): every exercise type is a module behind
 // this one interface, registered in a registry. The runner and the screens
@@ -37,6 +37,9 @@ export interface Exercise {
   // the screen shows the passage with the boxes in place instead of a prompt
   // followed by a list of boxes.
   segments?: Array<{ text: string } | { field: string }>;
+  // Answer by tapping these tiles instead of typing (a grammar passage with a
+  // tile set). Every expected answer is among them.
+  tiles?: string[];
 }
 
 export interface ExercisePart {
@@ -95,6 +98,9 @@ export interface ExerciseLibrary {
   exampleLinks?: ExampleLink[];
   // The TMRND value sets PO configured (labelling drills offer these).
   valueSets?: AttributeValueSets;
+  // Passages and tile sets, for passage drills that answer with tiles.
+  passages?: Passage[];
+  choiceSets?: ChoiceSet[];
 }
 
 export interface ExerciseContext {

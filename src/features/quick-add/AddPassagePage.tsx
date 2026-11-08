@@ -7,8 +7,9 @@ import { useToast } from '../../ui/Toast';
 import fieldStyles from '../../ui/field.module.css';
 import { dictionaryIdForLang } from '../../db/queries';
 import { addItemsToSet } from '../../choicesets';
-import type { ChoiceSet } from '../../db/types';
+import type { AnswerMode, ChoiceSet } from '../../db/types';
 import { createPassage } from '../../passages';
+import { AnswerModeSelect } from '../choicesets/AnswerModeSelect';
 import { ChoiceSetSelect } from '../choicesets/ChoiceSetSelect';
 import { PassageEditor, type PassageDraft } from '../passages/PassageEditor';
 import { LessonSelect } from '../lessons/LessonSelect';
@@ -30,6 +31,7 @@ export function AddPassagePage() {
   const [grammar, setGrammar] = useState(false);
   const [tiles, setTiles] = useState<ChoiceSet | null>(null);
   const [tilesKey, setTilesKey] = useState(0);
+  const [answerMode, setAnswerMode] = useState<AnswerMode>('tiles');
   const [missing, setMissing] = useState<string[]>([]);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -47,7 +49,7 @@ export function AddPassagePage() {
     setSaving(true);
     try {
       const dictionaryId = await dictionaryIdForLang(lang);
-      const result = await createPassage({ dictionaryId, lang, title: draft.title, text: draft.text, gaps: draft.gaps, setId, lessonId, grammar, choiceSetId: grammar ? tiles?.id : undefined });
+      const result = await createPassage({ dictionaryId, lang, title: draft.title, text: draft.text, gaps: draft.gaps, setId, lessonId, grammar, choiceSetId: grammar ? tiles?.id : undefined, answerMode });
       if (!result.ok && result.reason === 'missing-choices') {
         setMissing(result.missing);
         setError(`Bộ thẻ thiếu: ${result.missing.join(', ')}.`);
@@ -112,6 +114,7 @@ export function AddPassagePage() {
           }}
         />
       )}
+      {grammar && tiles && <AnswerModeSelect id="passage-answer-mode" value={answerMode} onChange={setAnswerMode} />}
 
       <PassageEditor
         draft={draft}

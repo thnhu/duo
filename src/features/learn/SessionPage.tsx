@@ -55,6 +55,8 @@ function Session({ config }: { config: SessionConfig }) {
   const [records, setRecords] = useState<AnswerRecord[]>([]);
   const [finished, setFinished] = useState(false);
   const [focusedKey, setFocusedKey] = useState<string | null>(null);
+  // Tile answers (grammar passage): the gap the next tapped tile goes into.
+  const [activeKey, setActiveKey] = useState<string | null>(null);
   const [study, setStudy] = useState<Required<StudySettings>>(defaultStudySettings);
   // How many times the current passage was repeated because of a low score.
   const [retriesDone, setRetriesDone] = useState(0);
@@ -117,6 +119,7 @@ function Session({ config }: { config: SessionConfig }) {
     setRecord(null);
     setTimedOut(false);
     setRetriesDone(0);
+    setActiveKey(exercise.fields[0]?.key ?? null);
     submitting.current = false;
     timer.current.start();
     if (exercise.speak) void speak(exercise.speak.text, exercise.speak.lang);
@@ -168,6 +171,7 @@ function Session({ config }: { config: SessionConfig }) {
   function startRetry() {
     setRetriesDone((n) => n + 1);
     setAnswer({});
+    setActiveKey(exercise?.fields[0]?.key ?? null);
     setRecord(null);
     setTimedOut(false);
     submitting.current = false;
@@ -178,6 +182,19 @@ function Session({ config }: { config: SessionConfig }) {
     if (!pairs) return;
     if (index + 1 >= pairs.length) setFinished(true);
     else setIndex(index + 1);
+  }
+
+  // A tile goes into the active gap, then the next empty gap becomes active
+  // (after this one first, then from the start); with none empty it stays.
+  function pickTile(tile: string) {
+    if (!exercise || record || !activeKey) return;
+    const filled = { ...answer, [activeKey]: tile };
+    setAnswer(filled);
+    const keys = exercise.fields.map((f) => f.key);
+    const at = keys.indexOf(activeKey);
+    const order = [...keys.slice(at + 1), ...keys.slice(0, at)];
+    const nextEmpty = order.find((k) => (filled[k] ?? '').trim() === '');
+    if (nextEmpty) setActiveKey(nextEmpty);
   }
 
   function insertChar(char: string) {
@@ -222,7 +239,7 @@ function Session({ config }: { config: SessionConfig }) {
 
   const result = record?.result;
   const specialKeys = pair?.module.input?.specialKeys ?? [];
-  const hasTextField = exercise.fields.some((f) => f.type === 'text');
+  const hasTextField = !exercise.tiles && exercise.fields.some((f) => f.type === 'text');
 
   return (
     <section className={styles.page}>
@@ -272,6 +289,30 @@ function Session({ config }: { config: SessionConfig }) {
                 if ('text' in seg) return <span key={i}>{seg.text}</span>;
                 const no = exercise.fields.findIndex((f) => f.key === seg.field) + 1;
                 const state = result ? (result.perField[seg.field] ? styles.gapRight : styles.gapWrong) : '';
+                if (exercise.tiles) {
+                  // Tile answer: the gap is a button showing its tile; tap it to choose it.
+                  return (
+                    <span key={i} className={styles.gapWrap}>
+                      <sup className={styles.gapNo}>{no}</sup>
+                      <button
+                        type="button"
+                        className={[
+                          styles.gapTile,
+                          !record && activeKey === seg.field && styles.gapTileActive,
+                          state,
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
+                        aria-label={`Chỗ trống ${no}${answer[seg.field] ? `: ${answer[seg.field]}` : ''}`}
+                        aria-pressed={activeKey === seg.field}
+                        disabled={!!record}
+                        onClick={() => setActiveKey(seg.field)}
+                      >
+                        {answer[seg.field] || ' '}
+                      </button>
+                    </span>
+                  );
+                }
                 return (
                   <span key={i} className={styles.gapWrap}>
                     <sup className={styles.gapNo}>{no}</sup>
@@ -302,6 +343,16 @@ function Session({ config }: { config: SessionConfig }) {
           )}
           {exercise.detail && <p className={styles.detail}>{exercise.detail}</p>}
         </Card>
+
+        {exercise.tiles && !record && (
+          <div className={styles.choices} role="group" aria-label="Thẻ đáp án">
+            {exercise.tiles.map((tile) => (
+              <button key={tile} type="button" className={styles.choice} onClick={() => pickTile(tile)}>
+                {tile}
+              </button>
+            ))}
+          </div>
+        )}
 
         {exercise.segments && result && !result.correct && (
           <div className={styles.expectedList}>

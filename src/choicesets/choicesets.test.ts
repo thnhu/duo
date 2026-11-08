@@ -185,3 +185,64 @@ describe('grammar passages', () => {
     expect(topic.lessonId).toBeUndefined();
   });
 });
+
+describe('answering a grammar passage with tiles (M17c)', () => {
+  async function made(answerMode?: 'type' | 'tiles', items = ['der', 'das', 'die']) {
+    const { germanPassage } = await import('../exercises/passage');
+    const { loadLibrary } = await import('../exercises/library');
+    const deck = await createWordSet('de', 'Grammatik');
+    const tiles = await createChoiceSet('de', 'Artikel', items);
+    if (!deck.ok || !tiles.ok) throw new Error('setup');
+    const text = 'Der Lehrer fragt die Schülerin.';
+    const result = await createPassage({
+      dictionaryId: DICT,
+      lang: 'de',
+      text,
+      gaps: autoGaps(text, ['der', 'die']),
+      setId: deck.set.id,
+      grammar: true,
+      choiceSetId: tiles.set.id,
+      answerMode,
+    });
+    if (!result.ok) throw new Error('not created');
+    const library = await loadLibrary();
+    const gaps = await listGaps(result.passage.id);
+    const concept = library.concepts.find((c) => c.id === gaps[0].targetConceptId)!;
+    const exercise = germanPassage.generate(concept, gaps[0], { rng: Math.random, options: {}, library });
+    return { exercise, result, concept, gaps };
+  }
+
+  it('defaults to tiles and shows the set in its order', async () => {
+    const { exercise, result } = await made();
+    expect(result.passage.answerMode).toBe('tiles');
+    expect(exercise.tiles).toEqual(['der', 'das', 'die']);
+    expect(exercise.fields).toHaveLength(2);
+  });
+
+  it('grades a tile answer by the gap, ignoring case', async () => {
+    const { exercise } = await made();
+    const { germanPassage } = await import('../exercises/passage');
+    expect(germanPassage.grade({ g1: 'der', g2: 'die' }, exercise).correct).toBe(true);
+    expect(germanPassage.grade({ g1: 'das', g2: 'die' }, exercise)).toMatchObject({ correct: false, perField: { g1: false, g2: true } });
+  });
+
+  it('adds an answer the set lacks after it was edited, so it stays answerable', async () => {
+    const { exercise, result } = await made('tiles', ['der', 'die']);
+    expect(exercise.tiles).toEqual(['der', 'die']);
+    // The set loses "die" afterwards: the drill still offers it.
+    await updateChoiceSet(result.passage.choiceSetId!, { items: ['der', 'das'] });
+    const { germanPassage } = await import('../exercises/passage');
+    const { loadLibrary } = await import('../exercises/library');
+    const library = await loadLibrary();
+    const gaps = await listGaps(result.passage.id);
+    const concept = library.concepts.find((c) => c.id === gaps[0].targetConceptId)!;
+    const again = germanPassage.generate(concept, gaps[0], { rng: Math.random, options: {}, library });
+    expect(again.tiles).toEqual(['der', 'das', 'die']);
+  });
+
+  it('types the answer when the passage is set to type', async () => {
+    const { exercise, result } = await made('type');
+    expect(result.passage.answerMode).toBe('type');
+    expect(exercise.tiles).toBeUndefined();
+  });
+});

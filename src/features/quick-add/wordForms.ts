@@ -19,7 +19,7 @@ export interface GrammarFieldSpec {
 export type GrammarValues = Record<GrammarKey, string>;
 
 const NOUN: GrammarFieldSpec[] = [
-  { key: 'gender', label: 'Giống (gender)', kind: 'choice', options: ['der', 'die', 'das'] },
+  { key: 'gender', label: 'Giống (gender)', kind: 'choice', options: ['der', 'das', 'die'] },
   { key: 'plural', label: 'Số nhiều (plural, dạng đầy đủ)', kind: 'text', placeholder: 'vd: Adressen' },
 ];
 

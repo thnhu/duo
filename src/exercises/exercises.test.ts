@@ -185,7 +185,7 @@ describe('exercise modules', () => {
     expect(germanNounGenderPlural.isEligible(noPlural, example('e', 'b', 'x'))).toBe(true);
     const ex = germanNounGenderPlural.generate(noPlural, example('e', 'b', 'x'), { rng: rngFirst, options: {} });
     expect(ex.fields.map((f) => f.key)).toEqual(['gender']);
-    expect(ex.fields[0].options).toEqual(['der', 'die', 'das']);
+    expect(ex.fields[0].options).toEqual(['der', 'das', 'die']);
   });
 
   it('conjugation: asks one tense and person with a certain answer', () => {

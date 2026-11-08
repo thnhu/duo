@@ -205,7 +205,7 @@ export function ConceptDetailPage() {
                   onChange={(e) => setGender(e.target.value)}
                 >
                   <option value="">— không có —</option>
-                  {['der', 'die', 'das'].map((g) => (
+                  {['der', 'das', 'die'].map((g) => (
                     <option key={g} value={g}>
                       {g}
                     </option>

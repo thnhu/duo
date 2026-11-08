@@ -21,7 +21,8 @@ const GERMAN_DATA_HINT =
   'Chưa có concept đủ dữ liệu cho bài này. Nhập từ file có các cột giống/số nhiều/dạng động từ, hoặc dùng Tra cứu tự động ở Thư viện.';
 
 // Article choices live here (German-specific), not in the screens.
-const ARTICLES = ['der', 'die', 'das'];
+// Order the PO's material uses: masculine, neuter, feminine.
+const ARTICLES = ['der', 'das', 'die'];
 
 function pick<T>(items: T[], rng: () => number): T {
   return items[Math.min(items.length - 1, Math.floor(rng() * items.length))];

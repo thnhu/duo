@@ -135,6 +135,9 @@ export function PassagesPage() {
         <LinkButton to="/add/passage" variant="secondary">
           Thêm đoạn văn
         </LinkButton>
+        <LinkButton to="/choice-sets" variant="secondary">
+          Bộ thẻ
+        </LinkButton>
         <LinkButton to="/learn">Ôn ở Học</LinkButton>
       </ButtonRow>
 

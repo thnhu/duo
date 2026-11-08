@@ -672,7 +672,7 @@ Lý do: khi học ngữ pháp tiếng Đức (điền mạo từ `der/das/die`, 
 | Bước | Nội dung | Xong khi |
 |---|---|---|
 | **M17a** Đoạn văn theo lesson (*đã làm*) | `Passage.lessonId?` (không cần migration), `/passages` đi deck → lesson → đoạn (chỉ tải khi bấm), hộp chọn Lesson ở Thêm và Sửa đoạn (đổi deck thì bỏ chọn lesson), thẻ "Chưa xếp lesson", lesson bị xóa/đổi deck thì gỡ nhãn khỏi đoạn; vào sao lưu theo phạm vi | Tạo lesson "Lektion Artikel" trong deck "Grammatik", thêm đoạn vào lesson, mở deck → lesson thấy đúng danh sách đoạn |
-| **M17b** Chế độ Grammar và bộ thẻ | Bảng `choiceSets` (schema v11) và màn quản lý; cờ Grammar của đoạn (không tạo word, concept tự tạo theo lesson, example của lỗ trỏ vào concept đó); `acquired` bị bỏ qua; đục tự động theo bộ thẻ; kiểm tra đáp án có trong bộ thẻ | Dán đoạn mạo từ, chọn bộ "Bestimmter Artikel", bấm đục tự động ra đủ lỗ, lưu không tạo word nào |
+| **M17b** Chế độ Grammar và bộ thẻ (*đã làm*) | Bảng `choiceSets` (schema v11) và màn quản lý; cờ Grammar của đoạn (không tạo word, concept tự tạo theo lesson, example của lỗ trỏ vào concept đó); `acquired` bị bỏ qua; đục tự động theo bộ thẻ; kiểm tra đáp án có trong bộ thẻ | Dán đoạn mạo từ, chọn bộ "Bestimmter Artikel", bấm đục tự động ra đủ lỗ, lưu không tạo word nào |
 | **M17c** Làm bài bằng thẻ | Màn làm bài đoạn văn có hàng thẻ, bấm thẻ điền và nhảy lỗ kế; chế độ trả lời theo từng đoạn (gõ / thẻ); chấm, ghi log từng lỗ, làm lại khi dưới ngưỡng như hiện tại | Làm đoạn mạo từ chỉ bằng bấm thẻ, nộp một lần, kết quả và lịch ôn ghi đúng cho từng lỗ |
 
 ### Quy ước phản hồi giao diện (v10, PO yêu cầu 2026-11-05) **[CHỐT]**

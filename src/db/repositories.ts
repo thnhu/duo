@@ -14,6 +14,7 @@ import type {
   Settings,
   Passage,
   WordSet,
+  ChoiceSet,
   Lesson,
 } from './types';
 
@@ -70,4 +71,7 @@ export const passageRepository = new Repository<Passage, string>(
 );
 export const lessonRepository = new Repository<Lesson, string>(
   db.lessons as unknown as Table<Lesson, string>,
+);
+export const choiceSetRepository = new Repository<ChoiceSet, string>(
+  db.choiceSets as unknown as Table<ChoiceSet, string>,
 );

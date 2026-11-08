@@ -59,6 +59,24 @@ export interface Passage {
   // meaningful while the lesson is live and in the passage's deck; otherwise the
   // passage counts as "no lesson".
   lessonId?: string;
+  // Grammar passage (Bản 10, M17b): its gaps teach a rule, not words, so they
+  // create no word; each gap example points at the grammar topic concept of
+  // the passage's lesson. Fixed when the passage is made.
+  grammar?: boolean;
+  // The set of answer tiles (ChoiceSet) the passage is answered with.
+  choiceSetId?: string;
+  updatedAt: number;
+  deletedAt?: number;
+}
+
+// A named set of answer tiles (Bản 10, M17b), e.g. "Bestimmter Artikel":
+// der, das, die, ... The PO makes them; a passage can be answered by tapping
+// these tiles instead of typing. Language-specific, order kept.
+export interface ChoiceSet {
+  id: string;
+  lang: Lang;
+  name: string;
+  items: string[];
   updatedAt: number;
   deletedAt?: number;
 }
@@ -135,6 +153,9 @@ export interface Concept {
   setIds?: string[];
   // The lesson (Bản 8) of one of this concept's decks, if any.
   lessonId?: string;
+  // The concept a grammar passage's gaps point at (one per lesson, Bản 10):
+  // an idea to sort by, never given `acquired` (answers only log right/wrong).
+  grammarTopic?: boolean;
   // Pending lookup suggestion awaiting PO review (M3b).
   lookup?: LookupSuggestion;
   verification: Verification;

@@ -109,6 +109,9 @@ export function buildScopedBackup(all: TableRows, scopeIn: ExportScope): ScopedB
     wordSets: liveDecks.filter((d) => deckIds.has(d.id as string)),
     lessons,
     passages,
+    choiceSets: rows('choiceSets').filter(
+      (s) => alive(s) && passages.some((p) => asString(p.choiceSetId) === (s.id as string)),
+    ),
     scheduleStates,
     reviewLogs,
     importMappings: [],

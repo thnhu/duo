@@ -1,7 +1,8 @@
 import { createId } from '../core/id';
 import { createDefaultAttributes } from '../db/defaults';
 import { findConceptByExactText } from '../db/queries';
-import { conceptRepository, exampleRepository, passageRepository } from '../db/repositories';
+import { choiceSetRepository, conceptRepository, exampleRepository, lessonRepository, passageRepository } from '../db/repositories';
+import { missingFromSet } from '../choicesets';
 import { db } from '../db/schema';
 import type { Concept, Example, Lang, Passage } from '../db/types';
 import { normalizeSelection, textForSelection, type Selection } from '../features/quick-add/highlight';
@@ -26,11 +27,68 @@ export interface PassageInput {
   setId?: string;
   // Lesson of that deck the passage is listed under ('' or undefined = none).
   lessonId?: string;
+  // Grammar passage: the gaps create no word (see ensureGrammarTopic).
+  grammar?: boolean;
+  // The tiles it is answered with; every gap's answer must be among them.
+  choiceSetId?: string;
 }
 
 export type PassageResult =
   | { ok: true; passage: Passage; gaps: number; createdWords: number }
-  | { ok: false; reason: 'empty' | 'no-gaps' };
+  | { ok: false; reason: 'empty' | 'no-gaps' }
+  | { ok: false; reason: 'missing-choices'; missing: string[] };
+
+// Grammar topic (Bản 10): the one concept every gap of a grammar passage of a
+// lesson points at, so schedule and log work per example without any word
+// being made. The id is built from the lesson (or the deck when the passage has
+// no lesson), so two devices make the same concept and sync does not double it.
+// It is a 'concept' named after the lesson, in that lesson, and never `acquired`.
+export async function ensureGrammarTopic(
+  passage: Pick<Passage, 'dictionaryId' | 'lang' | 'setId' | 'lessonId'>,
+): Promise<Concept> {
+  const lesson = passage.lessonId ? await lessonRepository.getById(passage.lessonId) : undefined;
+  const lessonOk =
+    !!lesson && lesson.deletedAt === undefined && lesson.lang === passage.lang && lesson.setId === passage.setId;
+  const id = lessonOk
+    ? `grammar-topic:${passage.lang}:lesson:${lesson!.id}`
+    : `grammar-topic:${passage.lang}:deck:${passage.setId ?? 'general'}`;
+  const text = lessonOk ? lesson!.name : 'Grammatik';
+  const setIds = passage.setId ? [passage.setId] : undefined;
+  const lessonId = lessonOk ? lesson!.id : undefined;
+  const existing = await conceptRepository.getById(id);
+  if (existing) {
+    await conceptRepository.update(id, { text, deletedAt: undefined, setIds, lessonId });
+    return { ...existing, text, deletedAt: undefined, setIds, lessonId };
+  }
+  const now = Date.now();
+  const concept: Concept = {
+    id,
+    dictionaryId: passage.dictionaryId,
+    lang: passage.lang,
+    text,
+    meanings: [],
+    kind: 'concept',
+    grammarTopic: true,
+    ...(setIds ? { setIds } : {}),
+    ...(lessonId ? { lessonId } : {}),
+    verification: 'verified',
+    source: { type: 'quick-add' },
+    status: 'loaded',
+    createdAt: now,
+    updatedAt: now,
+  };
+  await conceptRepository.add(concept);
+  return concept;
+}
+
+// The answers of these gaps that the passage's tile set lacks (none when the
+// passage has no set or the set is gone).
+async function missingChoices(text: string, gaps: Selection[], choiceSetId: string | undefined): Promise<string[]> {
+  if (!choiceSetId) return [];
+  const set = await choiceSetRepository.getById(choiceSetId);
+  if (!set || set.deletedAt !== undefined) return [];
+  return missingFromSet(text, gaps, set.items);
+}
 
 // A gap in the editor: a selection, plus the example that stores it once the
 // passage has been saved (so editing keeps its schedule and history).
@@ -180,6 +238,10 @@ export async function createPassage(input: PassageInput): Promise<PassageResult>
   const { body, gaps } = prepare(input.text, input.gaps);
   if (!body.trim()) return { ok: false, reason: 'empty' };
   if (gaps.length === 0) return { ok: false, reason: 'no-gaps' };
+  if (input.grammar) {
+    const missing = await missingChoices(body, gaps, input.choiceSetId);
+    if (missing.length > 0) return { ok: false, reason: 'missing-choices', missing };
+  }
 
   const now = Date.now();
   const passage: Passage = {
@@ -190,22 +252,32 @@ export async function createPassage(input: PassageInput): Promise<PassageResult>
     text: body,
     ...(input.setId ? { setId: input.setId } : {}),
     ...(input.lessonId ? { lessonId: input.lessonId } : {}),
+    ...(input.grammar ? { grammar: true } : {}),
+    ...(input.grammar && input.choiceSetId ? { choiceSetId: input.choiceSetId } : {}),
     updatedAt: now,
   };
   await passageRepository.add(passage);
 
+  const topic = input.grammar ? await ensureGrammarTopic(passage) : undefined;
   let createdWords = 0;
   for (const gap of gaps) {
-    const { created } = await addGapExample(passage, gap, input.setId);
+    const { created } = await addGapExample(passage, gap, input.setId, topic);
     if (created) createdWords++;
   }
   return { ok: true, passage, gaps: gaps.length, createdWords };
 }
 
-async function addGapExample(passage: Passage, gap: Selection, setId?: string): Promise<{ created: boolean }> {
+async function addGapExample(
+  passage: Passage,
+  gap: Selection,
+  setId?: string,
+  topic?: Concept,
+): Promise<{ created: boolean }> {
   const now = Date.now();
-  const word = textForSelection(passage.text, gap);
-  const { concept, created } = await wordFor(passage.dictionaryId, passage.lang, word, setId);
+  // A grammar gap points at the lesson's topic; any other gap is a word.
+  const { concept, created } = topic
+    ? { concept: topic, created: false }
+    : await wordFor(passage.dictionaryId, passage.lang, textForSelection(passage.text, gap), setId);
   await exampleRepository.add({
     id: createId(),
     dictionaryId: passage.dictionaryId,
@@ -231,11 +303,14 @@ export interface PassageEdit {
   setId?: string;
   // Left out = unchanged; '' = no lesson.
   lessonId?: string;
+  // Left out = unchanged; '' = no tile set.
+  choiceSetId?: string;
 }
 
 export type PassageUpdateResult =
   | { ok: true; kept: number; added: number; removed: number; createdWords: number }
-  | { ok: false; reason: 'missing' | 'empty' | 'no-gaps' };
+  | { ok: false; reason: 'missing' | 'empty' | 'no-gaps' }
+  | { ok: false; reason: 'missing-choices'; missing: string[] };
 
 // Saves an edited passage. Kept gaps keep their example (and so their review
 // schedule and log); removed gaps' examples are deleted; new gaps get a word
@@ -247,14 +322,25 @@ export async function updatePassage(passageId: string, edit: PassageEdit): Promi
   if (!body.trim()) return { ok: false, reason: 'empty' };
   if (gaps.length === 0) return { ok: false, reason: 'no-gaps' };
 
+  const nextSetId = edit.setId !== undefined ? edit.setId || undefined : current.setId;
+  const nextLessonId = edit.lessonId !== undefined ? edit.lessonId || undefined : current.lessonId;
+  const nextChoiceSetId = edit.choiceSetId !== undefined ? edit.choiceSetId || undefined : current.choiceSetId;
+  if (current.grammar) {
+    const missing = await missingChoices(body, gaps, nextChoiceSetId);
+    if (missing.length > 0) return { ok: false, reason: 'missing-choices', missing };
+  }
+
   // `setId` moves the passage to that deck ('' = General); left out = unchanged.
   await passageRepository.update(passageId, {
+    ...(current.grammar ? { choiceSetId: nextChoiceSetId } : {}),
     text: body,
     title: edit.title?.trim() || undefined,
     ...(edit.setId !== undefined ? { setId: edit.setId || undefined } : {}),
     ...(edit.lessonId !== undefined ? { lessonId: edit.lessonId || undefined } : {}),
   });
-  const passage: Passage = { ...current, text: body };
+  const passage: Passage = { ...current, text: body, setId: nextSetId, lessonId: nextLessonId };
+  // A grammar passage that changed lesson or deck follows the new topic.
+  const topic = current.grammar ? await ensureGrammarTopic(passage) : undefined;
 
   const existing = await listGaps(passageId);
   const existingIds = new Set(existing.map((e) => e.id));
@@ -270,9 +356,13 @@ export async function updatePassage(passageId: string, edit: PassageEdit): Promi
   let createdWords = 0;
   for (const gap of gaps) {
     if (gap.exampleId && keptIds.has(gap.exampleId)) {
-      await exampleRepository.update(gap.exampleId, { text: body, highlight: { start: gap.start, end: gap.end } });
+      await exampleRepository.update(gap.exampleId, {
+        text: body,
+        highlight: { start: gap.start, end: gap.end },
+        ...(topic ? { targetConceptId: topic.id } : {}),
+      });
     } else {
-      const { created } = await addGapExample(passage, gap, edit.setId);
+      const { created } = await addGapExample(passage, gap, nextSetId, topic);
       added++;
       if (created) createdWords++;
     }

@@ -21,6 +21,7 @@ export const BACKUP_TABLES = [
   ['wordSets', 'id'],
   ['lessons', 'id'],
   ['passages', 'id'],
+  ['choiceSets', 'id'],
   ['scheduleStates', 'exampleId'],
   ['reviewLogs', 'id'],
   ['importMappings', 'id'],

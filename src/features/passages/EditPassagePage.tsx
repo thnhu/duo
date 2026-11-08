@@ -5,7 +5,10 @@ import { ButtonRow } from '../../ui/ButtonRow';
 import { useToast } from '../../ui/Toast';
 import fieldStyles from '../../ui/field.module.css';
 import type { Passage } from '../../db/types';
+import { addItemsToSet } from '../../choicesets';
+import type { ChoiceSet } from '../../db/types';
 import { loadPassageForEdit, updatePassage } from '../../passages';
+import { ChoiceSetSelect } from '../choicesets/ChoiceSetSelect';
 import { LessonSelect } from '../lessons/LessonSelect';
 import { DeckSelect } from '../sets/DeckSelect';
 import { PassageEditor, type PassageDraft } from './PassageEditor';
@@ -22,6 +25,10 @@ export function EditPassagePage() {
   const [draft, setDraft] = useState<PassageDraft | null>(null);
   const [setId, setSetId] = useState('');
   const [lessonId, setLessonId] = useState('');
+  const [tiles, setTiles] = useState<ChoiceSet | null>(null);
+  const [tilesId, setTilesId] = useState('');
+  const [tilesKey, setTilesKey] = useState(0);
+  const [missing, setMissing] = useState<string[]>([]);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -32,6 +39,7 @@ export function EditPassagePage() {
       setPassage(loaded.passage);
       setSetId(loaded.passage.setId ?? '');
       setLessonId(loaded.passage.lessonId ?? '');
+      setTilesId(loaded.passage.choiceSetId ?? '');
       setDraft({ title: loaded.passage.title ?? '', text: loaded.passage.text, gaps: loaded.gaps });
     });
   }, [passageId]);
@@ -48,11 +56,24 @@ export function EditPassagePage() {
   // Back to the list of the deck this passage is in (not every passage).
   const backTo = `/passages?deck=${passage.setId ?? 'general'}${passage.lessonId ? `&lesson=${passage.lessonId}` : ''}`;
 
+  async function addMissing() {
+    if (!tiles) return;
+    await addItemsToSet(tiles.id, missing);
+    setMissing([]);
+    setError('');
+    setTilesKey((k) => k + 1);
+  }
+
   async function handleSave() {
     if (!passageId || !draft || saving) return;
     setSaving(true);
     try {
-      const result = await updatePassage(passageId, { title: draft.title, text: draft.text, gaps: draft.gaps, setId, lessonId });
+      const result = await updatePassage(passageId, { title: draft.title, text: draft.text, gaps: draft.gaps, setId, lessonId, ...(passage?.grammar ? { choiceSetId: tilesId } : {}) });
+      if (!result.ok && result.reason === 'missing-choices') {
+        setMissing(result.missing);
+        setError(`Bộ thẻ thiếu: ${result.missing.join(', ')}.`);
+        return;
+      }
       if (!result.ok) {
         setError(result.reason === 'empty' ? 'Hãy nhập đoạn văn.' : result.reason === 'no-gaps' ? 'Hãy giữ hoặc đục ít nhất một lỗ.' : 'Không tìm thấy đoạn văn.');
         return;
@@ -75,7 +96,41 @@ export function EditPassagePage() {
         Sửa chữ thì các lỗ đi theo. Lỗ giữ lại vẫn giữ lịch ôn và lịch sử; lỗ bị bỏ sẽ bị xóa.
       </p>
 
-      <PassageEditor draft={draft} onChange={(next) => { setDraft(next); setError(''); }} note={error} />
+      {passage.grammar && (
+        <>
+          <p className={fieldStyles.hint}>Đoạn ngữ pháp: các lỗ không tạo word, chấm theo bộ thẻ.</p>
+          <ChoiceSetSelect
+            id="passage-tiles"
+            lang={passage.lang}
+            value={tilesId}
+            reloadKey={tilesKey}
+            onChange={(set) => {
+              setTiles(set);
+              setTilesId(set?.id ?? '');
+              setMissing([]);
+              setError('');
+            }}
+          />
+        </>
+      )}
+
+      <PassageEditor
+        draft={draft}
+        onChange={(next) => {
+          setDraft(next);
+          setError('');
+          setMissing([]);
+        }}
+        note={error}
+        autoItems={passage.grammar ? tiles?.items : undefined}
+      />
+      {missing.length > 0 && tiles && (
+        <ButtonRow>
+          <Button variant="secondary" onClick={() => void addMissing()}>
+            Thêm {missing.join(', ')} vào bộ thẻ
+          </Button>
+        </ButtonRow>
+      )}
 
       <DeckSelect
         id="passage-deck"

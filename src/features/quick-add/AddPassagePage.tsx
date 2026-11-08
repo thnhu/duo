@@ -6,7 +6,10 @@ import { LangToggle } from '../../ui/LangToggle';
 import { useToast } from '../../ui/Toast';
 import fieldStyles from '../../ui/field.module.css';
 import { dictionaryIdForLang } from '../../db/queries';
+import { addItemsToSet } from '../../choicesets';
+import type { ChoiceSet } from '../../db/types';
 import { createPassage } from '../../passages';
+import { ChoiceSetSelect } from '../choicesets/ChoiceSetSelect';
 import { PassageEditor, type PassageDraft } from '../passages/PassageEditor';
 import { LessonSelect } from '../lessons/LessonSelect';
 import { DeckSelect } from '../sets/DeckSelect';
@@ -23,21 +26,41 @@ export function AddPassagePage() {
   const [draft, setDraft] = useState<PassageDraft>({ title: '', text: '', gaps: [] });
   const [setId, setSetId] = useState('');
   const [lessonId, setLessonId] = useState('');
+  // Grammar passage (Bản 10): gaps make no word and are answered with tiles.
+  const [grammar, setGrammar] = useState(false);
+  const [tiles, setTiles] = useState<ChoiceSet | null>(null);
+  const [tilesKey, setTilesKey] = useState(0);
+  const [missing, setMissing] = useState<string[]>([]);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+
+  async function addMissing() {
+    if (!tiles) return;
+    await addItemsToSet(tiles.id, missing);
+    setMissing([]);
+    setError('');
+    setTilesKey((k) => k + 1);
+  }
 
   async function handleSave() {
     if (saving) return;
     setSaving(true);
     try {
       const dictionaryId = await dictionaryIdForLang(lang);
-      const result = await createPassage({ dictionaryId, lang, title: draft.title, text: draft.text, gaps: draft.gaps, setId, lessonId });
+      const result = await createPassage({ dictionaryId, lang, title: draft.title, text: draft.text, gaps: draft.gaps, setId, lessonId, grammar, choiceSetId: grammar ? tiles?.id : undefined });
+      if (!result.ok && result.reason === 'missing-choices') {
+        setMissing(result.missing);
+        setError(`Bộ thẻ thiếu: ${result.missing.join(', ')}.`);
+        return;
+      }
       if (!result.ok) {
         setError(result.reason === 'empty' ? 'Hãy nhập đoạn văn.' : 'Hãy đục ít nhất một lỗ.');
         return;
       }
       toast.show(
-        `Đã thêm đoạn văn: ${result.gaps} lỗ, ${result.createdWords} word mới. Ôn ở Học → Điền vào đoạn văn.`,
+        grammar
+          ? `Đã thêm đoạn ngữ pháp: ${result.gaps} lỗ, không tạo word. Ôn ở Học → Điền vào đoạn văn.`
+          : `Đã thêm đoạn văn: ${result.gaps} lỗ, ${result.createdWords} word mới. Ôn ở Học → Điền vào đoạn văn.`,
       );
       // Back to the deck cards: they only count, the passages are read when a card is opened.
       navigate(lessonId ? `/passages?deck=${setId || 'general'}&lesson=${lessonId}` : '/passages');
@@ -55,6 +78,8 @@ export function AddPassagePage() {
           onChange={(next) => {
             setLang(next);
             setDraft({ ...draft, gaps: [] });
+            setTiles(null);
+            setMissing([]);
           }}
         />
       </div>
@@ -63,7 +88,48 @@ export function AddPassagePage() {
         hiện ra với các chỗ trống và bạn điền lại. <Link to="/add">Chọn loại khác</Link>
       </p>
 
-      <PassageEditor draft={draft} onChange={(next) => { setDraft(next); setError(''); }} note={error} />
+      <label className={styles.check}>
+        <input
+          type="checkbox"
+          checked={grammar}
+          onChange={(e) => {
+            setGrammar(e.target.checked);
+            setError('');
+          }}
+        />
+        Đoạn ngữ pháp (lỗ không tạo word, trả lời bằng bộ thẻ)
+      </label>
+      {grammar && (
+        <ChoiceSetSelect
+          id="passage-tiles"
+          lang={lang}
+          value={tiles?.id ?? ''}
+          reloadKey={tilesKey}
+          onChange={(set) => {
+            setTiles(set);
+            setMissing([]);
+            setError('');
+          }}
+        />
+      )}
+
+      <PassageEditor
+        draft={draft}
+        onChange={(next) => {
+          setDraft(next);
+          setError('');
+          setMissing([]);
+        }}
+        note={error}
+        autoItems={grammar ? tiles?.items : undefined}
+      />
+      {missing.length > 0 && tiles && (
+        <ButtonRow>
+          <Button variant="secondary" onClick={() => void addMissing()}>
+            Thêm {missing.join(', ')} vào bộ thẻ
+          </Button>
+        </ButtonRow>
+      )}
 
       <DeckSelect
         id="passage-deck"
@@ -75,7 +141,9 @@ export function AddPassagePage() {
           setLessonId('');
         }}
       />
-      <p className={fieldStyles.hint}>Deck áp dụng cho các word mới được tạo từ những lỗ.</p>
+      <p className={fieldStyles.hint}>
+        {grammar ? 'Deck của đoạn ngữ pháp.' : 'Deck áp dụng cho các word mới được tạo từ những lỗ.'}
+      </p>
       <LessonSelect
         id="passage-lesson"
         lang={lang}

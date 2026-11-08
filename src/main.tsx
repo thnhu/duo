@@ -23,6 +23,7 @@ import { AddChoicePage } from './features/quick-add/AddChoicePage'
 import { AddConceptPage } from './features/quick-add/AddConceptPage'
 import { AddPassagePage } from './features/quick-add/AddPassagePage'
 import { PassagesPage } from './features/passages/PassagesPage'
+import { ChoiceSetsPage } from './features/choicesets/ChoiceSetsPage'
 import { EditPassagePage } from './features/passages/EditPassagePage'
 import { AddExamplePage } from './features/quick-add/AddExamplePage'
 import { InboxPage } from './features/inbox/InboxPage'
@@ -64,6 +65,7 @@ async function bootstrap() {
             <Route path="add/word" element={<QuickAddPage />} />
             <Route path="add/passage" element={<AddPassagePage />} />
             <Route path="passages" element={<PassagesPage />} />
+            <Route path="choice-sets" element={<ChoiceSetsPage />} />
             <Route path="passages/:passageId" element={<EditPassagePage />} />
             <Route path="add/concept" element={<AddConceptPage />} />
             <Route path="add/example" element={<AddExamplePage />} />

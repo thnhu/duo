@@ -1,5 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type {
+  ChoiceSet,
   Concept,
   ConceptLink,
   Dictionary,
@@ -34,6 +35,7 @@ export class DuoDB extends Dexie {
   wordSets!: EntityTable<WordSet, 'id'>;
   passages!: EntityTable<Passage, 'id'>;
   lessons!: EntityTable<Lesson, 'id'>;
+  choiceSets!: EntityTable<ChoiceSet, 'id'>;
 
   constructor(name = 'duo') {
     super(name);
@@ -174,6 +176,19 @@ export class DuoDB extends Dexie {
           .toCollection()
           .modify((row: { schemaVersion?: number }) => {
             row.schemaVersion = 10;
+          });
+      });
+    // v11 (Bản 10, M17b): adds choiceSets (answer tiles for grammar passages).
+    // Passage.grammar/choiceSetId and Concept.grammarTopic are optional fields;
+    // existing rows are untouched.
+    this.version(11)
+      .stores({ choiceSets: 'id, lang, updatedAt, deletedAt' })
+      .upgrade(async (tx) => {
+        await tx
+          .table('settings')
+          .toCollection()
+          .modify((row: { schemaVersion?: number }) => {
+            row.schemaVersion = 11;
           });
       });
   }

@@ -317,7 +317,7 @@ describe('older passages get the deck of their words', () => {
     await v10.open();
     expect((await v10.passages.get('old'))?.setId).toBe('IT');
     expect((await v10.passages.get('lonely'))?.setId).toBeUndefined();
-    expect((await v10.settings.get('default'))?.schemaVersion).toBe(10);
+    expect((await v10.settings.get('default'))?.schemaVersion).toBe(11);
     v10.close();
     await Dexie.delete(name);
   });

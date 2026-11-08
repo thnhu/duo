@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '../../ui/Button';
 import { ButtonRow } from '../../ui/ButtonRow';
 import fieldStyles from '../../ui/field.module.css';
+import { autoGaps } from '../../choicesets';
 import { cleanGaps, remapGaps, segmentText, toggleGap, type PassageGap } from '../../passages';
 import { normalizeSelection } from '../quick-add/highlight';
 import styles from '../quick-add/AddPassageForm.module.css';
@@ -17,6 +18,9 @@ interface PassageEditorProps {
   onChange: (draft: PassageDraft) => void;
   // Shown under the passage when there is no hint of its own.
   note?: string;
+  // Tiles of the grammar set: with them, one button makes a gap of every word
+  // that is a tile (Bản 10).
+  autoItems?: string[];
 }
 
 // Offset in the passage of a point of the browser selection: every segment of
@@ -32,7 +36,7 @@ function offsetOf(node: Node | null, offset: number): number | null {
 // a word makes (or removes) a gap and a selection makes a phrase gap; "Sửa
 // chữ" turns it into a box to type in. Editing the text keeps the gaps: they
 // move with the words around them (remapGaps), so nothing is ever retyped.
-export function PassageEditor({ draft, onChange, note }: PassageEditorProps) {
+export function PassageEditor({ draft, onChange, note, autoItems }: PassageEditorProps) {
   const { text, gaps } = draft;
   const [mode, setMode] = useState<'gap' | 'text'>(text.trim() ? 'gap' : 'text');
   const [hint, setHint] = useState('');
@@ -204,6 +208,19 @@ export function PassageEditor({ draft, onChange, note }: PassageEditorProps) {
             {picked && (
               <Button variant="secondary" onClick={addPicked}>
                 Đục lỗ cụm đã chọn
+              </Button>
+            )}
+            {autoItems && autoItems.length > 0 && (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  // Merge with the gaps already there; overlaps are dropped.
+                  const found = autoGaps(text, autoItems);
+                  setHint(found.length === 0 ? 'Không có chữ nào trong đoạn khớp với các thẻ.' : '');
+                  onChange({ ...draft, gaps: cleanGaps(text, [...gaps, ...found]) });
+                }}
+              >
+                Đục tự động theo bộ thẻ
               </Button>
             )}
             {gaps.length > 0 && (

@@ -7,15 +7,19 @@ import { InlineConfirm } from '../../ui/InlineConfirm';
 import { LangToggle } from '../../ui/LangToggle';
 import { LinkButton } from '../../ui/LinkButton';
 import { useToast } from '../../ui/Toast';
-import type { Passage, WordSet } from '../../db/types';
+import type { Lesson, Passage, WordSet } from '../../db/types';
 import {
   countGapsOf,
+  countByLessonKey,
   countPassagesByDeck,
   deletePassage,
   listPassagesOfDeck,
+  NO_LESSON,
+  passagesOfLesson,
   movePassagesToDeck,
   undoMovePassages,
 } from '../../passages';
+import { listLessons } from '../../lessons';
 import { DeckSelect } from '../sets/DeckSelect';
 import fieldStyles from '../../ui/field.module.css';
 import { GENERAL_DECK_NAME, listWordSets } from '../../wordsets';
@@ -35,7 +39,9 @@ export function PassagesPage() {
   const [params, setParams] = useSearchParams();
   const [decks, setDecks] = useState<WordSet[] | null>(null);
   const [counts, setCounts] = useState<{ general: number; bySet: Map<string, number> } | null>(null);
+  // Every passage of the opened deck, and the deck's lessons (M17a).
   const [passages, setPassages] = useState<Passage[] | null>(null);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
   const [gapCounts, setGapCounts] = useState<Map<string, number>>(new Map());
   const [confirming, setConfirming] = useState<string | null>(null);
   // The deck the opened deck's passages would be moved to ('' = General).
@@ -45,6 +51,16 @@ export function PassagesPage() {
   // ?deck=general | <deck id>: which deck's passages are open (none = the cards).
   const deckParam = params.get('deck');
   const openDeck = deckParam && (deckParam === GENERAL || decks?.some((d) => d.id === deckParam)) ? deckParam : null;
+  // ?lesson=<lesson id> | none: which lesson's passages are open inside the deck.
+  const lessonParam = params.get('lesson');
+  const liveLessonIds = new Set(lessons.map((l) => l.id));
+  const openLesson =
+    openDeck && passages && lessonParam && (lessonParam === NO_LESSON || liveLessonIds.has(lessonParam))
+      ? lessonParam
+      : null;
+  const lessonName = openLesson === NO_LESSON ? 'Chưa xếp lesson' : (lessons.find((l) => l.id === openLesson)?.name ?? '');
+  const lessonCounts = passages ? countByLessonKey(passages, liveLessonIds) : new Map<string, number>();
+  const shown = passages && openLesson ? passagesOfLesson(passages, openLesson, liveLessonIds) : [];
   const openName = openDeck === GENERAL ? GENERAL_DECK_NAME : (decks?.find((d) => d.id === openDeck)?.name ?? '');
 
   async function load() {
@@ -52,7 +68,9 @@ export function PassagesPage() {
     setDecks(list);
     const ids = list.map((d) => d.id);
     if (deckParam && (deckParam === GENERAL || ids.includes(deckParam))) {
-      const rows = await listPassagesOfDeck(lang, deckParam === GENERAL ? undefined : deckParam, ids);
+      const setId = deckParam === GENERAL ? undefined : deckParam;
+      const rows = await listPassagesOfDeck(lang, setId, ids);
+      setLessons(await listLessons(lang, setId));
       setPassages(rows);
       setGapCounts(await countGapsOf(rows.map((p) => p.id)));
     } else {
@@ -67,7 +85,7 @@ export function PassagesPage() {
     setCounts(null);
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang, deckParam]);
+  }, [lang, deckParam, lessonParam]);
 
   async function handleDelete(passage: Passage) {
     const removed = await deletePassage(passage.id);
@@ -122,8 +140,12 @@ export function PassagesPage() {
 
       {openDeck && (
         <div className={libraryStyles.filters}>
-          <LinkButton to="/passages">← Các deck</LinkButton>
-          <strong>{openName}</strong>
+          {openLesson ? (
+            <LinkButton to={`/passages?deck=${openDeck}`}>← {openName}</LinkButton>
+          ) : (
+            <LinkButton to="/passages">← Các deck</LinkButton>
+          )}
+          <strong>{openLesson ? lessonName : openName}</strong>
         </div>
       )}
 
@@ -151,7 +173,36 @@ export function PassagesPage() {
         </>
       )}
 
-      {openDeck && passages && passages.length > 0 && (
+      {openDeck && passages && !openLesson && (
+        <>
+          <p className={styles.meta}>Chọn lesson để xem các đoạn văn của nó.</p>
+          <div className={libraryStyles.deckGrid} role="list" aria-label="Lesson">
+            {[
+              ...lessons.map((l) => ({ key: l.id, label: l.name, n: lessonCounts.get(l.id) ?? 0 })),
+              { key: NO_LESSON, label: 'Chưa xếp lesson', n: lessonCounts.get(NO_LESSON) ?? 0 },
+            ].map((card) => (
+              <button
+                key={card.key}
+                type="button"
+                role="listitem"
+                className={libraryStyles.deckCard}
+                onClick={() => setParams({ deck: openDeck, lesson: card.key })}
+              >
+                <span className={libraryStyles.deckName}>{card.label}</span>
+                <span className={libraryStyles.deckCount}>{card.n} đoạn văn</span>
+              </button>
+            ))}
+          </div>
+          {lessons.length === 0 && (
+            <p className={fieldStyles.hint}>
+              Deck này chưa có lesson. Tạo ở <Link to="/lessons">Quản lý lesson</Link>, hoặc chọn "+ Tạo lesson mới…"
+              khi thêm đoạn văn.
+            </p>
+          )}
+        </>
+      )}
+
+      {openDeck && passages && !openLesson && passages.length > 0 && (
         <Card>
           <h2>Chuyển tất cả sang deck khác</h2>
           <DeckSelect
@@ -177,12 +228,12 @@ export function PassagesPage() {
         </Card>
       )}
 
-      {openDeck && passages && passages.length === 0 && (
-        <p className={styles.meta}>Deck này chưa có đoạn văn nào.</p>
+      {openLesson && shown.length === 0 && (
+        <p className={styles.meta}>Lesson này chưa có đoạn văn nào.</p>
       )}
 
-      {openDeck &&
-        passages?.map((passage) => (
+      {openLesson &&
+        shown.map((passage) => (
           <Card key={passage.id}>
             <div className={styles.title}>{passage.title || passage.text.slice(0, 40)}</div>
             <p className={styles.meta}>{gapCounts.get(passage.id) ?? 0} lỗ</p>

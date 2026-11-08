@@ -55,6 +55,10 @@ export interface Passage {
   // made before decks were remembered). The Passages screen shows one deck at
   // a time.
   setId?: string;
+  // The lesson (Bản 10, M17a) of that deck the passage is listed under. Only
+  // meaningful while the lesson is live and in the passage's deck; otherwise the
+  // passage counts as "no lesson".
+  lessonId?: string;
   updatedAt: number;
   deletedAt?: number;
 }

@@ -6,6 +6,7 @@ import { useToast } from '../../ui/Toast';
 import fieldStyles from '../../ui/field.module.css';
 import type { Passage } from '../../db/types';
 import { loadPassageForEdit, updatePassage } from '../../passages';
+import { LessonSelect } from '../lessons/LessonSelect';
 import { DeckSelect } from '../sets/DeckSelect';
 import { PassageEditor, type PassageDraft } from './PassageEditor';
 import styles from '../quick-add/AddPassageForm.module.css';
@@ -20,6 +21,7 @@ export function EditPassagePage() {
   const [passage, setPassage] = useState<Passage | null>(null);
   const [draft, setDraft] = useState<PassageDraft | null>(null);
   const [setId, setSetId] = useState('');
+  const [lessonId, setLessonId] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -29,6 +31,7 @@ export function EditPassagePage() {
       if (!loaded) return;
       setPassage(loaded.passage);
       setSetId(loaded.passage.setId ?? '');
+      setLessonId(loaded.passage.lessonId ?? '');
       setDraft({ title: loaded.passage.title ?? '', text: loaded.passage.text, gaps: loaded.gaps });
     });
   }, [passageId]);
@@ -43,13 +46,13 @@ export function EditPassagePage() {
   }
 
   // Back to the list of the deck this passage is in (not every passage).
-  const backTo = `/passages?deck=${passage.setId ?? 'general'}`;
+  const backTo = `/passages?deck=${passage.setId ?? 'general'}${passage.lessonId ? `&lesson=${passage.lessonId}` : ''}`;
 
   async function handleSave() {
     if (!passageId || !draft || saving) return;
     setSaving(true);
     try {
-      const result = await updatePassage(passageId, { title: draft.title, text: draft.text, gaps: draft.gaps, setId });
+      const result = await updatePassage(passageId, { title: draft.title, text: draft.text, gaps: draft.gaps, setId, lessonId });
       if (!result.ok) {
         setError(result.reason === 'empty' ? 'Hãy nhập đoạn văn.' : result.reason === 'no-gaps' ? 'Hãy giữ hoặc đục ít nhất một lỗ.' : 'Không tìm thấy đoạn văn.');
         return;
@@ -58,7 +61,7 @@ export function EditPassagePage() {
         `Đã lưu đoạn văn: giữ ${result.kept} lỗ, thêm ${result.added}, bỏ ${result.removed}.`,
       );
       // The deck it is in now (it may have just been changed).
-      navigate(`/passages?deck=${setId || 'general'}`);
+      navigate(`/passages?deck=${setId || 'general'}${lessonId ? `&lesson=${lessonId}` : ''}`);
     } finally {
       setSaving(false);
     }
@@ -78,9 +81,21 @@ export function EditPassagePage() {
         id="passage-deck"
         lang={passage.lang}
         value={setId}
-        onChange={setSetId}
+        onChange={(next) => {
+          setSetId(next);
+          // A lesson belongs to one deck.
+          setLessonId('');
+        }}
         remember={false}
         label="Deck của đoạn văn"
+      />
+      <LessonSelect
+        id="passage-lesson"
+        lang={passage.lang}
+        decks={[{ setId: setId || undefined, label: setId ? 'Deck' : 'General' }]}
+        value={lessonId}
+        onChange={setLessonId}
+        label="Lesson của đoạn văn"
       />
       <p className={fieldStyles.hint}>
         Đoạn văn nằm trong deck này ở màn Đoạn văn. Đổi deck không chuyển các word đã có; các word mới tạo từ lỗ mới

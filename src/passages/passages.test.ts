@@ -370,3 +370,62 @@ describe('moving passages to another deck', () => {
     expect(await listPassagesOfDeck('en', daily.set.id, live)).toEqual([]);
   });
 });
+
+describe('passages by lesson (M17a)', () => {
+  it('lists a passage under its lesson, and under none once the lesson is gone', async () => {
+    const { createLesson } = await import('../lessons');
+    const { lessonRepository } = await import('../db/repositories');
+    const { lessonOfPassage, countByLessonKey, passagesOfLesson, NO_LESSON } = await import('./index');
+    const lesson = await createLesson('en', undefined, 'Artikel');
+    if (!lesson.ok) throw new Error('no lesson');
+    const made = await createPassage({
+      dictionaryId: DICT,
+      lang: 'en',
+      text: TEXT,
+      gaps: [at('towel')],
+      lessonId: lesson.lesson.id,
+    });
+    const loose = await createPassage({ dictionaryId: DICT, lang: 'en', text: TEXT, gaps: [at('shaves')] });
+    if (!made.ok || !loose.ok) throw new Error('not created');
+    expect(made.passage.lessonId).toBe(lesson.lesson.id);
+
+    const all = await listPassages('en');
+    const live = new Set([lesson.lesson.id]);
+    expect(lessonOfPassage(made.passage, live)).toBe(lesson.lesson.id);
+    expect(countByLessonKey(all, live).get(lesson.lesson.id)).toBe(1);
+    expect(passagesOfLesson(all, NO_LESSON, live).map((p) => p.id)).toEqual([loose.passage.id]);
+
+    // Deleting the lesson leaves the passage under "none" without touching it.
+    await lessonRepository.softDelete(lesson.lesson.id);
+    expect(lessonOfPassage(made.passage, new Set())).toBe(NO_LESSON);
+  });
+
+  it('sets the lesson on edit and clears it when the passage changes deck', async () => {
+    const { movePassagesToDeck, undoMovePassages } = await import('./index');
+    const { createWordSet } = await import('../wordsets');
+    const { createLesson } = await import('../lessons');
+    const deck = await createWordSet('en', 'Grammatik');
+    if (!deck.ok) throw new Error('no deck');
+    const lesson = await createLesson('en', deck.set.id, 'Lektion Artikel');
+    if (!lesson.ok) throw new Error('no lesson');
+    const made = await createPassage({ dictionaryId: DICT, lang: 'en', text: TEXT, gaps: [at('towel')], setId: deck.set.id });
+    if (!made.ok) throw new Error('not created');
+    const loaded = await loadPassageForEdit(made.passage.id);
+    await updatePassage(made.passage.id, {
+      text: TEXT,
+      gaps: loaded!.gaps,
+      setId: deck.set.id,
+      lessonId: lesson.lesson.id,
+    });
+    expect((await loadPassageForEdit(made.passage.id))!.passage.lessonId).toBe(lesson.lesson.id);
+
+    const undo = await movePassagesToDeck([made.passage.id], undefined);
+    expect((await loadPassageForEdit(made.passage.id))!.passage.lessonId).toBeUndefined();
+    await undoMovePassages(undo);
+    expect((await loadPassageForEdit(made.passage.id))!.passage.lessonId).toBe(lesson.lesson.id);
+
+    // '' clears the lesson.
+    await updatePassage(made.passage.id, { text: TEXT, gaps: loaded!.gaps, lessonId: '' });
+    expect((await loadPassageForEdit(made.passage.id))!.passage.lessonId).toBeUndefined();
+  });
+});

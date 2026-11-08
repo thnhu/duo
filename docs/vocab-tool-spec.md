@@ -1,7 +1,7 @@
 # SPEC: Công cụ học từ vựng Anh – Đức (Breadth & Depth)
 
 > Tài liệu này dành cho Claude Code đọc để triển khai. Product Owner (PO): người dùng, dùng một mình.
-> Phiên bản **v11** (nút (+) tách Thêm từ / Thêm example / Thêm concept, deck General và card con Word/Concept, chấm chính tả không phân biệt hoa/thường, chọn giọng đọc, tìm kiếm bấm Enter; xem mục 12). Trước đó **v10** (M12 xong, Deck/M13, quy ước phản hồi UI). Trước đó **v9** (quy luật UI quan hệ rút từ HUST PVO và kế hoạch M12) và **v8** (làm rõ Concept/Example, tri-fold, kế hoạch Bản 3) và **v7** (bỏ AI gợi ý nhãn). **Tool không đọc PDF và không dùng AI**: PO dùng công cụ ngoài rồi nhập bằng file CSV hoặc XLSX, và gắn nhãn TMRND (Tone, Mode, Register, Nuance, Dialect) bằng tay. Xem mục 12 để biết thay đổi so với các bản trước.
+> Phiên bản **v13** (kế hoạch Bản 10: ngữ pháp bằng đoạn văn đục lỗ chọn thẻ, M17a–c). Trước đó **v12** (cụm tô sáng nhiều đoạn cho động từ tách, định dạng file nhập mục 12, Bản 7 nhập tay và nhập file tiếng Đức khớp nhau, Bản 8 Lesson trong deck, Bản 9 xuất và sao lưu theo phạm vi, đoạn văn theo deck và làm lại khi dưới ngưỡng; xem mục 13). Trước đó **v11** (nút (+) tách Thêm từ / Thêm example / Thêm concept, deck General và card con Word/Concept, chấm chính tả không phân biệt hoa/thường, chọn giọng đọc, tìm kiếm bấm Enter). Trước đó **v10** (M12 xong, Deck/M13, quy ước phản hồi UI). Trước đó **v9** (quy luật UI quan hệ rút từ HUST PVO và kế hoạch M12) và **v8** (làm rõ Concept/Example, tri-fold, kế hoạch Bản 3) và **v7** (bỏ AI gợi ý nhãn). **Tool không đọc PDF và không dùng AI**: PO dùng công cụ ngoài rồi nhập bằng file CSV hoặc XLSX, và gắn nhãn TMRND (Tone, Mode, Register, Nuance, Dialect) bằng tay. Xem mục 12 để biết thay đổi so với các bản trước.
 > Quy ước: **[CHỐT]** = đã thống nhất. **[ĐỀ XUẤT]** = đề xuất, có thể chỉnh. **[MỞ]** = chưa quyết định, cần hỏi PO trước khi làm.
 
 ---
@@ -201,7 +201,7 @@ Tìm kiếm chạy **hoàn toàn cục bộ, kể cả khi không có mạng**, 
 ### 5.1 Tiếng Đức (A1–A2): chỉ chế độ Rộng **[CHỐT]**
 Bài tập đơn giản, tập trung chính tả và hình thái từ:
 - **Nghe chép chính tả:** phát âm từ, người học gõ đúng chính tả.
-- **Danh từ:** điền đúng **giống (der/die/das)** và **số nhiều**.
+- **Danh từ:** điền đúng **giống (der/das/die)** và **số nhiều**.
 - **Động từ:** chia đúng theo ngôi/thì.
 - **Động từ bất quy tắc:** điền các dạng (Infinitiv, Präteritum, Partizip II...).
 - Khi học danh từ luôn học kèm **giống và số nhiều**.
@@ -655,6 +655,26 @@ Lý do: xuất JSON và xlsx hiện ghi **toàn bộ kho** (cả Anh và Đức,
 | **M16c** JSON theo phạm vi (*đã làm*) | `exportBackup` nhận phạm vi: chọn bảng và dòng liên quan như trên, header `scope`, không có Cài đặt | Xuất một deck rồi nạp vào kho trống: concept, example, lịch ôn, bài, đoạn văn của deck đó về đúng chỗ, không có gì của deck khác (ngoại lệ: word ở lỗ của đoạn văn thuộc phạm vi đi kèm với riêng các example của lỗ, để đoạn văn đủ khi khôi phục). Đoạn văn của phạm vi: theo `Passage.setId`, không có đoạn văn khi chọn phạm vi là một bài. Tên file `duo-backup-<phạm vi>-<ngày>.json`; chỉ bản đầy đủ mới cập nhật mốc "lần sao lưu gần nhất"; phạm vi trống thì báo lỗi |
 | **M16d** Nạp bản một phần và nhãn vai trò (*đã làm; Bản 9 xong*) | Nạp JSON báo rõ "bản sao lưu một phần (phạm vi …)" và số dòng thêm/cập nhật; ghi chú vai trò JSON/xlsx ở Cài đặt; cập nhật hành trình J9 | Nạp bản một phần vào kho đang có dữ liệu thì gộp (mới hơn thắng), không xóa gì |
 
+### Bản 10: Ngữ pháp bằng đoạn văn đục lỗ, chọn thẻ (v13, PO yêu cầu 2026-11-08)
+Lý do: khi học ngữ pháp tiếng Đức (điền mạo từ `der/das/die`, `kein/keine`…), PO muốn làm như đoạn văn đục lỗ nhưng **không tạo word mới** vì bài chỉ kiểm tra đúng/sai, và muốn **bấm thẻ chọn** thay vì gõ. Không làm tool riêng: dùng lại `Passage`, lịch ôn theo example, deck và lesson.
+
+**Đã chốt (PO, 2026-11-08):**
+- **Một đoạn = một câu hỏi, nộp một lần** (như `de.passage-cloze`): ngưỡng đạt và số lần làm lại dùng lại. Lỗ đục **cả từ** (`die`, không phải `ie`); chấm không phân biệt hoa/thường.
+- **Nhập:** PO dán đoạn **đã điền đủ** (chính là đáp án), rồi đục lỗ; không có bước nhập đáp án riêng.
+- **Cấu trúc:** deck thường (ví dụ "Grammatik") → **Lesson** (ví dụ "Lektion Artikel") → danh sách đoạn văn. Không có code riêng cho tên "Grammatik". `/passages` đi **deck → lesson → đoạn** (áp dụng cả đoạn từ vựng); đoạn nhận `Passage.lessonId?` (trường tùy chọn); đoạn cũ chưa có lesson vào thẻ "Chưa xếp lesson".
+- **Chế độ Grammar của đoạn:** lỗ **không tạo word**. Mỗi lỗ vẫn là một Example (để giữ lịch ôn và log) có `targetConceptId` = **một concept tự tạo theo lesson** (`kind: 'concept'`, tên = tên lesson, nằm trong lesson, không hiện ở card Word). **Có ôn theo lịch**; bài grammar **chỉ ghi đúng/sai, không bao giờ đặt `acquired`** (như bài Sâu S1/S2).
+- **Trả lời bằng thẻ:** dưới đoạn có hàng thẻ lớn (`der` `die` `das`…); bấm thẻ thì điền vào lỗ đang chọn rồi **tự nhảy sang lỗ kế tiếp**; thẻ dùng lại không giới hạn; bấm vào lỗ đã điền để chọn lại. Chế độ trả lời (**gõ** hoặc **chọn thẻ**) là cài đặt của từng đoạn.
+- **Bộ thẻ là dữ liệu PO tự tạo** (nguyên tắc 3, không hard-code): `ChoiceSet` = id, lang, name, items[] (ví dụ "Bestimmter Artikel": `der das die die den dem des`, thứ tự theo tài liệu của PO là giống đực, trung, cái, số nhiều; "Kein-": `kein keine keinen keinem keiner`), thêm/bớt/sắp xếp được, có thẻ gây nhiễu. Một bộ dùng lại cho nhiều đoạn; chọn ở form đoạn hoặc "+ Tạo bộ mới…" tại chỗ. Khi lưu, mọi đáp án của lỗ phải có trong bộ thẻ (thiếu thì báo và đề nghị tự thêm). Bảng mới `choiceSets` (schema v11, đồng bộ, sao lưu, xóa mềm).
+- **Đục tự động theo bộ thẻ:** một nút đục mọi chỗ khớp một thẻ trong đoạn (cả từ, không phân biệt hoa/thường); chạm để bỏ lỗ bị đục nhầm (ví dụ `das` là đại từ quan hệ).
+
+**Các bước (mỗi phiên một bước, theo thứ tự):**
+
+| Bước | Nội dung | Xong khi |
+|---|---|---|
+| **M17a** Đoạn văn theo lesson (*đã làm*) | `Passage.lessonId?` (không cần migration), `/passages` đi deck → lesson → đoạn (chỉ tải khi bấm), hộp chọn Lesson ở Thêm và Sửa đoạn (đổi deck thì bỏ chọn lesson), thẻ "Chưa xếp lesson", lesson bị xóa/đổi deck thì gỡ nhãn khỏi đoạn; vào sao lưu theo phạm vi | Tạo lesson "Lektion Artikel" trong deck "Grammatik", thêm đoạn vào lesson, mở deck → lesson thấy đúng danh sách đoạn |
+| **M17b** Chế độ Grammar và bộ thẻ | Bảng `choiceSets` (schema v11) và màn quản lý; cờ Grammar của đoạn (không tạo word, concept tự tạo theo lesson, example của lỗ trỏ vào concept đó); `acquired` bị bỏ qua; đục tự động theo bộ thẻ; kiểm tra đáp án có trong bộ thẻ | Dán đoạn mạo từ, chọn bộ "Bestimmter Artikel", bấm đục tự động ra đủ lỗ, lưu không tạo word nào |
+| **M17c** Làm bài bằng thẻ | Màn làm bài đoạn văn có hàng thẻ, bấm thẻ điền và nhảy lỗ kế; chế độ trả lời theo từng đoạn (gõ / thẻ); chấm, ghi log từng lỗ, làm lại khi dưới ngưỡng như hiện tại | Làm đoạn mạo từ chỉ bằng bấm thẻ, nộp một lần, kết quả và lịch ôn ghi đúng cho từng lỗ |
+
 ### Quy ước phản hồi giao diện (v10, PO yêu cầu 2026-11-05) **[CHỐT]**
 - **Không dùng `confirm()`/`alert()` của trình duyệt.** Thông báo dùng **badge (toast)** ở đầu màn hình: nhỏ (cao ~38 px), tự tắt sau 2,5 s (4,5 s nếu có nút hoặc là lỗi), dừng khi rê chuột/focus, vẫn còn sau khi chuyển trang.
 - **Xóa phải có ô xác nhận** hiện ngay tại nút (panel trong trang, không phủ màn hình), nêu hậu quả bằng số, focus ở "Hủy", Esc để hủy; sau khi xóa vẫn có badge **"Hoàn tác"** (xóa mềm nên khôi phục được concept, ví dụ và mọi liên kết đi kèm).
@@ -755,15 +775,17 @@ Chỉ `text` bắt buộc. Cột mẫu theo đúng thứ tự dưới đây.
 
 ## 13. Lịch sử thay đổi
 
-**v12 (bản này):**
-- **Nhãn UI "Lesson"**: màn hình gọi bài là Lesson (như Deck, Concept, Word); chữ "bài" trong các mục Bản 8 và Bản 9 là cách viết cũ cho lesson, "bài" còn lại trong giao diện chỉ là bài tập.
-- **Màn Đoạn văn theo deck** (Bản 6): card deck trước, đọc danh sách đoạn văn khi bấm card; `Passage.setId`; schema v9 (chỉ mục `examples.passageId`); v10 gán deck cho đoạn văn cũ; sửa đoạn văn đổi được deck.
-- **Mục 12 Format input file** (cột, quy tắc, ví dụ từ file mẫu Goethe A1 của PO).
+**v13 (bản này):**
+- **Kế hoạch Bản 10** (mục 10): ngữ pháp bằng đoạn văn đục lỗ cả từ, trả lời bằng thẻ chọn, bộ thẻ tự tạo (`choiceSets`), đoạn văn theo lesson (`Passage.lessonId`), chế độ Grammar không tạo word; các bước M17a–M17c.
+
+**v12, tất cả đã làm xong (schema Dexie lên v10):**
+- **Nhãn UI "Lesson"**: màn hình gọi bài là Lesson (như Deck, Concept, Word); chữ "bài" trong các mục Bản 8 và Bản 9 là cách viết cũ cho lesson, "bài" còn lại trong giao diện chỉ là bài tập. Loại từ ở màn Thêm word và chi tiết concept là hộp chọn, nhãn chính là giá trị lưu (`noun`, `verb`, `adjective`…).
+- **Mục 12 Format input file** (cột, quy tắc, ví dụ từ file mẫu Goethe A1 của PO), thêm cột `praesens3sg`.
 - **Cụm tô sáng nhiều đoạn** cho động từ tách (`Example.highlightExtra`, không cần migration): nhập file bằng `fahren … ab`, nút "Tô thêm đoạn nữa", bài điền cụm tiếng Anh và nghe chép, xuất xlsx giữ nguyên cách ghi (C7, 9.2 câu 2, mục 12).
-- **Kế hoạch Bản 9** (mục 10): xuất và sao lưu theo phạm vi (ngôn ngữ, deck, bài); JSON một phần khôi phục đúng chỗ, xlsx để sửa hàng loạt; các bước M16a–M16d.
-- **Kế hoạch Bản 8** (mục 10): bài (lesson) là đối tượng có tên nằm trong deck, chọn bằng hộp chọn; ôn tập, học và Thư viện theo bài; các bước M15a–M15f.
-- **Kế hoạch Bản 7** (mục 10): nhập tay và nhập file tiếng Đức cho cùng dạng dữ liệu; màn hình hiện và sửa được mọi thông tin của file; loại từ ở màn Thêm word là hộp chọn.
-- **Bài điền đoạn văn phải làm lại khi dưới ngưỡng đạt** (mặc định 90%, tối đa 2 lần làm lại; chỉnh ở Cài đặt → Học).
+- **Bản 6 mở rộng:** bài điền đoạn văn phải làm lại khi dưới ngưỡng đạt (mặc định 90%, tối đa 2 lần làm lại; chỉnh ở Cài đặt → Học; chỉ lần đầu ghi log); màn Đoạn văn theo deck (card deck trước, đọc danh sách khi bấm card; `Passage.setId`; schema v9 chỉ mục `examples.passageId`; v10 gán deck cho đoạn cũ; sửa đoạn đổi được deck; chuyển hàng loạt sang deck khác có Hoàn tác).
+- **Bản 7 (M14a–e):** nhập tay và nhập file tiếng Đức cho cùng dạng dữ liệu; bước duyệt nhập file và chi tiết concept hiện và sửa được mọi thông tin của file; Thêm word tiếng Đức có ô ngữ pháp, nút tra cứu để điền, câu ví dụ và ghi chú; nhập lại gộp dạng động từ từng trường.
+- **Bản 8 (M15a–f):** Lesson là chủ đề có tên nằm trong deck (schema v8, `Concept.lessonId`), chọn bằng hộp chọn; nhập/xuất file theo cột `lesson`; Thư viện, Học, Ôn, Hôm nay, Tìm kiếm theo lesson.
+- **Bản 9 (M16a–d):** xuất và sao lưu theo phạm vi (ngôn ngữ, deck, lesson); JSON một phần khôi phục đúng chỗ và báo rõ khi nạp, xlsx để sửa hàng loạt.
 
 **v11:**
 - **Học theo đoạn văn đục lỗ** (Bản 6): bảng `passages` (schema v7), `Example.passageId`, bài `en/de.passage-cloze`, màn Thêm đoạn văn và Đoạn văn.

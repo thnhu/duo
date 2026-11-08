@@ -24,6 +24,8 @@ export interface PassageInput {
   gaps: Selection[];
   // Deck the new words go into ('' or undefined = General).
   setId?: string;
+  // Lesson of that deck the passage is listed under ('' or undefined = none).
+  lessonId?: string;
 }
 
 export type PassageResult =
@@ -187,6 +189,7 @@ export async function createPassage(input: PassageInput): Promise<PassageResult>
     title: input.title?.trim() || undefined,
     text: body,
     ...(input.setId ? { setId: input.setId } : {}),
+    ...(input.lessonId ? { lessonId: input.lessonId } : {}),
     updatedAt: now,
   };
   await passageRepository.add(passage);
@@ -226,6 +229,8 @@ export interface PassageEdit {
   // gaps (kept, with their schedule and history), the rest are new.
   gaps: PassageGap[];
   setId?: string;
+  // Left out = unchanged; '' = no lesson.
+  lessonId?: string;
 }
 
 export type PassageUpdateResult =
@@ -247,6 +252,7 @@ export async function updatePassage(passageId: string, edit: PassageEdit): Promi
     text: body,
     title: edit.title?.trim() || undefined,
     ...(edit.setId !== undefined ? { setId: edit.setId || undefined } : {}),
+    ...(edit.lessonId !== undefined ? { lessonId: edit.lessonId || undefined } : {}),
   });
   const passage: Passage = { ...current, text: body };
 
@@ -329,6 +335,35 @@ export async function listPassagesOfDeck(
     .sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
+// ---- Passages by lesson (M17a) ----
+
+export const NO_LESSON = 'none';
+
+// Pure. The lesson a passage is listed under: its `lessonId` if that lesson is
+// live (`liveLessonIds` = the lessons of the passage's deck), else none. A
+// deleted lesson or a deck change therefore leaves the passage under "none"
+// without touching it.
+export function lessonOfPassage(passage: Passage, liveLessonIds: Set<string>): string {
+  return passage.lessonId && liveLessonIds.has(passage.lessonId) ? passage.lessonId : NO_LESSON;
+}
+
+// Pure. How many passages each lesson has (key NO_LESSON for none).
+export function countByLessonKey(passages: Passage[], liveLessonIds: Set<string>): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const p of passages) {
+    const key = lessonOfPassage(p, liveLessonIds);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return counts;
+}
+
+// Pure. The passages of one lesson (or of NO_LESSON), newest first.
+export function passagesOfLesson(passages: Passage[], lessonKey: string, liveLessonIds: Set<string>): Passage[] {
+  return passages
+    .filter((p) => lessonOfPassage(p, liveLessonIds) === lessonKey)
+    .sort((a, b) => b.updatedAt - a.updatedAt);
+}
+
 // How many gaps each of these passages has (looked up by the passage, not by
 // reading every example).
 export async function countGapsOf(passageIds: string[]): Promise<Map<string, number>> {
@@ -368,7 +403,7 @@ export function gapsIn(passageId: string, examples: Example[]): Example[] {
 
 export interface PassageDeckUndo {
   // The deck each passage was in before (undefined = General).
-  previous: Array<{ id: string; setId?: string }>;
+  previous: Array<{ id: string; setId?: string; lessonId?: string }>;
 }
 
 // Puts these passages in a deck (undefined = General). Only the passage's own
@@ -378,12 +413,17 @@ export async function movePassagesToDeck(passageIds: string[], setId: string | u
   for (const id of passageIds) {
     const passage = await passageRepository.getById(id);
     if (!passage || passage.deletedAt !== undefined || passage.setId === setId) continue;
-    previous.push({ id, ...(passage.setId ? { setId: passage.setId } : {}) });
-    await passageRepository.update(id, { setId });
+    previous.push({
+      id,
+      ...(passage.setId ? { setId: passage.setId } : {}),
+      ...(passage.lessonId ? { lessonId: passage.lessonId } : {}),
+    });
+    // A lesson belongs to its deck, so the passage leaves it with the deck.
+    await passageRepository.update(id, { setId, lessonId: undefined });
   }
   return { previous };
 }
 
 export async function undoMovePassages(undo: PassageDeckUndo): Promise<void> {
-  for (const { id, setId } of undo.previous) await passageRepository.update(id, { setId });
+  for (const { id, setId, lessonId } of undo.previous) await passageRepository.update(id, { setId, lessonId });
 }

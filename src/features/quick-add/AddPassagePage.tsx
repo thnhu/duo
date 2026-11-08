@@ -8,6 +8,7 @@ import fieldStyles from '../../ui/field.module.css';
 import { dictionaryIdForLang } from '../../db/queries';
 import { createPassage } from '../../passages';
 import { PassageEditor, type PassageDraft } from '../passages/PassageEditor';
+import { LessonSelect } from '../lessons/LessonSelect';
 import { DeckSelect } from '../sets/DeckSelect';
 import { useLastLanguage } from './useLastLanguage';
 import styles from './AddPassageForm.module.css';
@@ -21,6 +22,7 @@ export function AddPassagePage() {
   const [lang, setLang] = useLastLanguage();
   const [draft, setDraft] = useState<PassageDraft>({ title: '', text: '', gaps: [] });
   const [setId, setSetId] = useState('');
+  const [lessonId, setLessonId] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -29,7 +31,7 @@ export function AddPassagePage() {
     setSaving(true);
     try {
       const dictionaryId = await dictionaryIdForLang(lang);
-      const result = await createPassage({ dictionaryId, lang, title: draft.title, text: draft.text, gaps: draft.gaps, setId });
+      const result = await createPassage({ dictionaryId, lang, title: draft.title, text: draft.text, gaps: draft.gaps, setId, lessonId });
       if (!result.ok) {
         setError(result.reason === 'empty' ? 'Hãy nhập đoạn văn.' : 'Hãy đục ít nhất một lỗ.');
         return;
@@ -38,7 +40,7 @@ export function AddPassagePage() {
         `Đã thêm đoạn văn: ${result.gaps} lỗ, ${result.createdWords} word mới. Ôn ở Học → Điền vào đoạn văn.`,
       );
       // Back to the deck cards: they only count, the passages are read when a card is opened.
-      navigate('/passages');
+      navigate(lessonId ? `/passages?deck=${setId || 'general'}&lesson=${lessonId}` : '/passages');
     } finally {
       setSaving(false);
     }
@@ -63,8 +65,25 @@ export function AddPassagePage() {
 
       <PassageEditor draft={draft} onChange={(next) => { setDraft(next); setError(''); }} note={error} />
 
-      <DeckSelect id="passage-deck" lang={lang} value={setId} onChange={setSetId} />
+      <DeckSelect
+        id="passage-deck"
+        lang={lang}
+        value={setId}
+        onChange={(next) => {
+          setSetId(next);
+          // A lesson belongs to one deck.
+          setLessonId('');
+        }}
+      />
       <p className={fieldStyles.hint}>Deck áp dụng cho các word mới được tạo từ những lỗ.</p>
+      <LessonSelect
+        id="passage-lesson"
+        lang={lang}
+        decks={[{ setId: setId || undefined, label: setId ? 'Deck' : 'General' }]}
+        value={lessonId}
+        onChange={setLessonId}
+        label="Lesson của đoạn văn"
+      />
 
       <ButtonRow>
         <Button disabled={!draft.text.trim() || draft.gaps.length === 0 || saving} onClick={() => void handleSave()}>

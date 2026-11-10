@@ -70,12 +70,22 @@ export async function loadPairs(
     );
     if (usable.length === 0) continue;
     // Real sentences make better drills than the auto-created minimal one.
+    if (module.passage) {
+      // One question per passage, however many of its words are due. A grammar
+      // concept is shared by every passage of its lesson, so it offers one
+      // question for each of its passages, not a single random one.
+      const seen = new Set<string>();
+      for (const example of usable) {
+        const passageId = example.passageId!;
+        if (seen.has(passageId) || pairs.some((p) => p.example.passageId === passageId)) continue;
+        seen.add(passageId);
+        pairs.push({ concept, example });
+      }
+      continue;
+    }
     const real = usable.filter((e) => !e.isMinimal);
     const choices = real.length > 0 ? real : usable;
-    const pair = { concept, example: choices[Math.floor(rng() * choices.length)] };
-    // One question per passage, however many of its words are due.
-    if (module.passage && pairs.some((p) => p.example.passageId === pair.example.passageId)) continue;
-    pairs.push(pair);
+    pairs.push({ concept, example: choices[Math.floor(rng() * choices.length)] });
   }
   return pairs;
 }

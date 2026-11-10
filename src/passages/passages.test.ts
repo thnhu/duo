@@ -602,3 +602,22 @@ describe('passages by lesson (M17a)', () => {
     expect((await loadPassageForEdit(made.passage.id))!.passage.lessonId).toBeUndefined();
   });
 });
+
+describe('grammar passages share one topic concept', () => {
+  it('offers every passage of the same deck, not one random passage per concept', async () => {
+    const { tableToText, tableCells } = await import('./table');
+    const { germanPassage } = await import('../exercises/passage');
+    const text = tableToText([['', 'm', 'f'], ['bestimmt', 'der', 'die']]);
+    const cells = tableCells(text).flat();
+    const tableGaps = ['der', 'die'].map((w) => {
+      const c = cells.find((x) => x.text === w)!;
+      return { start: c.start, end: c.end };
+    });
+    await createPassage({ dictionaryId: 'dict-de', lang: 'de', text, gaps: tableGaps, layout: 'table', grammar: true });
+    const plain = 'Das ist der Hund und die Katze.';
+    const plainGaps = ['der', 'die'].map((w) => ({ start: plain.indexOf(w), end: plain.indexOf(w) + w.length }));
+    await createPassage({ dictionaryId: 'dict-de', lang: 'de', text: plain, gaps: plainGaps, grammar: true });
+    const pairs = await loadPairs(germanPassage, { lang: 'de' });
+    expect(new Set(pairs.map((p) => p.example.passageId)).size).toBe(2);
+  });
+});

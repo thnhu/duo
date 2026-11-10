@@ -42,8 +42,10 @@ import { LearnPage } from './features/learn/LearnPage'
 import { SessionPage } from './features/learn/SessionPage'
 import { SearchPage } from './features/search/SearchPage'
 import { ToastProvider } from './ui/Toast'
+import { installDiagnostics } from './diagnostics'
 
 async function bootstrap() {
+  installDiagnostics()
   // The AI suggestion feature was removed; drop the API key it left on this device.
   try {
     for (const key of ['duo.ai.apiKey', 'duo.ai.usage']) localStorage.removeItem(key)

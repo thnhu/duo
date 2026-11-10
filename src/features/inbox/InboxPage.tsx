@@ -50,6 +50,7 @@ export function InboxPage() {
             example={entry.example}
             lang={entry.lang}
             onResolved={handleResolved}
+            onRemoved={(id, removed) => (removed ? handleResolved(id) : void loadEntries())}
           />
         ))}
       </div>

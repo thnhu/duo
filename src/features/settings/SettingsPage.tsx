@@ -12,6 +12,7 @@ import { useToast } from '../../ui/Toast';
 import { StudyCard } from './StudyCard';
 import { DepthCard } from './DepthCard';
 import { SyncCard } from './SyncCard';
+import { DiagnosticsCard } from './DiagnosticsCard';
 import { VoiceCard } from './VoiceCard';
 import styles from './SettingsPage.module.css';
 
@@ -110,6 +111,8 @@ export function SettingsPage() {
       <VoiceCard />
 
       <SyncCard />
+
+      <DiagnosticsCard />
 
       <ExportScopeCard scope={scope} onChange={setScope} />
 

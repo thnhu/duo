@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { Button } from '../../ui/Button';
 import { ButtonRow } from '../../ui/ButtonRow';
 import fieldStyles from '../../ui/field.module.css';
@@ -52,6 +52,12 @@ export function ExampleFields({ idPrefix, draft, onChange, sentenceLabel }: Exam
   useEffect(() => {
     void settingsRepository.getById(SETTINGS_ID).then((s) => setValueSets(s?.attributeValueSets ?? null));
   }, []);
+
+  // Pressing a button would move focus off the textarea and can drop the
+  // selection before the click reads it; keep focus where it is.
+  function keepSelection(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+  }
 
   function pickHighlight() {
     const textarea = textareaRef.current;
@@ -115,11 +121,11 @@ export function ExampleFields({ idPrefix, draft, onChange, sentenceLabel }: Exam
       )}
 
       <ButtonRow>
-        <Button variant="secondary" disabled={!draft.text.trim()} onClick={pickHighlight}>
+        <Button variant="secondary" disabled={!draft.text.trim()} onMouseDown={keepSelection} onClick={pickHighlight}>
           {draft.highlight ? 'Tô lại cụm đã chọn' : 'Tô sáng cụm đã chọn'}
         </Button>
         {draft.highlight && (
-          <Button variant="secondary" onClick={addHighlightPart}>
+          <Button variant="secondary" onMouseDown={keepSelection} onClick={addHighlightPart}>
             Tô thêm đoạn nữa
           </Button>
         )}

@@ -494,6 +494,14 @@ export function ImportPage() {
                       {result.lessonsCreated > 0 ? ` (tạo ${result.lessonsCreated} lesson mới)` : ''}
                     </li>
                   )}
+                  {result.linksCreated > 0 && <li>{result.linksCreated} liên kết concept con → cha</li>}
+                  {result.linksChanged > 0 && <li>{result.linksChanged} liên kết đã có được đổi loại theo file</li>}
+                  {result.parentsCreated > 0 && (
+                    <li>{result.parentsCreated} concept cha trống được tạo (file nhắc tên nhưng chưa có trong kho)</li>
+                  )}
+                  {result.linkProblems.map((problem) => (
+                    <li key={problem}>Không nối được {problem}</li>
+                  ))}
                   {result.mergedConcepts > 0 && <li>{result.mergedConcepts} concept đã có được gộp thêm</li>}
                   {result.updatedConcepts > 0 && <li>{result.updatedConcepts} concept đã có được cập nhật</li>}
                   <li>{result.skippedDuplicates} concept trùng/không đổi (bỏ qua)</li>

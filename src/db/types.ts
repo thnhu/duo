@@ -324,6 +324,8 @@ export interface ImportBatch {
   createdExampleIds: string[];
   // Lessons this import made (Bản 8), taken away again by the undo.
   createdLessonIds?: string[];
+  // Concept links this import made (parent column), taken away again by the undo.
+  createdLinkIds?: string[];
   // Previous values of concepts changed by a merge/update.
   updatedConcepts: Array<{ id: string; before: Partial<Concept> }>;
   createdAt: number;

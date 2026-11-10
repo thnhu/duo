@@ -174,6 +174,11 @@ export function ReviewStep({
                   Deck: {name}
                 </span>
               ))}
+              {group.links.map((link) => (
+                <span key={link.parent} className={styles.badge}>
+                  → {link.parent} ({link.type === 'typeOf' ? 'Type of' : 'Association'})
+                </span>
+              ))}
               {grammarLines(group.grammar).map((line) => (
                 <span key={line} className={styles.grammarLine}>
                   {line}

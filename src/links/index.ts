@@ -323,17 +323,32 @@ export interface AssociationResult {
   links: ConceptLink[];
 }
 
+export const MAX_ASSOCIATION_DEPTH = 4;
+
 // "Search Concept Association": from the chosen concepts, every concept linked
-// to one of them (either direction, one step). Links between two related
+// to one of them (either direction), following links `depth` steps outwards
+// (1 = only direct neighbours; 2 also shows neighbours of neighbours, so a chain
+// like war - confrontation - archemy appears whole). Links between two shown
 // concepts are included too, so the picture shows the whole small network.
-export async function searchAssociations(selectedIds: string[]): Promise<AssociationResult> {
+export async function searchAssociations(selectedIds: string[], depth = 1): Promise<AssociationResult> {
   const graph = await loadGraph();
   const selectedSet = new Set(selectedIds.filter((id) => graph.concepts.has(id)));
   const selected = [...new Set(selectedIds)].filter((id) => selectedSet.has(id));
   const related = new Set<string>();
-  for (const l of graph.links) {
-    if (selectedSet.has(l.childId) && !selectedSet.has(l.parentId)) related.add(l.parentId);
-    if (selectedSet.has(l.parentId) && !selectedSet.has(l.childId)) related.add(l.childId);
+  const steps = Math.max(1, Math.min(MAX_ASSOCIATION_DEPTH, Math.floor(depth)));
+  let frontier = new Set(selectedSet);
+  for (let step = 0; step < steps; step++) {
+    const next = new Set<string>();
+    for (const l of graph.links) {
+      for (const [from, to] of [[l.childId, l.parentId], [l.parentId, l.childId]]) {
+        if (frontier.has(from) && !selectedSet.has(to) && !related.has(to)) {
+          related.add(to);
+          next.add(to);
+        }
+      }
+    }
+    if (next.size === 0) break;
+    frontier = next;
   }
   const shown = new Set([...selected, ...related]);
   return {

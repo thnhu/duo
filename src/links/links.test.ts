@@ -235,6 +235,22 @@ describe('association search (R7)', () => {
     expect((await searchAssociations([])).nodes).toEqual([]);
   });
 
+  it('follows links several steps when asked (a whole chain shows up)', async () => {
+    const war = await make('war');
+    const rivalry = await make('rivalry');
+    const archenemy = await make('archenemy');
+    const unrelated = await make('unrelated');
+    await linkConcepts(rivalry.id, war.id, 'association'); // rivalry -> war
+    await linkConcepts(archenemy.id, rivalry.id, 'typeOf'); // archenemy -> rivalry
+
+    const one = await searchAssociations([archenemy.id], 1);
+    expect(one.nodes.map((n) => n.concept.text)).toEqual(['archenemy', 'rivalry']);
+    const two = await searchAssociations([archenemy.id], 2);
+    expect(two.nodes.map((n) => n.concept.text)).toEqual(['archenemy', 'rivalry', 'war']);
+    expect(two.links).toHaveLength(2);
+    expect(two.nodes.some((n) => n.concept.id === unrelated.id)).toBe(false);
+  });
+
   it('lays nodes out inside the box, deterministically, and handles edge cases', () => {
     const ids = ['a', 'b', 'c', 'd'];
     const edges = [

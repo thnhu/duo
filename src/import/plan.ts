@@ -1,5 +1,6 @@
 import type { Concept, ConceptGrammar, Lang } from '../db/types';
 import type { ExampleDraft, ImportRow } from './build';
+import type { ParsedLink } from './relations';
 
 // What to do with a word that already exists in the library (spec A1c).
 export type DuplicateAction = 'skip' | 'merge' | 'update';
@@ -17,6 +18,8 @@ export interface ImportGroup {
   // Word set names from the file's `set` column (merged over the rows).
   setNames: string[];
   grammar?: ConceptGrammar;
+  // Parent links named in the file (merged over the rows).
+  links: ParsedLink[];
   examples: ExampleDraft[];
   rowNumbers: number[];
   // Library concept this word duplicates, if any.
@@ -58,6 +61,7 @@ export function planGroups(rows: ImportRow[], existingConcepts: Concept[]): Impo
         pos: row.pos,
         meanings: [],
         setNames: [],
+        links: [],
         examples: [],
         rowNumbers: [],
         included: true,
@@ -73,6 +77,9 @@ export function planGroups(rows: ImportRow[], existingConcepts: Concept[]): Impo
     }
     for (const meaning of row.meanings) {
       if (!group.meanings.some((m) => sameText(m, meaning))) group.meanings.push(meaning);
+    }
+    for (const link of row.links) {
+      if (!group.links.some((l) => sameText(l.parent, link.parent))) group.links.push(link);
     }
     group.grammar = mergeGrammar(group.grammar, row.grammar);
     if (!group.examples.some((e) => sameText(e.text, row.example.text))) {

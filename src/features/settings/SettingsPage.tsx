@@ -7,7 +7,7 @@ import { dateStamp, downloadBlob, getLastBackupAt, setLastBackupAt } from '../..
 import { exportXlsx } from '../../backup/table';
 import { conceptsInScope, isWholeKit, scopeLabel, scopeSlug, xlsxFileName, type ExportScope } from '../../backup/scope';
 import { ExportScopeCard } from './ExportScopeCard';
-import { conceptRepository, exampleRepository, lessonRepository, wordSetRepository } from '../../db/repositories';
+import { conceptLinkRepository, conceptRepository, exampleRepository, lessonRepository, wordSetRepository } from '../../db/repositories';
 import { useToast } from '../../ui/Toast';
 import { StudyCard } from './StudyCard';
 import { DepthCard } from './DepthCard';
@@ -67,11 +67,12 @@ export function SettingsPage() {
 
   const handleExportXlsx = () =>
     run(async () => {
-      const [concepts, examples, sets, lessons] = await Promise.all([
+      const [concepts, examples, sets, lessons, allLinks] = await Promise.all([
         conceptRepository.listActive(),
         exampleRepository.listActive(),
         wordSetRepository.listActive(),
         lessonRepository.listActive(),
+        conceptLinkRepository.listActive(),
       ]);
       // Only the concepts inside the chosen scope.
       const inScope = conceptsInScope(concepts, scope, new Set(sets.map((d) => d.id)));
@@ -81,8 +82,8 @@ export function SettingsPage() {
       };
       // Nothing to put in the file: say so instead of downloading an empty one.
       if (inScope.length === 0) throw new BackupError(`Phạm vi "${scopeLabel(scope, names)}" chưa có concept nào để xuất.`);
-      downloadBlob(await exportXlsx(inScope, examples, sets, lessons), xlsxFileName(scope, names, dateStamp()));
-      return `Đã xuất ${inScope.length} concept (${scopeLabel(scope, names)}) ra file xlsx. File này để đọc và sửa hàng loạt, nhập lại bằng Nhập từ file; không có liên kết, đoạn văn, lịch ôn. Sao lưu đầy đủ là file JSON.`;
+      downloadBlob(await exportXlsx(inScope, examples, sets, lessons, allLinks, concepts), xlsxFileName(scope, names, dateStamp()));
+      return `Đã xuất ${inScope.length} concept (${scopeLabel(scope, names)}) ra file xlsx. File này để đọc và sửa hàng loạt, nhập lại bằng Nhập từ file (có cả cột parent/relation cho liên kết concept con → cha); không có liên kết example, đoạn văn, lịch ôn. Sao lưu đầy đủ là file JSON.`;
     });
 
   const handleImportJson = (file: File) =>

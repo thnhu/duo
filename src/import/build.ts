@@ -8,6 +8,7 @@ import type {
 import { PART_SEPARATOR } from '../core/highlights';
 import { MEANING_SEPARATOR, type ImportFieldId } from './fields';
 import type { FieldColumns } from './mapping';
+import { parseLinkCells, type ParsedLink } from './relations';
 
 // Turns the raw table + column mapping into validated rows (spec 6.4,
 // A1b): row-level errors are reported, nothing is written here.
@@ -46,6 +47,8 @@ export interface ImportRow {
   // Decks (word sets) named in the file (`deck` column, several separated by ;).
   setNames: string[];
   grammar?: ConceptGrammar;
+  // Links to parent concepts from the `parent` + `relation` columns (child -> parent).
+  links: ParsedLink[];
   example: ExampleDraft;
 }
 
@@ -152,6 +155,12 @@ export function buildRows(
       grammar.verbForms = verbForms;
     }
 
+    // Parent concepts and how this concept relates to each (never guessed).
+    const linkParse = parseLinkCells(cell('parent'), cell('relation'), MEANING_SEPARATOR, text);
+    if (!linkParse.ok) errors.push(linkParse.message);
+    else if (linkParse.ignoredRelation) warnings.push('Có relation nhưng không có parent: bỏ qua relation.');
+    const links = linkParse.ok ? linkParse.links : [];
+
     if (errors.length > 0) {
       result.errors.push({ rowNumber, text, message: errors.join(' ') });
       continue;
@@ -229,6 +238,7 @@ export function buildRows(
         .map((n) => n.trim())
         .filter((n, i, all) => n && all.findIndex((x) => x.toLowerCase() === n.toLowerCase()) === i),
       grammar: Object.keys(grammar).length > 0 ? grammar : undefined,
+      links,
       example,
     });
   }

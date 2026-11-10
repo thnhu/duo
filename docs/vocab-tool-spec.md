@@ -281,6 +281,8 @@ Claude Code có thể đề xuất thay thế nếu có lý do kỹ thuật rõ 
 | `pos` | Loại từ | noun, verb, adj... |
 | `meaning` | Nghĩa | Có thể nhiều nghĩa, phân tách bằng ký hiệu thống nhất (ví dụ `;`) |
 | `lesson` | Bài/chương nguồn | Dùng để lọc ở A1d |
+| `parent` | Concept cha của concept ở dòng này (v14, PO yêu cầu 2026-11-10) | Nhiều cha cách nhau `;`. Tìm cha theo tên (cùng ngôn ngữ, không phân biệt hoa/thường); **chưa có trong kho thì tạo concept cha trống** (chỉ có tên, vào deck của con). Hướng luôn con → cha |
+| `relation` | Quan hệ với cha: `association` hoặc `typeOf` (nhận cả `Type of`, `liên tưởng`, `là một loại của`…) | **Không có mặc định:** có `parent` mà thiếu hoặc sai `relation` thì dòng đó bị báo lỗi ở bước xem trước. Một giá trị chung cho mọi cha, hoặc đúng một giá trị mỗi cha. Vòng tròn: lần nhập vẫn xong, liên kết đó được báo "không nối được". Xuất xlsx tự điền hai cột này |
 | `example` | Câu/cụm ví dụ chứa concept | Tạo một Example gắn với concept. Tool **tự tìm `text` bên trong `example`** (không phân biệt hoa/thường) để đặt **phần tô sáng**; nếu không thấy (ví dụ câu dùng dạng biến thể như *swallowed* so với *swallow*), đánh dấu để PO tô sáng tay ở bước duyệt |
 | `highlight` | Đoạn chính xác trong `example` cần tô sáng | Tùy chọn; dùng khi dạng xuất hiện trong câu khác với `text` |
 | `gender` | Giống danh từ tiếng Đức | `der/die/das` hoặc `m/f/n`; tool chuẩn hóa |
@@ -562,7 +564,7 @@ Lý do: UI quan hệ concept/example hiện khó định hướng (PO phản h�
 | **M12c** Màn Tree theo R6 | Cha ở trên, concept giữa, con dưới; hàng đếm 8 loại liên kết; bấm loại để xem ví dụ (cụm tô vàng, nút sửa); điều hướng nhanh sang concept cha/con | Từ concept thấy cha, con, và số ví dụ từng loại; bấm loại hiện đúng ví dụ |
 | **M12d** Liên kết trong màn example (R5) | Một danh sách "Liên kết" (chip kèm loại), chọn concept bằng tìm kiếm có mô tả + tạo tại chỗ, Relation + nút Link, đánh dấu liên kết chủ; "Giữ tham số" + "Lưu và nhập tiếp" để nhập hàng loạt | Một example nối nhiều concept bằng một thao tác thống nhất; dữ liệu cũ (`targetConceptId`, `ExampleLink`) hiện đúng trong danh sách |
 | Làm thêm sau M12d | Lối vào sửa example từ Hộp chờ duyệt (ví dụ chưa có concept: "Gắn concept" đặt concept chủ). **Tìm theo liên kết (R7)**: `/association`, chọn tối đa 10 concept, thấy concept nối một bước (cả hai chiều) dạng đồ thị SVG tự vẽ (đỏ = đã chọn, xám = liên quan, mũi tên con → cha, nét đứt = Association; chạm nút để thêm/bỏ) và danh sách | Xong (v10). Làm theo yêu cầu của PO 2026-11-05; thay cho dòng "chưa hiển thị đồ thị" của các bản đầu |
-| Để sau | Lọc ví dụ theo concept liên kết, nhập liên kết từ file (bảng *Child/Parent/Relation* như PVO), chế độ Full của Tree, Tree/đồ thị lọc theo deck | PO quyết sau khi dùng thật |
+| Để sau | Lọc ví dụ theo concept liên kết, nhập liên kết example từ file, chế độ Full của Tree, Tree/đồ thị lọc theo deck | PO quyết sau khi dùng thật |
 
 ### Bản 4: Deck (v10, PO yêu cầu 2026-11-05)
 Lý do: gom tất cả từ vào một thư viện của một ngôn ngữ thì khó chọn ra sau này (bộ từ cho ngành IT, từ thu thập khi xem phim…). PO chọn hướng **một concept dùng chung cho nhiều deck**. Tên hiển thị là **Deck** ("bộ từ" nghe tối nghĩa); trong mã vẫn là `WordSet`.

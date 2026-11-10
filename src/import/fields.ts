@@ -9,6 +9,8 @@ export type ImportFieldId =
   | 'meaning'
   | 'lesson'
   | 'deck'
+  | 'parent'
+  | 'relation'
   | 'example'
   | 'highlight'
   | 'gender'
@@ -39,6 +41,8 @@ export const importFields: ImportField[] = [
   { id: 'meaning', label: 'Nghĩa (meaning)', aliases: ['meaning', 'meanings', 'definition', 'translation', 'bedeutung', 'nghĩa', 'dịch'] },
   { id: 'lesson', label: 'Lesson', aliases: ['lesson', 'chapter', 'unit', 'lektion', 'bài', 'chương'] },
   { id: 'deck', label: 'Deck (nhiều deck cách nhau bằng ;)', aliases: ['deck', 'decks', 'set', 'sets', 'wordset', 'word set', 'collection', 'topic', 'bộ', 'bộ từ', 'chủ đề'] },
+  { id: 'parent', label: 'Concept cha (parent; nhiều cha cách nhau ;)', aliases: ['parent', 'parents', 'parent concept', 'cha', 'concept cha'] },
+  { id: 'relation', label: 'Quan hệ với cha (relation: association / typeOf)', aliases: ['relation', 'relationship', 'link type', 'quan hệ', 'mối quan hệ', 'loại liên kết'] },
   { id: 'example', label: 'Câu ví dụ (example)', aliases: ['example', 'sentence', 'beispiel', 'ví dụ', 'câu', 'câu ví dụ'] },
   { id: 'highlight', label: 'Đoạn tô sáng (highlight)', aliases: ['highlight', 'tô sáng'] },
   { id: 'gender', label: 'Giống (gender)', aliases: ['gender', 'genus', 'artikel', 'article', 'giống'] },

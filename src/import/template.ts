@@ -40,6 +40,19 @@ const SAMPLE_ROWS: Record<string, string>[] = [
     tone: 'Neutral',
     mode: 'Neutral',
   },
+  // A chain of concepts: "parent" names the concept above, "relation" says how
+  // they are linked (association or typeOf). A parent missing from the library is
+  // created blank, so these three rows build war - rivalry - archenemy in one go.
+  { text: 'war', lang: 'en', deck: 'Phim' },
+  { text: 'rivalry', lang: 'en', deck: 'Phim', parent: 'war', relation: 'association' },
+  {
+    text: 'archenemy',
+    lang: 'en',
+    deck: 'Phim',
+    parent: 'rivalry',
+    relation: 'typeOf',
+    example: 'Batman met his archenemy again.',
+  },
 ];
 
 export function templateTable(): string[][] {

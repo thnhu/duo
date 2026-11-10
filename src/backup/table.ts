@@ -1,6 +1,6 @@
 import { highlightParts, phraseForFile } from '../core/highlights';
 import { importFields, MEANING_SEPARATOR, type ImportFieldId } from '../import/fields';
-import type { Concept, Example, Lesson, WordSet } from '../db/types';
+import type { Concept, ConceptLink, Example, Lesson, WordSet } from '../db/types';
 
 // xlsx export (spec E3): the columns are exactly the import columns
 // (importFields, the same list the template uses), so an exported file can
@@ -21,7 +21,20 @@ export function exportTable(
   examples: Example[],
   sets: WordSet[] = [],
   lessons: Lesson[] = [],
+  links: ConceptLink[] = [],
+  // Every concept (parents may sit outside the exported scope); defaults to `concepts`.
+  allConcepts: Concept[] = concepts,
 ): string[][] {
+  const nameOf = new Map(allConcepts.filter((c) => c.deletedAt === undefined).map((c) => [c.id, c.text]));
+  // child id -> its parent links, by parent name (links to a deleted concept are left out).
+  const parentsOf = new Map<string, Array<{ name: string; type: string }>>();
+  for (const link of links) {
+    const name = nameOf.get(link.parentId);
+    if (link.deletedAt !== undefined || !name) continue;
+    const list = parentsOf.get(link.childId) ?? [];
+    list.push({ name, type: link.type });
+    parentsOf.set(link.childId, list);
+  }
   const liveLessons = lessons.filter((l) => l.deletedAt === undefined);
   const lessonName = new Map(liveLessons.map((l) => [l.id, l.name]));
   const lessonDeck = new Map(liveLessons.map((l) => [l.id, l.setId]));
@@ -57,6 +70,9 @@ export function exportTable(
           .map((id) => setName.get(id))
           .filter((n): n is string => !!n)
           .join(`${MEANING_SEPARATOR} `),
+        // Parent concepts and the relation to each, in the same `a; b` form the import reads.
+        parent: (parentsOf.get(concept.id) ?? []).map((p) => p.name).join(`${MEANING_SEPARATOR} `),
+        relation: (parentsOf.get(concept.id) ?? []).map((p) => p.type).join(`${MEANING_SEPARATOR} `),
         gender: concept.grammar?.gender,
         plural: concept.grammar?.plural,
         infinitiv: concept.grammar?.verbForms?.infinitiv,
@@ -95,8 +111,10 @@ export async function exportXlsx(
   examples: Example[],
   sets: WordSet[] = [],
   lessons: Lesson[] = [],
+  links: ConceptLink[] = [],
+  allConcepts: Concept[] = concepts,
 ): Promise<Blob> {
   const { default: writeXlsxFile } = await import('write-excel-file/universal');
-  const data = exportTable(concepts, examples, sets, lessons).map((row) => row.map((value) => ({ value })));
+  const data = exportTable(concepts, examples, sets, lessons, links, allConcepts).map((row) => row.map((value) => ({ value })));
   return writeXlsxFile(data).toBlob();
 }

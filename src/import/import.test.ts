@@ -9,7 +9,9 @@ import { guessMapping, resolveColumns, saveMapping, listSavedMappings } from './
 import { planGroups } from './plan';
 import { commitImport, getLatestUndoableBatch, undoImport } from './commit';
 import { readTable } from './readFile';
-import { createWordSet, listWordSets } from '../wordsets';
+import { conceptKind, createWordSet, listWordSets } from '../wordsets';
+import { listNeighbours } from '../links';
+import { parseRelation } from './relations';
 import { templateCsv, templateTable, templateXlsx } from './template';
 
 const context: BuildContext = {
@@ -29,6 +31,7 @@ beforeEach(async () => {
   await db.importBatches.clear();
   await db.importMappings.clear();
   await db.wordSets.clear();
+  await db.conceptLinks.clear();
   await db.dictionaries.clear();
   await ensureDefaultDictionaries();
 });
@@ -451,7 +454,8 @@ describe('template + xlsx', () => {
     const { mapping } = guessMapping(headers, []);
     const built = buildRows(table.rows, resolveColumns(headers, mapping), context);
     expect(built.errors).toEqual([]);
-    expect(built.rows.map((r) => r.text)).toEqual(['Apfel', 'gehen', 'swallow']);
+    expect(built.rows.map((r) => r.text)).toEqual(['Apfel', 'gehen', 'swallow', 'war', 'rivalry', 'archenemy']);
+    expect(built.rows[5].links).toEqual([{ parent: 'rivalry', type: 'typeOf' }]);
     expect(built.rows[0].grammar?.plural).toBe('Äpfel');
   });
 
@@ -637,5 +641,101 @@ describe('exporting a scope and importing it again (M16b)', () => {
     const a2New = decks.find((d) => d.name === 'Goethe A2')!;
     expect((await listLessons('de', a2New.id)).map((l) => l.name)).toEqual(['Home']);
     expect(haus.lessonId).toBe((await listLessons('de', a2New.id))[0].id);
+  });
+});
+
+describe('parent + relation columns', () => {
+  const CHAIN = [
+    'text,lang,parent,relation,example',
+    'war,en,,,',
+    'rivalry,en,war,association,',
+    'archenemy,en,rivalry,typeOf,Batman met his archenemy.',
+    'archenemy,en,,,He fought his archenemy.',
+  ].join('\n');
+
+  async function idOf(text: string) {
+    return (await conceptRepository.listActive()).find((c) => c.text === text)!.id;
+  }
+
+  it('understands relation names, never guesses a missing one', () => {
+    expect(parseRelation('typeOf')).toBe('typeOf');
+    expect(parseRelation(' Type of ')).toBe('typeOf');
+    expect(parseRelation('Liên tưởng')).toBe('association');
+    expect(parseRelation('')).toBeUndefined();
+    expect(parseRelation('friends')).toBeUndefined();
+  });
+
+  it('a parent without a relation (or an unknown one) is a row error', async () => {
+    const { built } = await importCsv(
+      'text,lang,parent,relation\na,en,b,\nc,en,d,friends\ne,en,f;g,typeOf;association;typeOf',
+    );
+    expect(built.rows).toHaveLength(0);
+    expect(built.errors.map((e) => e.message).join(' ')).toContain('thiếu relation');
+    expect(built.errors.map((e) => e.message).join(' ')).toContain('không hiểu');
+    expect(built.errors.map((e) => e.message).join(' ')).toContain('2 parent nhưng 3 relation');
+  });
+
+  it('builds a chain from one file and creates a missing parent blank', async () => {
+    const { result } = await importCsv(CHAIN);
+    expect(result.linksCreated).toBe(2);
+    expect(result.parentsCreated).toBe(0);
+    const rivalry = await idOf('rivalry');
+    const archenemy = await idOf('archenemy');
+    expect((await listNeighbours(archenemy)).parents.map((p) => [p.concept.text, p.link.type])).toEqual([['rivalry', 'typeOf']]);
+    expect((await listNeighbours(rivalry)).parents.map((p) => [p.concept.text, p.link.type])).toEqual([['war', 'association']]);
+
+    // A parent that is not in the library nor in the file becomes a blank concept.
+    const second = await importCsv('text,lang,parent,relation\ncomrade,en,friend,association');
+    expect(second.result.parentsCreated).toBe(1);
+    const friend = (await conceptRepository.listActive()).find((c) => c.text === 'friend')!;
+    expect(conceptKind(friend)).toBe('concept');
+    expect((await exampleRepository.listActive()).filter((e) => e.targetConceptId === friend.id)).toHaveLength(0);
+  });
+
+  it('importing again changes nothing, and the undo takes the links away', async () => {
+    await importCsv(CHAIN);
+    const again = await importCsv(CHAIN);
+    expect(again.result.linksCreated).toBe(0);
+    expect(again.result.linksChanged).toBe(0);
+
+    await importCsv('text,lang,parent,relation\nloner,en,solo,typeOf');
+    const batch = (await getLatestUndoableBatch())!;
+    expect(await undoImport(batch.id)).toBe(true);
+    const loner = (await db.concepts.toArray()).find((c) => c.text === 'loner')!;
+    expect((await db.conceptLinks.where('childId').equals(loner.id).toArray()).every((l) => l.deletedAt !== undefined)).toBe(true);
+  });
+
+  it('reports a link that would make a cycle instead of failing the import', async () => {
+    await importCsv(CHAIN);
+    const { result } = await importCsv('text,lang,parent,relation\nwar,en,archenemy,association');
+    expect(result.linksCreated).toBe(0);
+    expect(result.linkProblems).toHaveLength(1);
+    expect(result.linkProblems[0]).toContain('vòng tròn');
+  });
+
+  it('exports parent and relation so the chain survives export then import', async () => {
+    await importCsv(CHAIN);
+    const { exportTable } = await import('../backup/table');
+    const links = await db.conceptLinks.toArray();
+    const table = exportTable(await conceptRepository.listActive(), await exampleRepository.listActive(), [], [], links);
+    const [header, ...rows] = table;
+    const parentCol = header.indexOf('parent');
+    const relationCol = header.indexOf('relation');
+    const textCol = header.indexOf('text');
+    const archRows = rows.filter((r) => r[textCol] === 'archenemy');
+    expect(archRows).toHaveLength(2);
+    expect(archRows.every((r) => r[parentCol] === 'rivalry' && r[relationCol] === 'typeOf')).toBe(true);
+    expect(rows.find((r) => r[textCol] === 'war')![parentCol]).toBe('');
+
+    // Fresh library: the exported table recreates the same links.
+    await db.concepts.clear();
+    await db.examples.clear();
+    await db.conceptLinks.clear();
+    const headers = table[0];
+    const { mapping } = guessMapping(headers, []);
+    const built = buildRows(table, resolveColumns(headers, mapping), context);
+    expect(built.errors).toEqual([]);
+    const result = await commitImport(planGroups(built.rows, []), { fileName: 'x.csv', mode: 'breadth', duplicateAction: 'merge' });
+    expect(result.linksCreated).toBe(2);
   });
 });

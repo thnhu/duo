@@ -6,7 +6,8 @@ import { Card } from '../../ui/Card';
 import { LinkButton } from '../../ui/LinkButton';
 import { conceptRepository } from '../../db/repositories';
 import type { Concept } from '../../db/types';
-import { MAX_ASSOCIATION_SELECTION, searchAssociations, type AssociationResult } from '../../links';
+import { MAX_ASSOCIATION_DEPTH, MAX_ASSOCIATION_SELECTION, searchAssociations, type AssociationResult } from '../../links';
+import fieldStyles from '../../ui/field.module.css';
 import { CONCEPT_LINK_LABEL } from '../../links/labels';
 import { ConceptPicker } from '../links/ConceptPicker';
 import { AssociationGraph } from './AssociationGraph';
@@ -20,6 +21,23 @@ export function AssociationPage() {
   const [concepts, setConcepts] = useState<Concept[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [result, setResult] = useState<AssociationResult | null>(null);
+  // How many links outwards to follow; remembered on this device.
+  const [depth, setDepthState] = useState(() => {
+    try {
+      const n = Number(localStorage.getItem('duo:assoc-depth'));
+      return n >= 1 && n <= MAX_ASSOCIATION_DEPTH ? n : 2;
+    } catch {
+      return 2;
+    }
+  });
+  function setDepth(n: number) {
+    setDepthState(n);
+    try {
+      localStorage.setItem('duo:assoc-depth', String(n));
+    } catch {
+      // storage unavailable: the choice just is not remembered
+    }
+  }
 
   useEffect(() => {
     void conceptRepository.listActive().then((all) => {
@@ -30,13 +48,13 @@ export function AssociationPage() {
 
   useEffect(() => {
     let cancelled = false;
-    void searchAssociations(selectedIds).then((r) => {
+    void searchAssociations(selectedIds, depth).then((r) => {
       if (!cancelled) setResult(r);
     });
     return () => {
       cancelled = true;
     };
-  }, [selectedIds]);
+  }, [selectedIds, depth]);
 
   const byId = useMemo(() => new Map(concepts.map((c) => [c.id, c])), [concepts]);
   const full = selectedIds.length >= MAX_ASSOCIATION_SELECTION;
@@ -54,7 +72,7 @@ export function AssociationPage() {
   function describe(id: string): string[] {
     if (!result) return [];
     return result.links
-      .filter((l) => (l.childId === id && selectedIds.includes(l.parentId)) || (l.parentId === id && selectedIds.includes(l.childId)))
+      .filter((l) => l.childId === id || l.parentId === id)
       .map(
         (l) => `${byId.get(l.childId)?.text ?? '?'} → ${byId.get(l.parentId)?.text ?? '?'} · ${CONCEPT_LINK_LABEL[l.type]}`,
       );
@@ -67,7 +85,7 @@ export function AssociationPage() {
       </Link>
       <h1>Tìm theo liên kết</h1>
       <p className={styles.hint}>
-        Chọn tối đa {MAX_ASSOCIATION_SELECTION} concept để thấy các concept nối với chúng (cha hoặc con, một bước).
+        Chọn tối đa {MAX_ASSOCIATION_SELECTION} concept để thấy các concept nối với chúng (cha hoặc con) theo số bước bạn chọn.
       </p>
 
       {!full && (
@@ -80,6 +98,24 @@ export function AssociationPage() {
         />
       )}
       {full && <p className={styles.hint}>Đã đủ {MAX_ASSOCIATION_SELECTION} concept; bỏ bớt để chọn thêm.</p>}
+
+      <div>
+        <label className={fieldStyles.label} htmlFor="assoc-depth">
+          Đi xa bao nhiêu bước
+        </label>
+        <select
+          id="assoc-depth"
+          className={fieldStyles.input}
+          value={depth}
+          onChange={(e) => setDepth(Number(e.target.value))}
+        >
+          {Array.from({ length: MAX_ASSOCIATION_DEPTH }, (_, i) => i + 1).map((n) => (
+            <option key={n} value={n}>
+              {n === 1 ? '1 bước (chỉ concept nối trực tiếp)' : `${n} bước`}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {selectedIds.length > 0 && (
         <div className={styles.chips}>

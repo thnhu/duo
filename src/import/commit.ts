@@ -3,7 +3,9 @@ import { createDefaultAttributes } from '../db/defaults';
 import { dictionaryIdForLang } from '../db/queries';
 import { db } from '../db/schema';
 import type { Concept, ConceptGrammar, Example, ImportBatch, Lang, StudyMode } from '../db/types';
-import { wordSetRepository } from '../db/repositories';
+import { conceptRepository, wordSetRepository } from '../db/repositories';
+import { LINK_FAILURE_TEXT, linkConcepts } from '../links';
+import { createConceptWithDescription } from '../features/quick-add/actions';
 import { ensureLesson } from '../lessons';
 import { createWordSet, listWordSets } from '../wordsets';
 import type { ExampleDraft } from './build';
@@ -35,6 +37,13 @@ export interface CommitResult {
   // Lessons the file made, and words put in a lesson (new or existing).
   lessonsCreated: number;
   lessonsAssigned: number;
+  // Parent links (file columns `parent` + `relation`): made, changed in type,
+  // blank parent concepts created for names not in the library, and the ones
+  // that could not be made (with the reason, in words).
+  linksCreated: number;
+  linksChanged: number;
+  parentsCreated: number;
+  linkProblems: string[];
 }
 
 function lower(s: string): string {
@@ -84,7 +93,13 @@ export async function commitImport(
     addedToSets: 0,
     lessonsCreated: 0,
     lessonsAssigned: 0,
+    linksCreated: 0,
+    linksChanged: 0,
+    parentsCreated: 0,
+    linkProblems: [],
   };
+  // The library concept each imported word ended up as (new or existing).
+  const conceptIdOf = new Map<ImportGroup, string>();
 
   const selected = groups.filter((g) => g.included);
   const dictionaryIds = new Map<Lang, string>();
@@ -193,6 +208,7 @@ export async function commitImport(
           updatedAt: now,
         };
         await db.concepts.add(concept);
+        conceptIdOf.set(group, concept.id);
         batch.createdConceptIds.push(concept.id);
         result.createdConcepts++;
         if (concept.lessonId) result.lessonsAssigned++;
@@ -223,6 +239,7 @@ export async function commitImport(
         }
       } else {
         const existing = group.existing;
+        conceptIdOf.set(group, existing.id);
         // A word that already exists can still join a set: that is how one
         // word ends up in several sets without a second copy.
         const wantedSets = groupSetIds(group);
@@ -315,7 +332,67 @@ export async function commitImport(
     }
   });
 
+  await applyParentLinks(selected, conceptIdOf, dictionaryIds, groupSetIds, batch, result);
   return result;
+}
+
+// Parent links named in the file. The parent is found by name in the same
+// language; a name not in the library becomes a blank concept (just the name,
+// in the child's decks) so one file can describe a whole chain. Runs after the
+// main write because linking has its own rules (no cycles) and transactions.
+async function applyParentLinks(
+  selected: ImportGroup[],
+  conceptIdOf: Map<ImportGroup, string>,
+  dictionaryIds: Map<Lang, string>,
+  groupSetIds: (group: ImportGroup) => string[],
+  batch: ImportBatch,
+  result: CommitResult,
+): Promise<void> {
+  const withLinks = selected.filter((g) => g.links.length > 0 && conceptIdOf.has(g));
+  if (withLinks.length === 0) return;
+
+  const live = await conceptRepository.listActive();
+  const createdLinkIds: string[] = [];
+  for (const group of withLinks) {
+    const childId = conceptIdOf.get(group)!;
+    for (const link of group.links) {
+      let parent = live.find((c) => c.id !== childId && c.lang === group.lang && lower(c.text) === lower(link.parent));
+      if (!parent) {
+        const made = await createConceptWithDescription(dictionaryIds.get(group.lang)!, group.lang, link.parent, '');
+        parent = made.concept;
+        if (made.outcome === 'created') {
+          const decks = groupSetIds(group);
+          if (decks.length > 0) {
+            await conceptRepository.update(parent.id, { setIds: decks });
+            parent = { ...parent, setIds: decks };
+          }
+          batch.createdConceptIds.push(parent.id);
+          result.parentsCreated++;
+        }
+        live.push(parent);
+      }
+      const before = (await db.conceptLinks.where('childId').equals(childId).toArray()).find(
+        (l) => l.parentId === parent!.id && l.deletedAt === undefined,
+      );
+      const outcome = await linkConcepts(childId, parent.id, link.type);
+      if (!outcome.ok) {
+        result.linkProblems.push(`"${group.text}" → "${link.parent}": ${LINK_FAILURE_TEXT[outcome.reason]}`);
+      } else if (!before) {
+        createdLinkIds.push(outcome.link.id);
+        result.linksCreated++;
+      } else if (before.type !== link.type) {
+        result.linksChanged++;
+      }
+    }
+  }
+
+  if (createdLinkIds.length > 0) batch.createdLinkIds = createdLinkIds;
+  if (createdLinkIds.length === 0 && result.parentsCreated === 0 && result.linksChanged === 0) return;
+  // The batch was saved inside the main write only when it changed something
+  // there; links and blank parents may be all this import did.
+  if (await db.importBatches.get(batch.id)) await db.importBatches.put({ ...batch, updatedAt: Date.now() });
+  else await db.importBatches.add({ ...batch, updatedAt: Date.now() });
+  result.batchId = batch.id;
 }
 
 // The most recent import that hasn't been undone (spec: "hoàn tác lần nhập
@@ -330,7 +407,10 @@ export async function undoImport(batchId: string): Promise<boolean> {
   if (!latest || latest.id !== batchId) return false;
   const now = Date.now();
 
-  await db.transaction('rw', [db.concepts, db.examples, db.importBatches, db.lessons], async () => {
+  await db.transaction('rw', [db.concepts, db.examples, db.importBatches, db.lessons, db.conceptLinks], async () => {
+    for (const id of latest.createdLinkIds ?? []) {
+      await db.conceptLinks.update(id, { deletedAt: now, updatedAt: now });
+    }
     for (const id of latest.createdExampleIds) {
       await db.examples.update(id, { deletedAt: now, updatedAt: now });
     }

@@ -17,6 +17,17 @@ const cursorKey = (userId: string) => `cursor:${userId}`;
 
 type Row = Record<string, unknown>;
 
+const TABLES_KEY = 'tables-signature';
+
+// Small number derived from the synced table names (syncMeta values are numbers).
+function tablesSignature(): number {
+  let hash = 7;
+  for (const char of SYNC_TABLES.map(([name]) => name).join('|')) {
+    hash = (hash * 31 + char.charCodeAt(0)) % 2147483647;
+  }
+  return hash;
+}
+
 // Version used for last-write-wins; review logs have only a timestamp.
 function versionOf(table: SyncTableName, row: Row): number {
   const value = table === 'reviewLogs' ? row.timestamp : row.updatedAt;
@@ -92,11 +103,20 @@ export async function syncOnce(adapter: SyncAdapter): Promise<SyncReport> {
   const user = await adapter.getUser();
   if (!user) throw new SyncError('auth', 'Chưa đăng nhập.');
 
+  // An older build ignores tables it does not know yet but still moves its
+  // cursor past their records, so after an app update those rows would never
+  // arrive. When the set of synced tables differs from what the cursor was
+  // recorded for, pull everything again (applying is idempotent: versions
+  // are compared per record).
+  const signature = tablesSignature();
+  const signatureRow = await db.syncMeta.get(TABLES_KEY);
   const cursorRow = await db.syncMeta.get(cursorKey(user.id));
-  const pulledResult = await adapter.pull(cursorRow?.value ?? 0);
+  const stale = signatureRow?.value !== signature;
+  const pulledResult = await adapter.pull(stale ? 0 : (cursorRow?.value ?? 0));
   const pulled = await applyRemote(pulledResult.records);
   // Saved only after the pulled records are safely applied.
   await db.syncMeta.put({ key: cursorKey(user.id), value: pulledResult.cursor });
+  if (stale) await db.syncMeta.put({ key: TABLES_KEY, value: signature });
 
   const dirty = await collectDirty();
   if (dirty.length > 0) {

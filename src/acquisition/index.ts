@@ -9,9 +9,20 @@ export function maxResponseTimeFor(criteria: AcquisitionCriteria, exerciseType: 
   return criteria.maxResponseTimeMsByExerciseType[exerciseType] ?? criteria.maxResponseTimeMsDefault;
 }
 
-// "Good" answer = correct and within the time limit of its drill type.
+// Drill types whose answers are NOT judged by time (PO 2026-11-10): a passage has
+// a different number of gaps each time, so a time limit means nothing there.
+// Matched by suffix so every language's module (en./de.passage-cloze) is covered.
+const UNTIMED_EXERCISE_SUFFIXES = ['.passage-cloze'];
+
+export function isUntimed(exerciseType: string): boolean {
+  return UNTIMED_EXERCISE_SUFFIXES.some((suffix) => exerciseType.endsWith(suffix));
+}
+
+// "Good" answer = correct and, for timed drill types, within the time limit.
 export function isQualifying(log: ReviewLog, criteria: AcquisitionCriteria): boolean {
-  return log.correct && log.responseTimeMs <= maxResponseTimeFor(criteria, log.exerciseType);
+  if (!log.correct) return false;
+  if (isUntimed(log.exerciseType)) return true;
+  return log.responseTimeMs <= maxResponseTimeFor(criteria, log.exerciseType);
 }
 
 // Local calendar day, so "3 different days" matches PO's own days.

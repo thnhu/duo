@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
 import fieldStyles from '../../ui/field.module.css';
-import { loadCriteria, recomputeAcquisition, saveCriteria } from '../../acquisition/update';
+import { isUntimed } from '../../acquisition';
+import { loadCriteria,recomputeAcquisition, saveCriteria } from '../../acquisition/update';
 import { exerciseModules } from '../../exercises';
 import {
   LIMITS,
@@ -180,10 +181,11 @@ export function StudyCard() {
         />
         <p className={styles.note}>
           Bài gõ chép cần nhiều thời gian hơn bài bấm chọn: đặt riêng cho từng kiểu bài bên dưới (để trống
-          = dùng mức chung). Vòng phản xạ chớp nhoáng cũng dùng các mức này làm giờ đếm ngược.
+          = dùng mức chung). Vòng phản xạ chớp nhoáng cũng dùng các mức này làm giờ đếm ngược. Bài điền
+          đoạn văn không tính thời gian (mỗi đoạn có số chỗ trống khác nhau), chỉ cần trả lời đúng.
         </p>
       </div>
-      {modules.map((module) => (
+      {modules.filter((module) => !isUntimed(module.id)).map((module) => (
         <div key={module.id}>
           <label className={fieldStyles.label} htmlFor={`study-type-${module.id}`}>
             {module.label} ({module.languages.join('/')})

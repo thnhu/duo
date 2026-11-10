@@ -135,6 +135,15 @@ export class SyncManager {
     return this.running;
   }
 
+  // Forget what was synced, then sync: this device sends every record again and
+  // pulls everything from the start. Safe (newest `updatedAt` wins per record);
+  // for when a device and the cloud have drifted apart.
+  async resyncAll(): Promise<void> {
+    if (this.running) await this.running;
+    await resetSyncState();
+    await this.syncNow(true);
+  }
+
   private fail(error: unknown): void {
     const known = error instanceof SyncError ? error : new SyncError('other', String((error as Error)?.message ?? error));
     this.lastFailureAt = Date.now();

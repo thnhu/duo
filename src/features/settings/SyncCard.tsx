@@ -122,6 +122,13 @@ export function SyncCard() {
           <Button disabled={busy} onClick={() => void syncManager.syncNow(true)}>
             Đồng bộ ngay
           </Button>
+          <Button variant="secondary" disabled={busy} onClick={() => void syncManager.resyncAll()}>
+            Đồng bộ lại toàn bộ
+          </Button>
+          <p className={styles.note}>
+            Dùng khi dữ liệu (ví dụ bộ thẻ) có ở máy này mà không có ở máy kia: máy này gửi lại mọi thứ và nhận lại
+            mọi thứ từ đầu, bản mới hơn thắng. Nên bấm ở máy có dữ liệu trước, rồi mới bấm ở máy còn thiếu.
+          </p>
           <Button variant="secondary" disabled={busy} onClick={() => void syncManager.signOut()}>
             Đăng xuất
           </Button>

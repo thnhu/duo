@@ -37,6 +37,13 @@ describe('acquisition criteria', () => {
     expect(isQualifying(log(0, 'a', { responseTimeMs: 9000 }), criteria)).toBe(false);
   });
 
+  it('ignores time for passage gaps', () => {
+    const slowGap = log(0, 'a', { exerciseType: 'de.passage-cloze', responseTimeMs: 600000 });
+    expect(isQualifying(slowGap, criteria)).toBe(true);
+    expect(isQualifying({ ...slowGap, exerciseType: 'en.passage-cloze' }, criteria)).toBe(true);
+    expect(isQualifying({ ...slowGap, correct: false }, criteria)).toBe(false);
+  });
+
   it('uses a per-drill-type time limit when configured', () => {
     const custom = { ...criteria, maxResponseTimeMsByExerciseType: { 'de.dictation': 10000 } };
     const slow = log(0, 'a', { responseTimeMs: 9000 });

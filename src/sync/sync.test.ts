@@ -153,6 +153,18 @@ describe('sync engine: pull', () => {
     expect(report.pulled).toBe(1); // r1 is the cursor boundary echo and is a no-op
     expect(await db.concepts.count()).toBe(2);
   });
+
+  it('re-pulls from the start when the synced tables changed (old build skipped a table)', async () => {
+    cloud.inject('choiceSets', { id: 's1', lang: 'de', name: 'sein', items: ['bin'], createdAt: 1, updatedAt: 5 }, 5);
+    // An old build already moved its cursor past the set without storing it.
+    await db.syncMeta.put({ key: 'cursor:u1', value: 99 });
+    const report = await syncOnce(cloud);
+    expect(report.pulled).toBe(1);
+    expect((await db.choiceSets.get('s1'))?.name).toBe('sein');
+    // The next cycle uses the cursor again.
+    cloud.inject('choiceSets', { id: 's2', lang: 'de', name: 'haben', items: ['habe'], createdAt: 1, updatedAt: 6 }, 6);
+    expect((await syncOnce(cloud)).pulled).toBe(1);
+  });
 });
 
 describe('sync engine: failures are soft', () => {

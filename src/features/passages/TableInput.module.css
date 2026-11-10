@@ -1,0 +1,101 @@
+.box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.raw {
+  min-height: 140px;
+  font-family: inherit;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.stepLabel {
+  color: var(--color-ink-muted);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.stepBtn {
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.stepValue {
+  min-width: 24px;
+  text-align: center;
+  font-size: 20px;
+}
+
+.toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-5);
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+}
+
+.scroll {
+  overflow-x: auto;
+}
+
+.grid {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.grid td {
+  border: 1px solid var(--color-border);
+  padding: 0;
+}
+
+.headerCell {
+  background: var(--color-surface-tint);
+  font-weight: 600;
+}
+
+.cell {
+  width: 100%;
+  min-width: 112px;
+  min-height: 44px;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: var(--color-ink);
+}
+
+.cell:focus {
+  outline: 2px solid var(--color-primary-400);
+  outline-offset: -2px;
+}
+
+.grid td.drop {
+  border: none;
+  padding-left: var(--space-1);
+}
+
+.dropBtn {
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--color-ink-muted);
+  font-size: 20px;
+  cursor: pointer;
+}

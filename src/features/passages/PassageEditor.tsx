@@ -4,11 +4,15 @@ import { ButtonRow } from '../../ui/ButtonRow';
 import fieldStyles from '../../ui/field.module.css';
 import { autoGaps } from '../../choicesets';
 import { cleanGaps, remapGaps, segmentText, toggleGap, type PassageGap } from '../../passages';
+import { isGapCell, tableCells } from '../../passages/table';
+import type { PassageLayout } from '../../db/types';
 import { normalizeSelection } from '../quick-add/highlight';
 import styles from '../quick-add/AddPassageForm.module.css';
 
 export interface PassageDraft {
   title: string;
+  // Optional description shown on top when studying (M18a).
+  prompt: string;
   text: string;
   gaps: PassageGap[];
 }
@@ -21,6 +25,10 @@ interface PassageEditorProps {
   // Tiles of the grammar set: with them, one button makes a gap of every word
   // that is a tile (Bản 10).
   autoItems?: string[];
+  // A table passage (M18c): gap mode draws the grid and a tap makes a whole
+  // cell a gap; header cells and blank cells cannot be gaps.
+  layout?: PassageLayout;
+  tableHeaders?: { row: boolean; col: boolean };
 }
 
 // Offset in the passage of a point of the browser selection: every segment of
@@ -36,7 +44,7 @@ function offsetOf(node: Node | null, offset: number): number | null {
 // a word makes (or removes) a gap and a selection makes a phrase gap; "Sửa
 // chữ" turns it into a box to type in. Editing the text keeps the gaps: they
 // move with the words around them (remapGaps), so nothing is ever retyped.
-export function PassageEditor({ draft, onChange, note, autoItems }: PassageEditorProps) {
+export function PassageEditor({ draft, onChange, note, autoItems, layout, tableHeaders }: PassageEditorProps) {
   const { text, gaps } = draft;
   const [mode, setMode] = useState<'gap' | 'text'>(text.trim() ? 'gap' : 'text');
   const [hint, setHint] = useState('');
@@ -85,6 +93,7 @@ export function PassageEditor({ draft, onChange, note, autoItems }: PassageEdito
   }
 
   const segments = segmentText(text, gaps);
+  const cells = layout === 'table' ? tableCells(text) : null;
 
   return (
     <>
@@ -99,6 +108,20 @@ export function PassageEditor({ draft, onChange, note, autoItems }: PassageEdito
           onChange={(e) => onChange({ ...draft, title: e.target.value })}
           placeholder="vd: Daily activities"
         />
+      </div>
+
+      <div>
+        <label className={fieldStyles.label} htmlFor="passage-prompt">
+          Mô tả (không bắt buộc)
+        </label>
+        <input
+          id="passage-prompt"
+          className={fieldStyles.input}
+          value={draft.prompt}
+          onChange={(e) => onChange({ ...draft, prompt: e.target.value })}
+          placeholder="vd: Điền mạo từ xác định theo giống và số"
+        />
+        <p className={fieldStyles.hint}>Hiện trên đầu bài khi ôn để biết đang kiểm tra gì. Không phải là lỗ hay đáp án.</p>
       </div>
 
       <div className={styles.modes} role="group" aria-label="Chế độ đoạn văn">
@@ -151,6 +174,52 @@ export function PassageEditor({ draft, onChange, note, autoItems }: PassageEdito
         </div>
       ) : (
         <div>
+          {cells ? (
+            <div className={styles.tableScroll}>
+              <table className={styles.tableGrid} aria-label="Bảng: chạm một ô để đục lỗ">
+                <tbody>
+                  {cells.map((row, r) => (
+                    <tr key={r}>
+                      {row.map((cell) => {
+                        const gapNo = gaps.findIndex((g) => g.start === cell.start && g.end === cell.end) + 1;
+                        const canGap = isGapCell(cell, tableHeaders);
+                        if (gapNo > 0) {
+                          return (
+                            <td key={cell.col} className={styles.tableGapOn}>
+                              <button
+                                type="button"
+                                className={styles.tableCellBtn}
+                                aria-label={`Lỗ ${gapNo}: ${cell.text}. Chạm để bỏ`}
+                                onClick={() => tap(cell.start, cell.end)}
+                              >
+                                <sup className={styles.gapNo}>{gapNo}</sup>
+                                {cell.text}
+                              </button>
+                            </td>
+                          );
+                        }
+                        return (
+                          <td key={cell.col} className={canGap ? undefined : styles.tableCellMuted}>
+                            {canGap ? (
+                              <button
+                                type="button"
+                                className={styles.tableCellBtn}
+                                onClick={() => tap(cell.start, cell.end)}
+                              >
+                                {cell.text}
+                              </button>
+                            ) : (
+                              <span className={styles.tableCellText}>{cell.text}</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
           <div ref={viewRef} className={styles.view} aria-label="Đoạn văn: chạm một word để đục lỗ">
             {segments.map((seg) => {
               const piece = text.slice(seg.start, seg.end);
@@ -203,6 +272,7 @@ export function PassageEditor({ draft, onChange, note, autoItems }: PassageEdito
               );
             })}
           </div>
+          )}
 
           <ButtonRow>
             {picked && (
@@ -215,7 +285,12 @@ export function PassageEditor({ draft, onChange, note, autoItems }: PassageEdito
                 variant="secondary"
                 onClick={() => {
                   // Merge with the gaps already there; overlaps are dropped.
-                  const found = autoGaps(text, autoItems);
+                  let found = autoGaps(text, autoItems);
+                  if (cells) {
+                    // Only whole cells of the table can be gaps.
+                    const ok = cells.flat().filter((c) => isGapCell(c, tableHeaders));
+                    found = found.filter((g) => ok.some((c) => c.start === g.start && c.end === g.end));
+                  }
                   setHint(found.length === 0 ? 'Không có chữ nào trong đoạn khớp với các thẻ.' : '');
                   onChange({ ...draft, gaps: cleanGaps(text, [...gaps, ...found]) });
                 }}
@@ -233,7 +308,9 @@ export function PassageEditor({ draft, onChange, note, autoItems }: PassageEdito
             {hint ||
               note ||
               (gaps.length === 0
-                ? 'Chạm một word để đục lỗ. Muốn đục cả cụm, bôi đen cụm rồi bấm "Đục lỗ cụm đã chọn".'
+                ? cells
+                  ? 'Chạm một ô để đục lỗ. Ô tiêu đề và ô trống không đục được.'
+                  : 'Chạm một word để đục lỗ. Muốn đục cả cụm, bôi đen cụm rồi bấm "Đục lỗ cụm đã chọn".'
                 : `${gaps.length} lỗ. Chạm một lỗ để bỏ, chạm word khác để đục thêm.`)}
           </p>
         </div>

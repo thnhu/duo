@@ -157,3 +157,53 @@
   width: 20px;
   height: 20px;
 }
+
+.tableScroll {
+  overflow-x: auto;
+}
+
+.tableGrid {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 17px;
+}
+
+.tableGrid td {
+  border: 1px solid var(--color-border);
+  padding: 0;
+  text-align: center;
+}
+
+.tableGrid td:first-child {
+  text-align: left;
+}
+
+.tableCellBtn {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: var(--space-2);
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.tableCellText {
+  display: block;
+  padding: var(--space-2);
+  min-height: 48px;
+  line-height: 32px;
+}
+
+.tableCellMuted {
+  background: var(--color-surface-tint);
+  color: var(--color-ink-muted);
+  font-weight: 600;
+}
+
+.tableGapOn {
+  background: var(--color-primary-200);
+  font-weight: 600;
+}

@@ -4,7 +4,7 @@ import { findConceptByExactText } from '../db/queries';
 import { choiceSetRepository, conceptRepository, exampleRepository, lessonRepository, passageRepository } from '../db/repositories';
 import { missingFromSet } from '../choicesets';
 import { db } from '../db/schema';
-import type { AnswerMode, Concept, Example, Lang, Passage } from '../db/types';
+import type { AnswerMode, Concept, Example, Lang, Passage, PassageLayout } from '../db/types';
 import { normalizeSelection, textForSelection, type Selection } from '../features/quick-add/highlight';
 import { addConceptToSet } from '../wordsets';
 
@@ -20,6 +20,11 @@ export interface PassageInput {
   dictionaryId: string;
   lang: Lang;
   title?: string;
+  // Optional description shown on top of the passage (M18a).
+  prompt?: string;
+  // 'table': `text` is a table (see ./table.ts). Fixed when the passage is made.
+  layout?: PassageLayout;
+  tableHeaders?: { row: boolean; col: boolean };
   text: string;
   // The words to hide, as selections on `text`. Overlaps are dropped.
   gaps: Selection[];
@@ -251,6 +256,10 @@ export async function createPassage(input: PassageInput): Promise<PassageResult>
     dictionaryId: input.dictionaryId,
     lang: input.lang,
     title: input.title?.trim() || undefined,
+    ...(input.prompt?.trim() ? { prompt: input.prompt.trim() } : {}),
+    ...(input.layout === 'table'
+      ? { layout: 'table' as const, tableHeaders: input.tableHeaders ?? { row: true, col: true } }
+      : {}),
     text: body,
     ...(input.setId ? { setId: input.setId } : {}),
     ...(input.lessonId ? { lessonId: input.lessonId } : {}),
@@ -300,6 +309,8 @@ async function addGapExample(
 
 export interface PassageEdit {
   title?: string;
+  // Left out = unchanged; '' = no description.
+  prompt?: string;
   text: string;
   // The gaps as the editor has them; those with an `exampleId` are existing
   // gaps (kept, with their schedule and history), the rest are new.
@@ -346,6 +357,7 @@ export async function updatePassage(passageId: string, edit: PassageEdit): Promi
       : {}),
     text: body,
     title: edit.title?.trim() || undefined,
+    ...(edit.prompt !== undefined ? { prompt: edit.prompt.trim() || undefined } : {}),
     ...(edit.setId !== undefined ? { setId: edit.setId || undefined } : {}),
     ...(edit.lessonId !== undefined ? { lessonId: edit.lessonId || undefined } : {}),
   });

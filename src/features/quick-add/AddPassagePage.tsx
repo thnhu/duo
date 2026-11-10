@@ -12,6 +12,7 @@ import { createPassage } from '../../passages';
 import { AnswerModeSelect } from '../choicesets/AnswerModeSelect';
 import { ChoiceSetSelect } from '../choicesets/ChoiceSetSelect';
 import { PassageEditor, type PassageDraft } from '../passages/PassageEditor';
+import { TableInput } from '../passages/TableInput';
 import { LessonSelect } from '../lessons/LessonSelect';
 import { DeckSelect } from '../sets/DeckSelect';
 import { useLastLanguage } from './useLastLanguage';
@@ -24,7 +25,7 @@ export function AddPassagePage() {
   const navigate = useNavigate();
   const toast = useToast();
   const [lang, setLang] = useLastLanguage();
-  const [draft, setDraft] = useState<PassageDraft>({ title: '', text: '', gaps: [] });
+  const [draft, setDraft] = useState<PassageDraft>({ title: '', prompt: '', text: '', gaps: [] });
   const [setId, setSetId] = useState('');
   const [lessonId, setLessonId] = useState('');
   // Grammar passage (Bản 10): gaps make no word and are answered with tiles.
@@ -35,6 +36,20 @@ export function AddPassagePage() {
   const [missing, setMissing] = useState<string[]>([]);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  // Bảng (Bản 11, M18b): the text is a table pasted and checked in TableInput.
+  const [kind, setKind] = useState<'text' | 'table'>('text');
+  const [tableReady, setTableReady] = useState(false);
+  const [tableHeaders, setTableHeaders] = useState({ row: true, col: true });
+  const tableStep = kind === 'table' && !tableReady;
+
+  function switchKind(next: 'text' | 'table') {
+    if (next === kind) return;
+    setKind(next);
+    setTableReady(false);
+    setDraft({ ...draft, text: '', gaps: [] });
+    setMissing([]);
+    setError('');
+  }
 
   async function addMissing() {
     if (!tiles) return;
@@ -49,7 +64,7 @@ export function AddPassagePage() {
     setSaving(true);
     try {
       const dictionaryId = await dictionaryIdForLang(lang);
-      const result = await createPassage({ dictionaryId, lang, title: draft.title, text: draft.text, gaps: draft.gaps, setId, lessonId, grammar, choiceSetId: grammar ? tiles?.id : undefined, answerMode });
+      const result = await createPassage({ dictionaryId, lang, title: draft.title, prompt: draft.prompt, ...(kind === 'table' ? { layout: 'table' as const, tableHeaders } : {}), text: draft.text, gaps: draft.gaps, setId, lessonId, grammar, choiceSetId: grammar ? tiles?.id : undefined, answerMode });
       if (!result.ok && result.reason === 'missing-choices') {
         setMissing(result.missing);
         setError(`Bộ thẻ thiếu: ${result.missing.join(', ')}.`);
@@ -74,7 +89,7 @@ export function AddPassagePage() {
   return (
     <section className={styles.page}>
       <div className={styles.header}>
-        <h1>Thêm đoạn văn</h1>
+        <h1>{kind === 'table' ? 'Thêm bảng' : 'Thêm đoạn văn'}</h1>
         <LangToggle
           value={lang}
           onChange={(next) => {
@@ -85,10 +100,41 @@ export function AddPassagePage() {
           }}
         />
       </div>
+      <div className={styles.modes} role="group" aria-label="Loại">
+        <button
+          type="button"
+          className={[styles.modeBtn, kind === 'text' && styles.modeOn].filter(Boolean).join(' ')}
+          aria-pressed={kind === 'text'}
+          onClick={() => switchKind('text')}
+        >
+          Đoạn văn
+        </button>
+        <button
+          type="button"
+          className={[styles.modeBtn, kind === 'table' && styles.modeOn].filter(Boolean).join(' ')}
+          aria-pressed={kind === 'table'}
+          onClick={() => switchKind('table')}
+        >
+          Bảng
+        </button>
+      </div>
       <p className={fieldStyles.hint}>
-        Dán một đoạn văn ngắn rồi chuyển sang "Đục lỗ": chạm một word để đục lỗ, chạm lại để bỏ. Khi ôn, đoạn văn
-        hiện ra với các chỗ trống và bạn điền lại. <Link to="/add">Chọn loại khác</Link>
+        {kind === 'table'
+          ? 'Dán bảng ngữ pháp copy từ PDF, kiểm tra lưới rồi đục lỗ các ô cần học. '
+          : 'Dán một đoạn văn ngắn rồi chuyển sang "Đục lỗ": chạm một word để đục lỗ, chạm lại để bỏ. Khi ôn, đoạn văn hiện ra với các chỗ trống và bạn điền lại. '}
+        <Link to="/add">Chọn loại khác</Link>
       </p>
+
+      {tableStep ? (
+        <TableInput
+          onUse={({ text, headers }) => {
+            setDraft({ ...draft, text, gaps: [] });
+            setTableHeaders(headers);
+            setTableReady(true);
+          }}
+        />
+      ) : (
+      <>
 
       <label className={styles.check}>
         <input
@@ -125,6 +171,8 @@ export function AddPassagePage() {
         }}
         note={error}
         autoItems={grammar ? tiles?.items : undefined}
+        layout={kind}
+        tableHeaders={tableHeaders}
       />
       {missing.length > 0 && tiles && (
         <ButtonRow>
@@ -158,9 +206,22 @@ export function AddPassagePage() {
 
       <ButtonRow>
         <Button disabled={!draft.text.trim() || draft.gaps.length === 0 || saving} onClick={() => void handleSave()}>
-          Lưu đoạn văn
+          {kind === 'table' ? 'Lưu bảng' : 'Lưu đoạn văn'}
         </Button>
+        {kind === 'table' && (
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setTableReady(false);
+              setDraft({ ...draft, text: '', gaps: [] });
+            }}
+          >
+            Nhập lại bảng
+          </Button>
+        )}
       </ButtonRow>
+      </>
+      )}
     </section>
   );
 }

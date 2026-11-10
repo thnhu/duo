@@ -1,5 +1,6 @@
 import type { Concept, Example, Lang } from '../db/types';
 import { gapsIn } from '../passages';
+import { tableCells } from '../passages/table';
 import { gradeFields } from './grade';
 import type { Exercise, ExerciseModule, FieldSpec } from './types';
 
@@ -51,6 +52,7 @@ function makePassageModule(lang: Lang, label: string, input: ExerciseModule['inp
       });
 
       const text = example.text;
+      const ranges: Array<{ start: number; end: number; key: string }> = [];
       const fields: FieldSpec[] = [];
       const expected: Record<string, string[]> = {};
       const parts: NonNullable<Exercise['parts']> = [];
@@ -61,6 +63,7 @@ function makePassageModule(lang: Lang, label: string, input: ExerciseModule['inp
         const { start, end } = gap.highlight!;
         if (start < cursor) return; // overlapping gap: not asked
         const key = `g${i + 1}`;
+        ranges.push({ start, end, key });
         prompt += text.slice(cursor, start) + `(${i + 1}) ${BLANK}`;
         if (start > cursor) segments.push({ text: text.slice(cursor, start) });
         segments.push({ field: key });
@@ -85,6 +88,22 @@ function makePassageModule(lang: Lang, label: string, input: ExerciseModule['inp
         }
       }
 
+      // A table passage is drawn as a grid when every gap is a whole cell.
+      let table: Exercise['table'];
+      if (passage?.layout === 'table') {
+        const heads = passage.tableHeaders ?? { row: true, col: true };
+        let used = 0;
+        const rows = tableCells(text).map((row) =>
+          row.map((cell) => {
+            const range = ranges.find((r) => r.start === cell.start && r.end === cell.end && cell.end > cell.start);
+            if (range) used++;
+            const header = (heads.row && cell.row === 0) || (heads.col && cell.col === 0);
+            return range ? { text: '', field: range.key, header } : { text: cell.text, header };
+          }),
+        );
+        if (rows.length > 0 && used === ranges.length) table = { rows };
+      }
+
       return {
         moduleId: `${lang}.passage-cloze`,
         conceptId: concept.id,
@@ -96,6 +115,8 @@ function makePassageModule(lang: Lang, label: string, input: ExerciseModule['inp
         expected,
         parts,
         segments,
+        ...(passage?.prompt ? { intro: passage.prompt } : {}),
+        ...(table ? { table } : {}),
         ...(tiles ? { tiles } : {}),
       };
     },

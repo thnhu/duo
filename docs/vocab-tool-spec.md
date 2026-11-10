@@ -1,7 +1,7 @@
 # SPEC: Công cụ học từ vựng Anh – Đức (Breadth & Depth)
 
 > Tài liệu này dành cho Claude Code đọc để triển khai. Product Owner (PO): người dùng, dùng một mình.
-> Phiên bản **v13** (kế hoạch Bản 10: ngữ pháp bằng đoạn văn đục lỗ chọn thẻ, M17a–c). Trước đó **v12** (cụm tô sáng nhiều đoạn cho động từ tách, định dạng file nhập mục 12, Bản 7 nhập tay và nhập file tiếng Đức khớp nhau, Bản 8 Lesson trong deck, Bản 9 xuất và sao lưu theo phạm vi, đoạn văn theo deck và làm lại khi dưới ngưỡng; xem mục 13). Trước đó **v11** (nút (+) tách Thêm từ / Thêm example / Thêm concept, deck General và card con Word/Concept, chấm chính tả không phân biệt hoa/thường, chọn giọng đọc, tìm kiếm bấm Enter). Trước đó **v10** (M12 xong, Deck/M13, quy ước phản hồi UI). Trước đó **v9** (quy luật UI quan hệ rút từ HUST PVO và kế hoạch M12) và **v8** (làm rõ Concept/Example, tri-fold, kế hoạch Bản 3) và **v7** (bỏ AI gợi ý nhãn). **Tool không đọc PDF và không dùng AI**: PO dùng công cụ ngoài rồi nhập bằng file CSV hoặc XLSX, và gắn nhãn TMRND (Tone, Mode, Register, Nuance, Dialect) bằng tay. Xem mục 12 để biết thay đổi so với các bản trước.
+> Phiên bản **v15** (kế hoạch Bản 11: bảng ngữ pháp đục lỗ và dòng mô tả, M18a–c). Trước đó **v13** (kế hoạch Bản 10: ngữ pháp bằng đoạn văn đục lỗ chọn thẻ, M17a–c). Trước đó **v12** (cụm tô sáng nhiều đoạn cho động từ tách, định dạng file nhập mục 12, Bản 7 nhập tay và nhập file tiếng Đức khớp nhau, Bản 8 Lesson trong deck, Bản 9 xuất và sao lưu theo phạm vi, đoạn văn theo deck và làm lại khi dưới ngưỡng; xem mục 13). Trước đó **v11** (nút (+) tách Thêm từ / Thêm example / Thêm concept, deck General và card con Word/Concept, chấm chính tả không phân biệt hoa/thường, chọn giọng đọc, tìm kiếm bấm Enter). Trước đó **v10** (M12 xong, Deck/M13, quy ước phản hồi UI). Trước đó **v9** (quy luật UI quan hệ rút từ HUST PVO và kế hoạch M12) và **v8** (làm rõ Concept/Example, tri-fold, kế hoạch Bản 3) và **v7** (bỏ AI gợi ý nhãn). **Tool không đọc PDF và không dùng AI**: PO dùng công cụ ngoài rồi nhập bằng file CSV hoặc XLSX, và gắn nhãn TMRND (Tone, Mode, Register, Nuance, Dialect) bằng tay. Xem mục 12 để biết thay đổi so với các bản trước.
 > Quy ước: **[CHỐT]** = đã thống nhất. **[ĐỀ XUẤT]** = đề xuất, có thể chỉnh. **[MỞ]** = chưa quyết định, cần hỏi PO trước khi làm.
 
 ---
@@ -483,6 +483,10 @@ Ghi chú:
 6. ~~Bộ từ điển (Dictionary)~~ **Đã chốt (2026-11-05):** từ điển vẫn mỗi ngôn ngữ một bộ; để gom từ theo mục đích PO yêu cầu thêm **Deck** (`WordSet`), một concept nằm được trong nhiều deck (C6, mục 10 Bản 4).
 7. ~~Ngưỡng chấp nhận chất lượng gợi ý AI~~ **Không còn áp dụng (v7).**
 8. **Chi tiết kỹ thuật cần kiểm khi triển khai (không cần PO quyết):** CORS và hạn mức khi gọi Free Dictionary API, Wikimedia API, Gemini API từ trình duyệt; cách phân tích mục từ tiếng Đức của Wiktionary; thư viện tìm kiếm.
+9. **[MỞ, 2026-11-10] `association` có nên là liên kết hai chiều (không cha–con)?** PO nhận ra `association` chỉ là "liên tưởng đến" nên chuyện cha–con của nó vô lý, và đó là nguyên nhân PO tạo liên kết ngược chiều ở màn Liên kết concept (ô trên là con, ô dưới là cha; PO tưởng ngược lại). **Mâu thuẫn cần PO quyết (PO đang suy nghĩ, CHƯA làm gì):**
+   - *Hiện trạng (đang chạy):* mọi `ConceptLink` đều lưu con → cha, kể cả `association`; mỗi cặp một liên kết có thứ tự (nối ngược chiều thì app hỏi "Đổi chiều"); **cấm vòng tròn cho cả hai loại** (mục 1.3, 1.4, M11c); đồ thị vẽ association nét đứt có mũi tên; file xuất/nhập ghi `parent` cả cho association (v14).
+   - *Đề xuất (chưa chốt):* chỉ `typeOf` có cha–con; `association` hai chiều: coi A–B và B–A là một liên kết (không cần migration, vẫn một dòng mỗi cặp), màn Liên kết hiện `A ↔ B` và không hỏi đổi chiều, **bỏ luật cấm vòng tròn cho association** (A–B, B–C, C–A hợp lệ), đồ thị nét đứt không mũi tên, Tree chỉ thụt lề theo `typeOf` còn association nằm ở mục "Liên tưởng", file nhập/xuất với association thì `parent` nghĩa là "liên tưởng với" và nhập tự gộp khi hai phía cùng khai báo.
+   - *Điều kiện để làm:* PO xác nhận; phải sửa cả mục 1.3 và 1.4 (đang ghi cấm vòng tròn cho cả hai loại), `src/links` (`linkConcepts`, `describePair`, `wouldCreateCycle`, `buildTree`, `searchAssociations`), `LinkEditorPage`, `AssociationGraph`, `TreePage`, `import/relations.ts` + `commit.ts`, `backup/table.ts`, test. Trong lúc chờ, hướng nhập/xuất `parent` của association giữ nguyên như hiện trạng.
 
 ---
 
@@ -677,6 +681,30 @@ Lý do: khi học ngữ pháp tiếng Đức (điền mạo từ `der/das/die`, 
 | **M17b** Chế độ Grammar và bộ thẻ (*đã làm*) | Bảng `choiceSets` (schema v11) và màn quản lý; cờ Grammar của đoạn (không tạo word, concept tự tạo theo lesson, example của lỗ trỏ vào concept đó); `acquired` bị bỏ qua; đục tự động theo bộ thẻ; kiểm tra đáp án có trong bộ thẻ | Dán đoạn mạo từ, chọn bộ "Bestimmter Artikel", bấm đục tự động ra đủ lỗ, lưu không tạo word nào |
 | **M17c** Làm bài bằng thẻ (*đã làm; Bản 10 xong*) | Màn làm bài đoạn văn có hàng thẻ, bấm thẻ điền và nhảy lỗ kế; chế độ trả lời theo từng đoạn (gõ / thẻ); chấm, ghi log từng lỗ, làm lại khi dưới ngưỡng như hiện tại | Làm đoạn mạo từ chỉ bằng bấm thẻ, nộp một lần, kết quả và lịch ôn ghi đúng cho từng lỗ |
 
+### Bản 11: Bảng ngữ pháp đục lỗ và dòng mô tả (v15, PO yêu cầu 2026-11-10, **kế hoạch, chưa làm**)
+Lý do: ở A1 tiếng Đức PO phải thuộc các bảng ngữ pháp (mạo từ `der/das/die`, `ein/eine`, `kein/keine`…) trong sách PDF. Đục lỗ hiện chỉ hợp với đoạn văn; PO muốn dán một bảng nhỏ và đục lỗ các ô. **Không dùng ảnh** (đã cân nhắc che ảnh kiểu Anki Image Occlusion và PO bỏ), **không gõ lại bảng thủ công**, không OCR/AI (nguyên tắc 5).
+
+**Đã chốt (PO, 2026-11-10):**
+- **Bảng là một `Passage` có kiểu hiển thị "bảng"** (`Passage.layout?: 'text' | 'table'`, trường tùy chọn, thiếu = `'text'`). Chữ của đoạn vẫn là text, các ô cách nhau bằng tab hoặc `|`, các hàng cách nhau bằng xuống dòng; màn hình tách text đó rồi vẽ thành lưới. Lỗ đục vẫn là vị trí trong text nên giữ nguyên: mỗi lỗ là một Example, lịch ôn/log/ngưỡng đạt/làm lại, sửa đoạn (`remapGaps`), deck → lesson, chế độ Grammar, bộ thẻ, đồng bộ, sao lưu.
+- **Ôn tập: một câu hỏi = cả một bảng**, nộp một lần, trả lời bằng thẻ chọn hoặc gõ (như đoạn văn ngữ pháp ở Bản 10).
+- **Nhập: dán chữ copy từ PDF.** Chữ copy ra từ PDF giữ mỗi hàng một dòng, các ô cách nhau bằng dấu cách (đã thử trên bảng mạo từ ở sách *Wir lernen Deutsch*, trang in 33). Quy tắc chia ô, **không AI**:
+  - PO đặt **số cột giá trị N** (nút +/−; app đoán sẵn theo dòng tiêu đề cột). Mỗi dòng lấy **N từ cuối** làm các ô, phần còn lại ở đầu dòng là **tên hàng** (tên hàng có thể nhiều từ, giá trị luôn một từ).
+  - Dòng có **ít hơn N từ** = dòng nhóm (như `Singular Plural`), PO bỏ hoặc sửa tay; dòng đúng N từ không có tên hàng = hàng tiêu đề cột.
+  - Dòng đã có **tab hoặc `|`** (dán từ Google Sheets/Excel) thì dùng thẳng, bỏ quy tắc N từ cuối.
+  - Ô `-----` hoặc `-` = ô trống, không đục lỗ.
+  - **Xem trước dạng lưới** cập nhật ngay khi đổi N; chạm ô để sửa chữ (xử lý ký tự hỏng do font PDF, ví dụ `ü`).
+  - Hàng 1 và cột 1 mặc định là tiêu đề, **không đục lỗ được** (có công tắc tắt khi bảng không có tiêu đề).
+- **Phạm vi:** chỉ **bảng nhỏ**, mỗi ô một từ. **Không làm:** ô gộp (nhập lại thành các cột thường, tiêu đề lặp lại), ô nhiều từ, đục phần đuôi của từ (bảng đại từ sở hữu trang 52 không thuộc phạm vi), bộ nút gộp/cắt dòng, lưới sửa từng ô, ảnh.
+- **Dòng mô tả đầu bài (cho cả bảng và đoạn văn thường), tùy chọn:** trường `Passage.prompt?: string` (ví dụ *"Điền mạo từ xác định và không xác định theo giống và số"*), nhập ở form Thêm/Sửa, **hiện cố định trên cùng** khi làm bài và khi xem, **không đục lỗ và không tính vào đáp án**, tách riêng khỏi chữ của bảng/đoạn nên dán bảng từ PDF không lẫn dòng mô tả vào lưới. Để trống thì hiện tên/tiêu đề của đoạn như hiện nay. Cả hai trường mới đều tùy chọn nên **không cần migration**; vào đồng bộ và sao lưu như các trường khác của `Passage`.
+
+**Các bước (mỗi phiên một bước, theo thứ tự):**
+
+| Bước | Nội dung | Xong khi |
+|---|---|---|
+| **M18a** Dòng mô tả (*đã làm*; `Passage.prompt`, `Exercise.intro`, ô "Mô tả" ở `PassageEditor`, hiện ở `SessionPage` và danh sách `/passages`; chưa kiểm trên trình duyệt thật) | `Passage.prompt?`, ô nhập ở Thêm/Sửa đoạn, hiện trên cùng ở màn làm bài và màn xem, không vào đáp án; đồng bộ/sao lưu | Đặt mô tả cho một đoạn thường, thấy nó ở đầu bài, không có lỗ nào nằm trong mô tả; đoạn cũ không có mô tả vẫn như trước |
+| **M18b** Bảng: dán, chia ô, xem trước (*đã làm*; `src/passages/table.ts` `parseTable`/`guessValueCols`/`tableToText`/`textToRows`/`isBlankCell`, `Passage.layout`/`tableHeaders`, `features/passages/TableInput`, nút "Đoạn văn / Bảng" ở Thêm đoạn văn; sau khi "Dùng bảng này" bảng vẫn đục lỗ bằng cách chạm word trên chữ `\| a \| b \|`, lưới đục lỗ là M18c; sửa bảng đã lưu cũng bằng chữ; chưa có lối vào Thêm bảng từ nút (+); đã kiểm trên Chrome thật) | `Passage.layout`, hàm thuần chia ô (`parseTable`: N từ cuối, dòng nhóm, tab/`\|`, ô trống), ô dán + nút số cột + xem trước lưới, sửa chữ trong ô, tiêu đề hàng/cột | Dán đúng đoạn bảng mạo từ ở trên với N = 4 ra lưới 3 hàng × 4 cột đúng (đủ cả dòng nhóm bị bỏ); test thuần cho từng quy tắc; dán TSV từ Sheets ra cùng kết quả |
+| **M18c** Đục lỗ và làm bài bằng bảng (*đã làm; Bản 11 xong*; `tableCells`/`isGapCell` ở `passages/table.ts`, `PassageEditor` có `layout`/`tableHeaders` vẽ lưới chạm ô, `Exercise.table` do `exercises/passage.ts` sinh khi mọi lỗ là một ô trọn vẹn, `SessionPage` vẽ lưới bằng `renderGap`, không thì quay về chữ; đã kiểm gõ đáp án trên Chrome thật, chế độ thẻ chọn mới có test thuần; sửa bảng đã lưu vẫn bằng chữ, chưa có chỗ đổi công tắc tiêu đề sau khi lưu) | Chạm ô để đục lỗ (không đục tiêu đề), bảng vào chế độ Grammar và bộ thẻ, màn làm bài vẽ lưới với một câu hỏi = cả bảng, nộp một lần, ghi log/lịch ôn từng lỗ | Đục các ô `der das die`, làm bằng thẻ, nộp một lần; kết quả, ngưỡng đạt và lịch ôn đúng cho từng lỗ; sửa bảng sau khi lưu thì lỗ đi theo chữ |
+
 ### Quy ước phản hồi giao diện (v10, PO yêu cầu 2026-11-05) **[CHỐT]**
 - **Không dùng `confirm()`/`alert()` của trình duyệt.** Thông báo dùng **badge (toast)** ở đầu màn hình: nhỏ (cao ~38 px), tự tắt sau 2,5 s (4,5 s nếu có nút hoặc là lỗi), dừng khi rê chuột/focus, vẫn còn sau khi chuyển trang.
 - **Xóa phải có ô xác nhận** hiện ngay tại nút (panel trong trang, không phủ màn hình), nêu hậu quả bằng số, focus ở "Hủy", Esc để hủy; sau khi xóa vẫn có badge **"Hoàn tác"** (xóa mềm nên khôi phục được concept, ví dụ và mọi liên kết đi kèm).
@@ -777,7 +805,10 @@ Chỉ `text` bắt buộc. Cột mẫu theo đúng thứ tự dưới đây.
 
 ## 13. Lịch sử thay đổi
 
-**v13 (bản này):**
+**v15 (bản này):**
+- **Kế hoạch Bản 11** (mục 10, chưa làm): bảng ngữ pháp đục lỗ (`Passage.layout: 'table'`, dán chữ từ PDF, chia ô bằng số cột N, không ảnh/OCR/AI) và dòng mô tả tùy chọn `Passage.prompt` cho cả bảng và đoạn văn; các bước M18a–M18c.
+
+**v13:**
 - **Kế hoạch Bản 10** (mục 10): ngữ pháp bằng đoạn văn đục lỗ cả từ, trả lời bằng thẻ chọn, bộ thẻ tự tạo (`choiceSets`), đoạn văn theo lesson (`Passage.lessonId`), chế độ Grammar không tạo word; các bước M17a–M17c.
 
 **v12, tất cả đã làm xong (schema Dexie lên v10):**

@@ -46,12 +46,23 @@ export interface Lesson {
 // Example (text = this passage, highlight = the gap, passageId = this row) so
 // schedule, review log and acquisition keep working per example.
 export type AnswerMode = 'type' | 'tiles';
+export type PassageLayout = 'text' | 'table';
 
 export interface Passage {
   id: string;
   dictionaryId: string;
   lang: Lang;
   title?: string;
+  // Optional one-line description shown on top when the passage is studied and
+  // listed (Bản 11, M18a), e.g. "Điền mạo từ xác định theo giống và số". It is
+  // not part of `text`, so it is never a gap or an answer.
+  prompt?: string;
+  // 'table' (Bản 11, M18b): `text` is rows of cells (`| a | b |`, one row per
+  // line), drawn as a grid. Missing = 'text', an ordinary passage.
+  layout?: PassageLayout;
+  // Table only: whether row 1 / column 1 are headers (never made gaps).
+  // Missing = both headers.
+  tableHeaders?: { row: boolean; col: boolean };
   text: string;
   // The deck the passage was added to (undefined = General, and the passages
   // made before decks were remembered). The Passages screen shows one deck at

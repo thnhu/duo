@@ -37,6 +37,14 @@ export interface Exercise {
   // the screen shows the passage with the boxes in place instead of a prompt
   // followed by a list of boxes.
   segments?: Array<{ text: string } | { field: string }>;
+  // A one-line description shown above a passage (Passage.prompt, M18a); never
+  // part of the text, so never a gap or an answer.
+  intro?: string;
+  // A table passage (M18c): the same passage drawn as a grid. A cell is plain
+  // text or a gap `field` (a key of `fields`); `header` cells are bold. Absent
+  // for an ordinary passage, or when a gap does not sit on a whole cell (then
+  // `segments` is used).
+  table?: { rows: Array<Array<{ text: string; field?: string; header: boolean }>> };
   // Answer by tapping these tiles instead of typing (a grammar passage with a
   // tile set). Every expected answer is among them.
   tiles?: string[];

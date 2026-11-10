@@ -163,6 +163,13 @@
   }
 }
 
+.passageIntro {
+  margin: 0 0 var(--space-3);
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-ink-muted);
+}
+
 .passagePrompt {
   text-align: left;
   white-space: pre-wrap;
@@ -251,4 +258,37 @@
   background: var(--color-danger-bg);
   border-bottom-color: var(--color-danger);
   color: var(--color-danger);
+}
+
+.tableScroll {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.tableGrid {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 17px;
+}
+
+.tableGrid td {
+  border: 1px solid var(--color-border);
+  padding: var(--space-2);
+  text-align: center;
+  vertical-align: middle;
+}
+
+.tableGrid td:first-child {
+  text-align: left;
+}
+
+.tableHeadCell {
+  background: var(--color-surface-tint);
+  font-weight: 600;
+}
+
+.tableGapCell {
+  min-width: 72px;
 }

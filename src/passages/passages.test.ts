@@ -205,6 +205,179 @@ describe('gap view helpers', () => {
   });
 });
 
+describe('passage description (M18a)', () => {
+  it('is optional, trimmed, editable and clearable; old passages without one are unchanged', async () => {
+    const plain = await createPassage({ dictionaryId: DICT, lang: 'en', text: TEXT, gaps: [at('towel')] });
+    if (!plain.ok) throw new Error('not created');
+    expect(plain.passage.prompt).toBeUndefined();
+    expect('prompt' in plain.passage).toBe(false);
+
+    const blank = await createPassage({ dictionaryId: DICT, lang: 'en', text: TEXT, gaps: [at('towel')], prompt: '   ' });
+    if (!blank.ok) throw new Error('not created');
+    expect(blank.passage.prompt).toBeUndefined();
+
+    const described = await createPassage({
+      dictionaryId: DICT,
+      lang: 'en',
+      text: TEXT,
+      gaps: [at('towel')],
+      prompt: '  Điền từ còn thiếu  ',
+    });
+    if (!described.ok) throw new Error('not created');
+    expect(described.passage.prompt).toBe('Điền từ còn thiếu');
+    // The description is not part of the text, so no gap can fall in it.
+    expect(described.passage.text).toBe(TEXT);
+
+    const loaded = await loadPassageForEdit(described.passage.id);
+    const gaps = loaded!.gaps;
+    // Left out = unchanged; text edits keep it.
+    await updatePassage(described.passage.id, { text: TEXT, gaps });
+    expect((await loadPassageForEdit(described.passage.id))!.passage.prompt).toBe('Điền từ còn thiếu');
+    await updatePassage(described.passage.id, { text: TEXT, gaps, prompt: 'Mô tả mới' });
+    expect((await loadPassageForEdit(described.passage.id))!.passage.prompt).toBe('Mô tả mới');
+    await updatePassage(described.passage.id, { text: TEXT, gaps, prompt: '  ' });
+    expect((await loadPassageForEdit(described.passage.id))!.passage.prompt).toBeUndefined();
+  });
+
+  it('is shown above the question and is not an answer', async () => {
+    const created = await createPassage({
+      dictionaryId: DICT,
+      lang: 'en',
+      text: TEXT,
+      gaps: [at('towel')],
+      prompt: 'Điền từ còn thiếu',
+    });
+    if (!created.ok) throw new Error('not created');
+    const library = await loadLibrary();
+    const gaps = await listGaps(created.passage.id);
+    const concept = library.concepts.find((c) => c.id === gaps[0].targetConceptId)!;
+    const exercise = englishPassage.generate(concept, gaps[0], { rng: Math.random, options: {}, library });
+    expect(exercise.intro).toBe('Điền từ còn thiếu');
+    expect(exercise.prompt).not.toContain('Điền từ còn thiếu');
+    expect(exercise.expected).toEqual({ g1: ['towel'] });
+
+    const plain = await createPassage({ dictionaryId: DICT, lang: 'en', text: TEXT, gaps: [at('shaves')] });
+    if (!plain.ok) throw new Error('not created');
+    const library2 = await loadLibrary();
+    const gaps2 = await listGaps(plain.passage.id);
+    const concept2 = library2.concepts.find((c) => c.id === gaps2[0].targetConceptId)!;
+    expect(englishPassage.generate(concept2, gaps2[0], { rng: Math.random, options: {}, library: library2 }).intro).toBeUndefined();
+  });
+});
+
+describe('table passages (M18b)', () => {
+  it('stores the layout and header flags only for a table; an ordinary passage has neither', async () => {
+    const { tableToText } = await import('./table');
+    const text = tableToText([
+      ['', 'maskulin', 'feminin'],
+      ['bestimmter Artikel', 'der', 'die'],
+    ]);
+    const start = text.indexOf('der');
+    const table = await createPassage({
+      dictionaryId: 'dict-de',
+      lang: 'de',
+      text,
+      gaps: [{ start, end: start + 3 }],
+      layout: 'table',
+      tableHeaders: { row: true, col: false },
+    });
+    if (!table.ok) throw new Error('not created');
+    expect(table.passage.layout).toBe('table');
+    expect(table.passage.tableHeaders).toEqual({ row: true, col: false });
+    expect(table.passage.text).toBe(text);
+
+    const defaults = await createPassage({
+      dictionaryId: 'dict-de',
+      lang: 'de',
+      text,
+      gaps: [{ start, end: start + 3 }],
+      layout: 'table',
+    });
+    if (!defaults.ok) throw new Error('not created');
+    expect(defaults.passage.tableHeaders).toEqual({ row: true, col: true });
+
+    const plain = await createPassage({ dictionaryId: DICT, lang: 'en', text: TEXT, gaps: [at('towel')] });
+    if (!plain.ok) throw new Error('not created');
+    expect('layout' in plain.passage).toBe(false);
+    expect('tableHeaders' in plain.passage).toBe(false);
+
+    // The table keeps its layout when edited as text.
+    const loaded = await loadPassageForEdit(table.passage.id);
+    await updatePassage(table.passage.id, { text, gaps: loaded!.gaps });
+    expect((await loadPassageForEdit(table.passage.id))!.passage.layout).toBe('table');
+  });
+});
+
+describe('table passage drill (M18c)', () => {
+  const rows = [
+    ['', 'maskulin', 'neutral', 'feminin'],
+    ['bestimmter Artikel', 'der', 'das', 'die'],
+    ['unbestimmter Artikel', 'ein', 'ein', 'eine'],
+  ];
+
+  async function make(gapWords: string[], extra: Record<string, unknown> = {}) {
+    const { tableToText, tableCells } = await import('./table');
+    const text = tableToText(rows);
+    const cells = tableCells(text).flat();
+    const gaps = gapWords.map((w) => {
+      const cell = cells.find((c) => c.text === w)!;
+      return { start: cell.start, end: cell.end };
+    });
+    const created = await createPassage({ dictionaryId: 'dict-de', lang: 'de', text, gaps, layout: 'table', prompt: 'Artikel', ...extra });
+    if (!created.ok) throw new Error('not created');
+    const { germanPassage } = await import('../exercises/passage');
+    const library = await loadLibrary();
+    const list = await listGaps(created.passage.id);
+    const concept = library.concepts.find((c) => c.id === list[0].targetConceptId)!;
+    return { exercise: germanPassage.generate(concept, list[0], { rng: Math.random, options: {}, library }), text };
+  }
+
+  it('is one question drawn as a grid: headers kept, each gap cell is a field, one submit', async () => {
+    const { exercise } = await make(['der', 'das', 'die']);
+    expect(exercise.fields).toHaveLength(3);
+    expect(exercise.expected).toEqual({ g1: ['der'], g2: ['das'], g3: ['die'] });
+    const grid = exercise.table!.rows;
+    expect(grid).toHaveLength(3);
+    expect(grid[0].map((c) => [c.text, c.header])).toEqual([['', true], ['maskulin', true], ['neutral', true], ['feminin', true]]);
+    // The label column is a header; gap cells hide their answer.
+    expect(grid[1][0]).toEqual({ text: 'bestimmter Artikel', header: true });
+    expect(grid[1].slice(1).map((c) => c.field)).toEqual(['g1', 'g2', 'g3']);
+    expect(grid[1].slice(1).every((c) => c.text === '' && !c.header)).toBe(true);
+    expect(grid[2].map((c) => c.field)).toEqual([undefined, undefined, undefined, undefined]);
+    expect(exercise.intro).toBe('Artikel');
+  });
+
+  it('falls back to the plain passage view when a gap is not a whole cell', async () => {
+    const { tableToText } = await import('./table');
+    const text = tableToText(rows);
+    const start = text.indexOf('bestimmter');
+    const created = await createPassage({
+      dictionaryId: 'dict-de',
+      lang: 'de',
+      text,
+      gaps: [{ start, end: start + 'bestimmter'.length }],
+      layout: 'table',
+    });
+    if (!created.ok) throw new Error('not created');
+    const { germanPassage } = await import('../exercises/passage');
+    const library = await loadLibrary();
+    const list = await listGaps(created.passage.id);
+    const concept = library.concepts.find((c) => c.id === list[0].targetConceptId)!;
+    const exercise = germanPassage.generate(concept, list[0], { rng: Math.random, options: {}, library });
+    expect(exercise.table).toBeUndefined();
+    expect(exercise.segments).toBeDefined();
+  });
+
+  it('an ordinary passage has no grid', async () => {
+    const created = await createPassage({ dictionaryId: DICT, lang: 'en', text: TEXT, gaps: [at('towel')] });
+    if (!created.ok) throw new Error('not created');
+    const library = await loadLibrary();
+    const list = await listGaps(created.passage.id);
+    const concept = library.concepts.find((c) => c.id === list[0].targetConceptId)!;
+    expect(englishPassage.generate(concept, list[0], { rng: Math.random, options: {}, library }).table).toBeUndefined();
+  });
+});
+
 describe('passages by deck (read only when a deck is opened)', () => {
   it('remembers the deck, counts per deck without reading texts into the screen, and lists one deck', async () => {
     const { countPassagesByDeck, listPassagesOfDeck, countGapsOf } = await import('./index');

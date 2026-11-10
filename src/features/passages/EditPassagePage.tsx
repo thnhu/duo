@@ -43,7 +43,7 @@ export function EditPassagePage() {
       setLessonId(loaded.passage.lessonId ?? '');
       setTilesId(loaded.passage.choiceSetId ?? '');
       setAnswerMode(loaded.passage.answerMode ?? 'tiles');
-      setDraft({ title: loaded.passage.title ?? '', text: loaded.passage.text, gaps: loaded.gaps });
+      setDraft({ title: loaded.passage.title ?? '', prompt: loaded.passage.prompt ?? '', text: loaded.passage.text, gaps: loaded.gaps });
     });
   }, [passageId]);
 
@@ -71,7 +71,7 @@ export function EditPassagePage() {
     if (!passageId || !draft || saving) return;
     setSaving(true);
     try {
-      const result = await updatePassage(passageId, { title: draft.title, text: draft.text, gaps: draft.gaps, setId, lessonId, ...(passage?.grammar ? { choiceSetId: tilesId, answerMode } : {}) });
+      const result = await updatePassage(passageId, { title: draft.title, prompt: draft.prompt, text: draft.text, gaps: draft.gaps, setId, lessonId, ...(passage?.grammar ? { choiceSetId: tilesId, answerMode } : {}) });
       if (!result.ok && result.reason === 'missing-choices') {
         setMissing(result.missing);
         setError(`Bộ thẻ thiếu: ${result.missing.join(', ')}.`);
@@ -127,6 +127,8 @@ export function EditPassagePage() {
         }}
         note={error}
         autoItems={passage.grammar ? tiles?.items : undefined}
+        layout={passage.layout}
+        tableHeaders={passage.tableHeaders}
       />
       {missing.length > 0 && tiles && (
         <ButtonRow>

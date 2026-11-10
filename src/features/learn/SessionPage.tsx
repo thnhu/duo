@@ -240,6 +240,57 @@ function Session({ config }: { config: SessionConfig }) {
   const result = record?.result;
   const specialKeys = pair?.module.input?.specialKeys ?? [];
   const hasTextField = !exercise.tiles && exercise.fields.some((f) => f.type === 'text');
+  const current = exercise;
+
+  // One gap of a passage: a tile button when it is answered with tiles, else a
+  // box to type in. Used inside the text and inside a table cell.
+  function renderGap(field: string, key?: number) {
+    const no = current.fields.findIndex((f) => f.key === field) + 1;
+    const state = result ? (result.perField[field] ? styles.gapRight : styles.gapWrong) : '';
+    if (current.tiles) {
+      // Tile answer: the gap is a button showing its tile; tap it to choose it.
+      return (
+        <span key={key} className={styles.gapWrap}>
+          <sup className={styles.gapNo}>{no}</sup>
+          <button
+            type="button"
+            className={[styles.gapTile, !record && activeKey === field && styles.gapTileActive, state]
+              .filter(Boolean)
+              .join(' ')}
+            aria-label={`Chỗ trống ${no}${answer[field] ? `: ${answer[field]}` : ''}`}
+            aria-pressed={activeKey === field}
+            disabled={!!record}
+            onClick={() => setActiveKey(field)}
+          >
+            {answer[field] || ' '}
+          </button>
+        </span>
+      );
+    }
+    return (
+      <span key={key} className={styles.gapWrap}>
+        <sup className={styles.gapNo}>{no}</sup>
+        <input
+          ref={(el) => {
+            inputs.current[field] = el;
+          }}
+          className={[styles.gapInput, state].filter(Boolean).join(' ')}
+          aria-label={`Chỗ trống ${no}`}
+          value={answer[field] ?? ''}
+          disabled={!!record}
+          lang={pair?.module.input?.lang}
+          autoFocus={no === 1}
+          autoCapitalize="off"
+          autoCorrect="off"
+          autoComplete="off"
+          spellCheck={false}
+          size={Math.max(6, (answer[field] ?? '').length + 1)}
+          onFocus={() => setFocusedKey(field)}
+          onChange={(e) => setAnswer({ ...answer, [field]: e.target.value })}
+        />
+      </span>
+    );
+  }
 
   return (
     <section className={styles.page}>
@@ -282,61 +333,36 @@ function Session({ config }: { config: SessionConfig }) {
               </Button>
             </div>
           ) : null}
-          {exercise.segments ? (
+          {exercise.intro ? <p className={styles.passageIntro}>{exercise.intro}</p> : null}
+          {exercise.table ? (
+            // A table passage: the same gaps, drawn as a grid.
+            <div className={styles.tableScroll}>
+              <table className={styles.tableGrid}>
+                <tbody>
+                  {exercise.table.rows.map((row, r) => (
+                    <tr key={r}>
+                      {row.map((cell, c) =>
+                        cell.field ? (
+                          <td key={c} className={styles.tableGapCell}>
+                            {renderGap(cell.field)}
+                          </td>
+                        ) : (
+                          <td key={c} className={cell.header ? styles.tableHeadCell : undefined}>
+                            {cell.text}
+                          </td>
+                        ),
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : exercise.segments ? (
             // A passage: the answer boxes sit inside the text where the gaps are.
             <p className={styles.passagePrompt}>
-              {exercise.segments.map((seg, i) => {
-                if ('text' in seg) return <span key={i}>{seg.text}</span>;
-                const no = exercise.fields.findIndex((f) => f.key === seg.field) + 1;
-                const state = result ? (result.perField[seg.field] ? styles.gapRight : styles.gapWrong) : '';
-                if (exercise.tiles) {
-                  // Tile answer: the gap is a button showing its tile; tap it to choose it.
-                  return (
-                    <span key={i} className={styles.gapWrap}>
-                      <sup className={styles.gapNo}>{no}</sup>
-                      <button
-                        type="button"
-                        className={[
-                          styles.gapTile,
-                          !record && activeKey === seg.field && styles.gapTileActive,
-                          state,
-                        ]
-                          .filter(Boolean)
-                          .join(' ')}
-                        aria-label={`Chỗ trống ${no}${answer[seg.field] ? `: ${answer[seg.field]}` : ''}`}
-                        aria-pressed={activeKey === seg.field}
-                        disabled={!!record}
-                        onClick={() => setActiveKey(seg.field)}
-                      >
-                        {answer[seg.field] || ' '}
-                      </button>
-                    </span>
-                  );
-                }
-                return (
-                  <span key={i} className={styles.gapWrap}>
-                    <sup className={styles.gapNo}>{no}</sup>
-                    <input
-                      ref={(el) => {
-                        inputs.current[seg.field] = el;
-                      }}
-                      className={[styles.gapInput, state].filter(Boolean).join(' ')}
-                      aria-label={`Chỗ trống ${no}`}
-                      value={answer[seg.field] ?? ''}
-                      disabled={!!record}
-                      lang={pair?.module.input?.lang}
-                      autoFocus={no === 1}
-                      autoCapitalize="off"
-                      autoCorrect="off"
-                      autoComplete="off"
-                      spellCheck={false}
-                      size={Math.max(6, (answer[seg.field] ?? '').length + 1)}
-                      onFocus={() => setFocusedKey(seg.field)}
-                      onChange={(e) => setAnswer({ ...answer, [seg.field]: e.target.value })}
-                    />
-                  </span>
-                );
-              })}
+              {exercise.segments.map((seg, i) =>
+                'text' in seg ? <span key={i}>{seg.text}</span> : renderGap(seg.field, i),
+              )}
             </p>
           ) : (
             <p className={exercise.speak ? styles.instruction : styles.prompt}>{exercise.prompt}</p>

@@ -239,6 +239,7 @@ export function PassagesPage() {
         shown.map((passage) => (
           <Card key={passage.id}>
             <div className={styles.title}>{passage.title || passage.text.slice(0, 40)}</div>
+            {passage.prompt && <p className={styles.meta}>{passage.prompt}</p>}
             <p className={styles.meta}>{gapCounts.get(passage.id) ?? 0} lỗ</p>
             {/* A short preview: the whole text is shown when the passage is opened to edit. */}
             <p className={styles.text}>

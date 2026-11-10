@@ -620,4 +620,22 @@ describe('grammar passages share one topic concept', () => {
     const pairs = await loadPairs(germanPassage, { lang: 'de' });
     expect(new Set(pairs.map((p) => p.example.passageId)).size).toBe(2);
   });
+
+  it('reviews every grammar passage of a shared topic, not one per topic', async () => {
+    const { germanPassage } = await import('../exercises/passage');
+    const texts = ['Das ist der Hund und die Katze.', 'Ich sehe der Mann und die Frau.'];
+    for (const t of texts) {
+      const gaps = ['der', 'die'].map((w) => ({ start: t.indexOf(w), end: t.indexOf(w) + w.length }));
+      await createPassage({ dictionaryId: 'dict-de', lang: 'de', text: t, gaps, grammar: true });
+    }
+    const pairs = await loadPairs(germanPassage, { lang: 'de' });
+    expect(pairs).toHaveLength(2);
+    const library = await loadLibrary();
+    for (const pair of pairs) {
+      const exercise = germanPassage.generate(pair.concept, pair.example, { rng: () => 0, library, options: {} });
+      await recordAnswer(germanPassage, exercise, { g1: 'x', g2: 'y' }, 4000);
+    }
+    const items = await loadReviewItems({ kind: 'review', count: 50, lang: 'de', now: Date.now() + 60 * 60 * 1000, rng: () => 0 });
+    expect(new Set(items.map((i) => i.example.passageId)).size).toBe(2);
+  });
 });

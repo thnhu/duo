@@ -87,10 +87,26 @@ export async function loadReviewItems(request: ReviewRequest): Promise<SessionIt
     const all = byConcept.get(concept.id) ?? [];
     const dueExamples = all.filter((e) => dueAt.has(e.id));
     if (kind === 'review' && dueExamples.length === 0) continue;
-    const item = pickItem(concept, kind === 'review' ? dueExamples : all, logs.get(concept.id), modules, rng, library);
-    if (!item) continue;
-    const overdue = Math.min(...dueExamples.map((e) => dueAt.get(e.id)!), Infinity);
-    entries.push({ item, overdue });
+    const candidates = kind === 'review' ? dueExamples : all;
+    const item = pickItem(concept, candidates, logs.get(concept.id), modules, rng, library);
+    if (item) {
+      const overdue = Math.min(...dueExamples.map((e) => dueAt.get(e.id)!), Infinity);
+      entries.push({ item, overdue });
+    }
+    // A grammar topic is shared by every passage of its lesson, so each of its
+    // passages is its own question, not one random pick for the whole topic.
+    if (concept.grammarTopic) {
+      const byPassage = new Map<string, Example[]>();
+      for (const e of candidates) {
+        if (!e.passageId || e.passageId === item?.example.passageId) continue;
+        byPassage.set(e.passageId, [...(byPassage.get(e.passageId) ?? []), e]);
+      }
+      for (const group of byPassage.values()) {
+        const extra = pickItem(concept, group, logs.get(concept.id), modules, rng, library);
+        if (!extra) continue;
+        entries.push({ item: extra, overdue: Math.min(...group.map((e) => dueAt.get(e.id) ?? Infinity)) });
+      }
+    }
   }
 
   const chosen =

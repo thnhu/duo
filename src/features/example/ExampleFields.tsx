@@ -19,10 +19,12 @@ export interface ExampleDraft {
   // True once the PO touched a label; only then are the labels saved as chosen.
   labelsChosen: boolean;
   note: string;
+  // Also turn the highlighted phrase into a Word to study (default on).
+  alsoWord: boolean;
 }
 
 export function emptyDraft(): ExampleDraft {
-  return { text: '', highlight: null, highlightExtra: [], attributes: createDefaultAttributes(), labelsChosen: false, note: '' };
+  return { text: '', highlight: null, highlightExtra: [], attributes: createDefaultAttributes(), labelsChosen: false, note: '', alsoWord: true };
 }
 
 // Same five labels as the example editor; the value lists come from Settings.
@@ -135,6 +137,16 @@ export function ExampleFields({ idPrefix, draft, onChange, sentenceLabel }: Exam
           </Button>
         )}
       </ButtonRow>
+      {draft.highlight && draft.highlightExtra.length === 0 && (
+        <label className={fieldStyles.hint}>
+          <input
+            type="checkbox"
+            checked={draft.alsoWord}
+            onChange={(e) => onChange({ ...draft, alsoWord: e.target.checked })}
+          />{' '}
+          Cũng thêm cụm đã tô sáng thành Word để học (ở tab Học)
+        </label>
+      )}
       <p className={fieldStyles.hint}>
         {hint || 'Bôi đen cụm cần học trong câu rồi bấm "Tô sáng". Phần còn lại của câu chỉ là ngữ cảnh. Cụm bị ngắt quãng (động từ tách như fahren … ab): tô đoạn đầu rồi bấm "Tô thêm đoạn nữa" cho đoạn sau. Không tô thì cả câu là cách diễn đạt.'}
       </p>

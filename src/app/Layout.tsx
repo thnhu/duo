@@ -1,11 +1,22 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { useEffect } from 'react';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import styles from './Layout.module.css';
 
 function navLinkClass({ isActive }: { isActive: boolean }) {
   return [styles.navItem, isActive && styles.navItemActive].filter(Boolean).join(' ');
 }
 
+// A new page always starts at its top (the window scrolls, and a route change
+// would otherwise keep the old scroll position, e.g. after saving a long form).
+function useScrollToTopOnNavigate() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+}
+
 export function Layout() {
+  useScrollToTopOnNavigate();
   return (
     <div className={styles.shell}>
       <main className={styles.content}>

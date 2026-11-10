@@ -4,6 +4,7 @@ import { createDefaultAttributes } from '../db/defaults';
 import { conceptRepository, exampleRepository, scheduleStateRepository } from '../db/repositories';
 import type { Concept, Example } from '../db/types';
 import { resetSyncState, syncOnce } from './engine';
+import { resetWatermarks } from './watermark';
 import { parseFirebaseConfig, toSyncError } from './firebase';
 import { SyncError, type PullResult, type RemoteRecord, type SyncAdapter } from './types';
 
@@ -219,5 +220,27 @@ const firebaseConfig = {
     expect(toSyncError({ code: 'auth/wrong-password' }).kind).toBe('auth');
     expect(toSyncError({ code: 'auth/api-key-not-valid.-please-pass-a-valid-api-key.' }).message).toMatch(/apiKey/);
     expect(toSyncError(new Error('boom')).kind).toBe('other');
+  });
+});
+
+describe('sync engine: incremental scan', () => {
+  it('only looks at recent rows after the first sync, and still sends new edits', async () => {
+    await conceptRepository.add(concept('c1', 'Apfel'));
+    await syncOnce(cloud);
+    // A row with an old version written behind the engine's back is not seen...
+    await db.concepts.add(concept('old', 'alt', { updatedAt: 1 }));
+    expect((await syncOnce(cloud)).pushed).toBe(0);
+    // ...but a normal edit of any row is (it gets a fresh updatedAt).
+    await conceptRepository.update('old', { text: 'neu' });
+    expect((await syncOnce(cloud)).pushed).toBe(1);
+  });
+
+  it('resetWatermarks makes the next sync scan everything (after a backup restore)', async () => {
+    await conceptRepository.add(concept('c1', 'Apfel'));
+    await syncOnce(cloud);
+    await db.concepts.add(concept('old', 'alt', { updatedAt: 1 }));
+    await resetWatermarks();
+    expect((await syncOnce(cloud)).pushed).toBe(1);
+    expect(cloud.docs.has('concepts~old')).toBe(true);
   });
 });

@@ -1,5 +1,6 @@
 import { db } from '../db/schema';
 import { SYNC_TABLES, SyncError, type RemoteRecord, type SyncAdapter, type SyncTableName } from './types';
+import { VERSION_INDEX, WATERMARK_SLACK_MS, watermarkKey } from './watermark';
 
 // Sync engine (spec 6.3). Local-first: IndexedDB stays the source of truth
 // on each device; this only copies changes to and from the cloud.
@@ -80,23 +81,41 @@ interface Dirty {
   version: number;
 }
 
-async function collectDirty(): Promise<Dirty[]> {
-  const synced = new Map<string, number>();
-  for (const row of await db.syncMeta.toArray()) synced.set(row.key, row.value);
+interface Collected {
+  dirty: Dirty[];
+  // Per table: the newest version seen while scanning (becomes the watermark once pushed).
+  scannedMax: Record<string, number>;
+}
 
+// What still needs pushing = rows whose version differs from `syncMeta`. Only the
+// rows near the table's watermark are read (see watermark.ts); a table with no
+// watermark yet is read whole, once.
+async function collectDirty(): Promise<Collected> {
   const dirty: Dirty[] = [];
+  const scannedMax: Record<string, number> = {};
   for (const [table, key] of SYNC_TABLES) {
-    for (const row of (await db.table(table).toArray()) as Row[]) {
-      const id = row[key] as string;
+    const field = VERSION_INDEX[table];
+    const mark = field ? (await db.syncMeta.get(watermarkKey(table)))?.value : undefined;
+    const store = db.table(table);
+    const rows = (
+      field && mark !== undefined
+        ? await store.where(field).aboveOrEqual(Math.max(0, mark - WATERMARK_SLACK_MS)).toArray()
+        : await store.toArray()
+    ) as Row[];
+    const metas = await db.syncMeta.bulkGet(rows.map((row) => recordKey(table, row[key] as string)));
+    let max = 0;
+    rows.forEach((row, i) => {
       const version = versionOf(table, row);
-      if (synced.get(recordKey(table, id)) === version) continue;
+      if (version > max) max = version;
+      if (metas[i]?.value === version) return;
       dirty.push({
-        record: { table, id, updatedAt: version, payload: JSON.stringify(row) },
+        record: { table, id: row[key] as string, updatedAt: version, payload: JSON.stringify(row) },
         version,
       });
-    }
+    });
+    scannedMax[table] = max;
   }
-  return dirty;
+  return { dirty, scannedMax };
 }
 
 export async function syncOnce(adapter: SyncAdapter): Promise<SyncReport> {
@@ -118,7 +137,7 @@ export async function syncOnce(adapter: SyncAdapter): Promise<SyncReport> {
   await db.syncMeta.put({ key: cursorKey(user.id), value: pulledResult.cursor });
   if (stale) await db.syncMeta.put({ key: TABLES_KEY, value: signature });
 
-  const dirty = await collectDirty();
+  const { dirty, scannedMax } = await collectDirty();
   if (dirty.length > 0) {
     await adapter.push(dirty.map((d) => d.record));
     // Mark the versions that were sent (not whatever the row is now), so an
@@ -127,6 +146,14 @@ export async function syncOnce(adapter: SyncAdapter): Promise<SyncReport> {
       dirty.map((d) => ({ key: recordKey(d.record.table, d.record.id), value: d.version })),
     );
   }
+  // Everything scanned is now uploaded: move each table's watermark forward.
+  const marks: Array<{ key: string; value: number }> = [];
+  for (const [table] of SYNC_TABLES) {
+    if (!VERSION_INDEX[table]) continue;
+    const previous = (await db.syncMeta.get(watermarkKey(table)))?.value ?? 0;
+    marks.push({ key: watermarkKey(table), value: Math.max(previous, scannedMax[table] ?? 0) });
+  }
+  await db.syncMeta.bulkPut(marks);
   return { pushed: dirty.length, pulled };
 }
 

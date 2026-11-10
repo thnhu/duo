@@ -13,6 +13,7 @@ import { StudyCard } from './StudyCard';
 import { DepthCard } from './DepthCard';
 import { SyncCard } from './SyncCard';
 import { DiagnosticsCard } from './DiagnosticsCard';
+import { StorageCard } from './StorageCard';
 import { VoiceCard } from './VoiceCard';
 import styles from './SettingsPage.module.css';
 
@@ -111,6 +112,8 @@ export function SettingsPage() {
       <VoiceCard />
 
       <SyncCard />
+
+      <StorageCard />
 
       <DiagnosticsCard />
 

@@ -5,7 +5,8 @@ import { createDefaultAttributes } from '../../db/defaults';
 import { listInboxExamples } from '../../db/queries';
 import { exampleRepository } from '../../db/repositories';
 import { saveSentenceWithHighlight } from '../quick-add/actions';
-import { addSecondPhrase, clearExampleAttributes, saveExampleEdits } from './actions';
+import { conceptRepository } from '../../db/repositories';
+import { addSecondPhrase, clearExampleAttributes, createExample, createWordFromHighlight, saveExampleEdits } from './actions';
 
 const DICT = 'dict-en';
 const SENTENCE = 'She swallowed her pride and left.';
@@ -164,5 +165,47 @@ describe('split phrases (separable verb)', () => {
       note: '',
     });
     expect(saved?.highlightExtra).toBeUndefined();
+  });
+});
+
+describe('createWordFromHighlight', () => {
+  async function owned() {
+    const now = Date.now();
+    const owner = { id: 'owner', dictionaryId: DICT, lang: 'en' as const, text: 'số lượng nhiều', kind: 'concept' as const, setIds: ['deck1'], meanings: [], verification: 'unverified' as const, source: { type: 'quick-add' as const }, status: 'loaded' as const, createdAt: now, updatedAt: now };
+    await conceptRepository.add(owner);
+    const example = (await createExample({ dictionaryId: DICT, text: 'I have a lot of houses.', highlight: { start: 7, end: 15 }, conceptId: 'owner' }))!;
+    return { owner, example };
+  }
+
+  it('makes the phrase a word with its own copy of the example, in the same deck', async () => {
+    const { example } = await owned();
+    const result = (await createWordFromHighlight(example, 'en'))!;
+    expect(result.created).toBe(true);
+    expect(result.word.text).toBe('a lot of');
+    expect(result.word.kind).toBe('word');
+    expect(result.word.setIds).toEqual(['deck1']);
+    expect(result.example?.targetConceptId).toBe(result.word.id);
+    expect(result.example?.highlight).toEqual({ start: 7, end: 15 });
+    // The original stays in its concept.
+    expect((await exampleRepository.getById(example.id))?.targetConceptId).toBe('owner');
+  });
+
+  it('reuses an existing word and does not copy the same example twice', async () => {
+    const { example } = await owned();
+    const first = (await createWordFromHighlight(example, 'en'))!;
+    const again = (await createWordFromHighlight(example, 'en'))!;
+    expect(again.created).toBe(false);
+    expect(again.word.id).toBe(first.word.id);
+    expect(again.example).toBeUndefined();
+    expect((await exampleRepository.listActive()).filter((e) => e.targetConceptId === first.word.id)).toHaveLength(1);
+  });
+
+  it('does nothing without a concept, for a split phrase, or when the phrase is the concept itself', async () => {
+    const loose = (await createExample({ dictionaryId: DICT, text: 'I have a lot of houses.', highlight: { start: 7, end: 15 } }))!;
+    expect(await createWordFromHighlight(loose, 'en')).toBeNull();
+    const { example } = await owned();
+    expect(await createWordFromHighlight({ ...example, highlightExtra: [{ start: 16, end: 22 }] }, 'en')).toBeNull();
+    const self = (await createExample({ dictionaryId: DICT, text: 'số lượng nhiều', highlight: { start: 0, end: 14 }, conceptId: 'owner' }))!;
+    expect(await createWordFromHighlight(self, 'en')).toBeNull();
   });
 });

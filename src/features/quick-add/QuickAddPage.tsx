@@ -158,6 +158,7 @@ export function QuickAddPage() {
       });
     }
     if (!stay) navigate('/library');
+    else window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   return (

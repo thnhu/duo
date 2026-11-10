@@ -1,9 +1,10 @@
 import { createId } from '../../core/id';
 import { toStored } from '../../core/highlights';
 import { createDefaultAttributes } from '../../db/defaults';
-import { exampleLinkRepository, exampleRepository } from '../../db/repositories';
+import { conceptRepository, exampleLinkRepository, exampleRepository } from '../../db/repositories';
+import { findConceptByExactText } from '../../db/queries';
 import { listLinksOfExample } from '../../depth';
-import type { Example, ExampleAttributes } from '../../db/types';
+import type { Concept, Example, ExampleAttributes, Lang } from '../../db/types';
 import { normalizeSelection, type Selection } from '../quick-add/highlight';
 
 export interface ExampleEdits {
@@ -149,4 +150,77 @@ export async function createExample(input: NewExampleInput): Promise<Example | n
   };
   await exampleRepository.add(example);
   return example;
+}
+
+export interface WordFromHighlight {
+  word: Concept;
+  // True when the word did not exist and was created now.
+  created: boolean;
+  // The copy of the example that belongs to the word (undefined = it already had it).
+  example?: Example;
+}
+
+// "Also learn the highlighted phrase as a word" (PO 2026-11-10): the phrase of
+// an example that belongs to a concept becomes, or is matched to, a Word, so the
+// Học tab can drill it. The Word gets its own copy of the example (same sentence,
+// phrase and labels) because the schedule and the drills work per example. The
+// word joins the decks and lesson of the concept the example is about. Only a
+// single-part phrase is turned into a word (a split one like fahren ... ab is not
+// one string), and never the concept itself.
+export async function createWordFromHighlight(example: Example, lang: Lang): Promise<WordFromHighlight | null> {
+  if (!example.targetConceptId || !example.highlight || (example.highlightExtra?.length ?? 0) > 0) return null;
+  const phrase = example.text.slice(example.highlight.start, example.highlight.end).trim();
+  if (!phrase) return null;
+  const owner = example.targetConceptId ? await conceptRepository.getById(example.targetConceptId) : undefined;
+
+  let word = await findConceptByExactText(example.dictionaryId, phrase);
+  if (word && word.id === owner?.id) return null;
+  let created = false;
+  if (!word) {
+    const now = Date.now();
+    word = {
+      id: createId(),
+      dictionaryId: example.dictionaryId,
+      lang,
+      text: phrase,
+      kind: 'word',
+      meanings: [],
+      verification: 'unverified',
+      source: { type: 'quick-add' },
+      status: 'loaded',
+      ...(owner?.setIds && owner.setIds.length > 0 ? { setIds: [...owner.setIds] } : {}),
+      ...(owner?.lessonId ? { lessonId: owner.lessonId } : {}),
+      createdAt: now,
+      updatedAt: now,
+    };
+    await conceptRepository.add(word);
+    created = true;
+  }
+
+  // Not twice when the word already has this very sentence and phrase.
+  const have = (await exampleRepository.listActive()).some(
+    (e) =>
+      e.targetConceptId === word!.id &&
+      e.text === example.text &&
+      e.highlight?.start === example.highlight!.start &&
+      e.highlight?.end === example.highlight!.end,
+  );
+  if (have) return { word, created };
+
+  const now = Date.now();
+  const copy: Example = {
+    id: createId(),
+    dictionaryId: example.dictionaryId,
+    text: example.text,
+    targetConceptId: word.id,
+    highlight: { ...example.highlight },
+    attributes: { ...example.attributes },
+    attributesStatus: example.attributesStatus,
+    note: example.note,
+    verification: 'unverified',
+    createdAt: now,
+    updatedAt: now,
+  };
+  await exampleRepository.add(copy);
+  return { word, created, example: copy };
 }

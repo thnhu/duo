@@ -10,7 +10,7 @@ import { dictionaryIdForLang } from '../../db/queries';
 import { addConceptToSet } from '../../wordsets';
 import { textForSelection } from './highlight';
 import { createConceptWithDescription } from './actions';
-import { createExample } from '../example/actions';
+import { createExample, createWordFromHighlight } from '../example/actions';
 import { ExampleFields, emptyDraft, type ExampleDraft } from '../example/ExampleFields';
 import { DeckSelect } from '../sets/DeckSelect';
 import { useLastLanguage } from './useLastLanguage';
@@ -51,12 +51,14 @@ export function AddConceptPage() {
       if (setId) await addConceptToSet(concept.id, setId);
       // The box still being filled counts too, so the last example needs no extra click.
       const all = draft.text.trim() ? [...added, draft] : added;
+      let wordsMade = 0;
       for (const item of all) {
-        await createExample({ ...item, dictionaryId, conceptId: concept.id });
+        const created = await createExample({ ...item, dictionaryId, conceptId: concept.id });
+        if (created && item.alsoWord && (await createWordFromHighlight(created, lang))?.created) wordsMade++;
       }
       toast.show(
         all.length > 0
-          ? `Đã thêm concept "${concept.text}" và ${all.length} example.`
+          ? `Đã thêm concept "${concept.text}" và ${all.length} example${wordsMade > 0 ? `, ${wordsMade} word từ cụm tô sáng` : ''}.`
           : `Đã thêm concept "${concept.text}". Thêm example ở màn concept.`,
       );
       navigate(`/library/${concept.id}`);

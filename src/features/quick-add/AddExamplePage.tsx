@@ -8,7 +8,7 @@ import fieldStyles from '../../ui/field.module.css';
 import { conceptRepository } from '../../db/repositories';
 import { dictionaryIdForLang, listConceptsByDictionary } from '../../db/queries';
 import type { Concept } from '../../db/types';
-import { createExample } from '../example/actions';
+import { createExample, createWordFromHighlight } from '../example/actions';
 import { ExampleFields, emptyDraft, type ExampleDraft } from '../example/ExampleFields';
 import { ConceptPicker } from '../links/ConceptPicker';
 import { createConceptWithDescription } from './actions';
@@ -69,13 +69,16 @@ export function AddExamplePage() {
       const dictionaryId = await dictionaryIdForLang(lang);
       const created = await createExample({ ...draft, dictionaryId, conceptId: concept?.id });
       if (!created) return;
+      const made = draft.alsoWord ? await createWordFromHighlight(created, lang) : null;
+      const wordNote = made ? (made.created ? ` Cụm "${made.word.text}" đã thành word để học.` : ` Đã thêm vào word "${made.word.text}".`) : '';
       if (next) {
         // Keep the concept and (with the box ticked) the labels for the next sentence.
         setDraft(keep ? { ...emptyDraft(), attributes: draft.attributes, labelsChosen: draft.labelsChosen } : emptyDraft());
-        toast.show(concept ? `Đã thêm example vào "${concept.text}". Nhập câu kế tiếp.` : 'Đã lưu vào Hộp chờ duyệt.');
+        toast.show(concept ? `Đã thêm example vào "${concept.text}".${wordNote} Nhập câu kế tiếp.` : 'Đã lưu vào Hộp chờ duyệt.');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         return;
       }
-      toast.show(concept ? `Đã thêm example vào "${concept.text}".` : 'Chưa chọn concept: example nằm trong Hộp chờ duyệt.');
+      toast.show(concept ? `Đã thêm example vào "${concept.text}".${wordNote}` : 'Chưa chọn concept: example nằm trong Hộp chờ duyệt.');
       navigate(concept ? `/library/${concept.id}` : '/inbox');
     } finally {
       setSaving(false);

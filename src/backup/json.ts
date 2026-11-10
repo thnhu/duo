@@ -2,6 +2,7 @@ import { db } from '../db/schema';
 import { CURRENT_SCHEMA_VERSION } from '../db/defaults';
 import { buildScopedBackup, type BackupScopeInfo } from './scopedBackup';
 import { isWholeKit, type ExportScope } from './scope';
+import { resetWatermarks } from '../sync/watermark';
 
 // Full JSON backup (spec E2/E3). It is the backup that does not depend on any
 // sync service: every table, including soft-deleted rows (so a restore keeps
@@ -148,5 +149,7 @@ export async function restoreBackup(data: unknown): Promise<RestoreSummary> {
       if (toWrite.length > 0) await table.bulkPut(toWrite);
     }
   });
+  // Restored rows may carry old versions the incremental sync would not look at.
+  await resetWatermarks();
   return summary;
 }

@@ -43,7 +43,7 @@ export function DiagnosticsCard() {
       {entries.length === 0 ? (
         <p className={styles.note}>Chưa ghi nhận gì.</p>
       ) : (
-        <textarea readOnly value={toText(entries)} rows={10} style={{ width: '100%', fontSize: '0.75rem' }} />
+        <textarea data-diag-ignore readOnly value={toText(entries)} rows={10} style={{ width: '100%', fontSize: '0.75rem' }} />
       )}
       <Button variant="secondary" onClick={() => setEntries(readLog())}>
         Làm mới

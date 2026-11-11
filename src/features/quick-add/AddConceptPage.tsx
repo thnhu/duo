@@ -154,14 +154,14 @@ export function AddConceptPage() {
         <ExampleFields idPrefix="concept-example" draft={draft} onChange={setDraft} />
 
         <ButtonRow>
-          <Button variant="secondary" disabled={!draft.text.trim()} onClick={addDraft}>
+          <Button variant="secondary" keepFocus disabled={!draft.text.trim()} onClick={addDraft}>
             Thêm example này, nhập tiếp
           </Button>
         </ButtonRow>
       </Card>
 
       <ButtonRow>
-        <Button disabled={!name.trim() || saving} onClick={() => void handleSave()}>
+        <Button keepFocus disabled={!name.trim() || saving} onClick={() => void handleSave()}>
           Lưu concept
         </Button>
       </ButtonRow>

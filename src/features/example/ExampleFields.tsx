@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '../../ui/Button';
 import { ButtonRow } from '../../ui/ButtonRow';
 import fieldStyles from '../../ui/field.module.css';
@@ -55,19 +55,28 @@ export function ExampleFields({ idPrefix, draft, onChange, sentenceLabel }: Exam
     void settingsRepository.getById(SETTINGS_ID).then((s) => setValueSets(s?.attributeValueSets ?? null));
   }, []);
 
-  // Pressing a button would move focus off the textarea and can drop the
-  // selection before the click reads it; keep focus where it is.
-  function keepSelection(event: MouseEvent<HTMLButtonElement>) {
-    event.preventDefault();
+  // Last non-empty selection, remembered as it changes: a tap on a button can
+  // blur the textarea (and on a phone drop the selection) before the click reads it.
+  const lastSelection = useRef<{ start: number; end: number } | null>(null);
+
+  function rememberSelection() {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const { selectionStart: start, selectionEnd: end } = textarea;
+    if (end > start) lastSelection.current = { start, end };
+  }
+
+  // Current selection, or the remembered one when the textarea has lost it.
+  function readSelection() {
+    const textarea = textareaRef.current;
+    if (textarea && textarea.selectionEnd > textarea.selectionStart) {
+      return { start: textarea.selectionStart, end: textarea.selectionEnd };
+    }
+    return lastSelection.current ?? { start: 0, end: 0 };
   }
 
   function pickHighlight() {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    const picked = normalizeSelection(draft.text, {
-      start: textarea.selectionStart,
-      end: textarea.selectionEnd,
-    });
+    const picked = normalizeSelection(draft.text, readSelection());
     if (!picked) {
       setHint('Hãy bôi đen (chọn) một cụm trong câu trước.');
       return;
@@ -78,12 +87,8 @@ export function ExampleFields({ idPrefix, draft, onChange, sentenceLabel }: Exam
 
   // A separable verb or phrasal verb: one more part of the same phrase.
   function addHighlightPart() {
-    const textarea = textareaRef.current;
-    if (!textarea || !draft.highlight) return;
-    const picked = normalizeSelection(draft.text, {
-      start: textarea.selectionStart,
-      end: textarea.selectionEnd,
-    });
+    if (!draft.highlight) return;
+    const picked = normalizeSelection(draft.text, readSelection());
     const next = picked ? addPart([draft.highlight, ...draft.highlightExtra], picked) : null;
     if (!next) {
       setHint('Hãy bôi đen một đoạn khác (không trùng đoạn đã tô) rồi bấm lại.');
@@ -106,28 +111,33 @@ export function ExampleFields({ idPrefix, draft, onChange, sentenceLabel }: Exam
           value={draft.text}
           onChange={(e) => {
             setHint('');
+            lastSelection.current = null;
             onChange({ ...draft, text: e.target.value, highlight: null, highlightExtra: [] });
           }}
+          onSelect={rememberSelection}
+          onKeyUp={rememberSelection}
+          onPointerUp={rememberSelection}
           placeholder="vd: I have a lot of houses."
         />
       </div>
 
-      {draft.highlight && (
-        <p className={styles.preview}>
-          {splitByParts(draft.text, [draft.highlight, ...draft.highlightExtra]).map((piece, i) => (
-            <span key={i} className={piece.hit ? styles.highlight : styles.context}>
-              {piece.text}
-            </span>
-          ))}
-        </p>
-      )}
+      {/* Always rendered so the buttons below do not jump when a phrase is highlighted. */}
+      <p className={styles.preview}>
+        {draft.highlight
+          ? splitByParts(draft.text, [draft.highlight, ...draft.highlightExtra]).map((piece, i) => (
+              <span key={i} className={piece.hit ? styles.highlight : styles.context}>
+                {piece.text}
+              </span>
+            ))
+          : null}
+      </p>
 
       <ButtonRow>
-        <Button variant="secondary" disabled={!draft.text.trim()} onMouseDown={keepSelection} onClick={pickHighlight}>
+        <Button variant="secondary" keepFocus disabled={!draft.text.trim()} onClick={pickHighlight}>
           {draft.highlight ? 'Tô lại cụm đã chọn' : 'Tô sáng cụm đã chọn'}
         </Button>
         {draft.highlight && (
-          <Button variant="secondary" onMouseDown={keepSelection} onClick={addHighlightPart}>
+          <Button variant="secondary" keepFocus onClick={addHighlightPart}>
             Tô thêm đoạn nữa
           </Button>
         )}
@@ -137,7 +147,7 @@ export function ExampleFields({ idPrefix, draft, onChange, sentenceLabel }: Exam
           </Button>
         )}
       </ButtonRow>
-      {draft.highlight && draft.highlightExtra.length === 0 && (
+      {draft.highlight && draft.highlightExtra.length === 0 ? (
         <label className={fieldStyles.hint}>
           <input
             type="checkbox"
@@ -145,6 +155,10 @@ export function ExampleFields({ idPrefix, draft, onChange, sentenceLabel }: Exam
             onChange={(e) => onChange({ ...draft, alsoWord: e.target.checked })}
           />{' '}
           Cũng thêm cụm đã tô sáng thành Word để học (ở tab Học)
+        </label>
+      ) : (
+        <label className={fieldStyles.hint} style={{ visibility: 'hidden' }} aria-hidden="true">
+          <input type="checkbox" disabled tabIndex={-1} /> Cũng thêm cụm đã tô sáng thành Word để học (ở tab Học)
         </label>
       )}
       <p className={fieldStyles.hint}>

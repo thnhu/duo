@@ -885,6 +885,19 @@ describe('highlighted phrases become words on import', () => {
     expect(await exampleRepository.listActive()).toHaveLength(0);
   });
 
+  it('re-importing concepts that already have the sentences still makes the words', async () => {
+    await importCsv(FILE);
+    for (const c of await conceptRepository.listActive()) {
+      if (conceptKind(c) === 'word') await db.concepts.update(c.id, { deletedAt: Date.now() });
+    }
+    for (const e of await exampleRepository.listActive()) {
+      const owner = await conceptRepository.getById(e.targetConceptId!);
+      if (owner && owner.deletedAt !== undefined) await db.examples.update(e.id, { deletedAt: Date.now() });
+    }
+    const again = await importCsv(FILE);
+    expect(again.result.wordsCreated).toBe(1);
+  });
+
   it('a word-kind row does not make words from its highlight', async () => {
     const { result } = await importCsv('text,lang,example,highlight\nswallow,en,She swallowed the pill.,swallowed');
     expect(result.wordsCreated).toBe(0);

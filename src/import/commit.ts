@@ -251,6 +251,17 @@ export async function commitImport(
         // A word that already exists can still join a set: that is how one
         // word ends up in several sets without a second copy.
         const wantedSets = groupSetIds(group);
+        // A concept row whose sentences are already in the library (an earlier
+        // import) still gets its highlighted phrases turned into Words.
+        if (group.kind === 'concept') {
+          for (const draft of group.examples) {
+            if (draft.isMinimal || !draft.highlight) continue;
+            const old = activeExamples.find(
+              (e) => e.targetConceptId === existing.id && lower(e.text) === lower(draft.text) && e.highlight,
+            );
+            if (old) wordSources.push({ example: old, lang: group.lang, meaning: draft.highlightMeaning });
+          }
+        }
         const nextSets = [...new Set([...(existing.setIds ?? []), ...wantedSets])];
         const setsChanged = nextSets.length !== (existing.setIds ?? []).length;
         if (options.duplicateAction === 'skip') {

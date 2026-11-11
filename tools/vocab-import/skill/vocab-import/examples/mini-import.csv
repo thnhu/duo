@@ -1,0 +1,12 @@
+﻿text,lang,kind,pos,meaning,lesson,deck,parent,relation,example,highlight,highlightMeaning,gender,plural,infinitiv,praesens3sg,praeteritum,partizip2,tone,mode,register,nuance,dialect,note
+Chiến tranh & xung đột,en,concept,,,Lektion Test,Mini deck,,,,,,,,,,,,,,,,,
+Đối đầu,en,concept,,,Lektion Test,Mini deck,Chiến tranh & xung đột,association,,,,,,,,,,,,,,,
+Tranh luận & thuyết phục,en,concept,,,Lektion Test,Mini deck,,,,,,,,,,,,,,,,,
+archenemy,en,concept,,kẻ thù không đội trời chung,Lektion Test,Mini deck,Đối đầu,association,Batman's archenemy is the Joker.,archenemy,,,,,,,,Neutral,Neutral,Neutral,Neutral,Neutral,"Ví dụ minh họa cho test, không phải dữ liệu thật"
+archenemy,en,concept,,kẻ thù không đội trời chung,Lektion Test,Mini deck,Đối đầu,association,"He's my sworn enemy, the guy I can't stand.",sworn enemy,kẻ thù không đội trời chung,,,,,,,Informal,Spoken,Neutral,Neutral,Neutral,"đồng nghĩa gần, không hoàn toàn"
+archenemy,en,concept,,kẻ thù không đội trời chung,Lektion Test,Mini deck,Đối đầu,association,The two nations remained implacable foes for centuries.,implacable foes,kẻ thù không thể xoa dịu,,,,,,,Formal,Written,Literature,Neutral,Neutral,
+polar opposite,en,concept,,"đối cực, hoàn toàn trái ngược",Lektion Test,Mini deck,Đối đầu,association,Their views are polar opposites.,polar opposites,những điều đối cực,,,,,,,Neutral,Neutral,Neutral,Neutral,Neutral,[chưa kiểm]
+polar opposite,en,concept,,"đối cực, hoàn toàn trái ngược",Lektion Test,Mini deck,Đối đầu,association,"We're total opposites, honestly.",total opposites,hoàn toàn trái ngược nhau,,,,,,,Informal,Spoken,Neutral,Neutral,Neutral,[chưa kiểm]
+debate,en,concept,,tranh luận,Lektion Test,Mini deck,Tranh luận & thuyết phục,association,Back and forth went the debate,debate,,,,,,,,Neutral,Written,Literature,Neutral,Neutral,"câu PO đưa, nguyên văn"
+debate,en,concept,,tranh luận,Lektion Test,Mini deck,Tranh luận & thuyết phục,association,Let's not debate this again.,debate,,,,,,,,Informal,Spoken,Neutral,Neutral,Neutral,
+debate,en,concept,,tranh luận,Lektion Test,Mini deck,Tranh luận & thuyết phục,association,The committee will debate the proposal next week.,debate,,,,,,,,Formal,Written,Business,Neutral,Neutral,

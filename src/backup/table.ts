@@ -1,5 +1,6 @@
 import { highlightParts, phraseForFile } from '../core/highlights';
 import { importFields, MEANING_SEPARATOR, type ImportFieldId } from '../import/fields';
+import { conceptKind } from '../wordsets';
 import type { Concept, ConceptLink, Example, Lesson, WordSet } from '../db/types';
 
 // xlsx export (spec E3): the columns are exactly the import columns
@@ -59,6 +60,7 @@ export function exportTable(
       const cells: Partial<Record<ImportFieldId, string>> = {
         text: concept.text,
         lang: concept.lang,
+        kind: conceptKind(concept) === 'concept' ? 'concept' : '',
         pos: concept.pos,
         meaning: concept.meanings.join(`${MEANING_SEPARATOR} `),
         // The lesson as it is now; the file's old text only when the word has none.

@@ -43,8 +43,8 @@ const SAMPLE_ROWS: Record<string, string>[] = [
   // A chain of concepts: "parent" names the concept above, "relation" says how
   // they are linked (association or typeOf). A parent missing from the library is
   // created blank, so these three rows build war - rivalry - archenemy in one go.
-  { text: 'war', lang: 'en', deck: 'Phim' },
-  { text: 'rivalry', lang: 'en', deck: 'Phim', parent: 'war', relation: 'association' },
+  { text: 'war', lang: 'en', kind: 'concept', deck: 'Phim' },
+  { text: 'rivalry', lang: 'en', kind: 'concept', deck: 'Phim', parent: 'war', relation: 'association' },
   {
     text: 'archenemy',
     lang: 'en',

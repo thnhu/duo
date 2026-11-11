@@ -5,6 +5,7 @@
 export type ImportFieldId =
   | 'text'
   | 'lang'
+  | 'kind'
   | 'pos'
   | 'meaning'
   | 'lesson'
@@ -13,6 +14,7 @@ export type ImportFieldId =
   | 'relation'
   | 'example'
   | 'highlight'
+  | 'highlightMeaning'
   | 'gender'
   | 'plural'
   | 'infinitiv'
@@ -37,6 +39,7 @@ export interface ImportField {
 export const importFields: ImportField[] = [
   { id: 'text', label: 'Word / cụm (text)', required: true, aliases: ['text', 'word', 'term', 'vocabulary', 'concept', 'wort', 'từ', 'từ vựng', 'cụm từ'] },
   { id: 'lang', label: 'Ngôn ngữ (lang)', aliases: ['lang', 'language', 'ngôn ngữ', 'sprache'] },
+  { id: 'kind', label: 'Loại (kind): word hoặc concept', aliases: ['kind', 'type', 'loại', 'loại mục'] },
   { id: 'pos', label: 'Loại từ (pos)', aliases: ['pos', 'part of speech', 'wortart', 'loại từ', 'từ loại'] },
   { id: 'meaning', label: 'Nghĩa (meaning)', aliases: ['meaning', 'meanings', 'definition', 'translation', 'bedeutung', 'nghĩa', 'dịch'] },
   { id: 'lesson', label: 'Lesson', aliases: ['lesson', 'chapter', 'unit', 'lektion', 'bài', 'chương'] },
@@ -45,6 +48,11 @@ export const importFields: ImportField[] = [
   { id: 'relation', label: 'Quan hệ với cha (relation: association / typeOf)', aliases: ['relation', 'relationship', 'link type', 'quan hệ', 'mối quan hệ', 'loại liên kết'] },
   { id: 'example', label: 'Câu ví dụ (example)', aliases: ['example', 'sentence', 'beispiel', 'ví dụ', 'câu', 'câu ví dụ'] },
   { id: 'highlight', label: 'Đoạn tô sáng (highlight)', aliases: ['highlight', 'tô sáng'] },
+  {
+    id: 'highlightMeaning',
+    label: 'Nghĩa của cụm tô sáng (highlightMeaning)',
+    aliases: ['highlightmeaning', 'highlight meaning', 'nghĩa highlight', 'nghĩa cụm tô sáng', 'nghĩa cụm'],
+  },
   { id: 'gender', label: 'Giống (gender)', aliases: ['gender', 'genus', 'artikel', 'article', 'giống'] },
   { id: 'plural', label: 'Số nhiều (plural)', aliases: ['plural', 'số nhiều'] },
   { id: 'infinitiv', label: 'Infinitiv', aliases: ['infinitiv', 'infinitive'] },

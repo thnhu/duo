@@ -6,6 +6,7 @@ import type { Concept, ConceptGrammar, Example, ImportBatch, Lang, StudyMode } f
 import { conceptRepository, wordSetRepository } from '../db/repositories';
 import { LINK_FAILURE_TEXT, linkConcepts } from '../links';
 import { createConceptWithDescription } from '../features/quick-add/actions';
+import { createWordFromHighlight } from '../features/example/actions';
 import { ensureLesson } from '../lessons';
 import { createWordSet, listWordSets } from '../wordsets';
 import type { ExampleDraft } from './build';
@@ -44,6 +45,8 @@ export interface CommitResult {
   linksChanged: number;
   parentsCreated: number;
   linkProblems: string[];
+  // Words made from the highlighted phrases of a concept's examples.
+  wordsCreated: number;
 }
 
 function lower(s: string): string {
@@ -97,7 +100,10 @@ export async function commitImport(
     linksChanged: 0,
     parentsCreated: 0,
     linkProblems: [],
+    wordsCreated: 0,
   };
+  // Examples of `concept` rows whose highlighted phrase also becomes a Word (below).
+  const wordSources: Array<{ example: Example; lang: Lang; meaning?: string }> = [];
   // The library concept each imported word ended up as (new or existing).
   const conceptIdOf = new Map<ImportGroup, string>();
 
@@ -192,8 +198,10 @@ export async function commitImport(
           pos: group.pos,
           meanings: group.meanings,
           grammar: group.grammar,
-          // Spec 5.1/5.2: German has Rộng only for now.
-          mode: group.lang === 'de' ? 'breadth' : options.mode,
+          // Spec 5.1/5.2: German has Rộng only for now. An English concept is a
+          // depth concept, like the "Add concept" screen makes.
+          mode: group.lang === 'de' ? 'breadth' : group.kind === 'concept' ? 'depth' : options.mode,
+          kind: group.kind === 'concept' ? 'concept' : undefined,
           setIds: groupSetIds(group).length > 0 ? groupSetIds(group) : undefined,
           lessonId: lessonOf.get(group),
           verification: 'unverified',
@@ -226,7 +234,7 @@ export async function commitImport(
           }
         }
         // Spec C4: every concept has at least one linked example.
-        if (linked === 0) {
+        if (linked === 0 && group.kind !== 'concept') {
           newExamples.push(
             toExample(
               dictionaryId,
@@ -315,6 +323,16 @@ export async function commitImport(
         else result.mergedConcepts++;
       }
 
+      if (group.kind === 'concept') {
+        // newExamples and group.examples line up for the draft that has a real sentence.
+        const drafts = group.examples.filter((d) => !d.isMinimal && !(d.needsHighlight && !d.highlight));
+        for (const example of newExamples) {
+          if (!example.targetConceptId || !example.highlight) continue;
+          const draft = drafts.find((d) => d.text === example.text);
+          wordSources.push({ example, lang: group.lang, meaning: draft?.highlightMeaning });
+        }
+      }
+
       if (newExamples.length > 0) {
         await db.examples.bulkAdd(newExamples);
         for (const e of newExamples) batch.createdExampleIds.push(e.id);
@@ -333,6 +351,7 @@ export async function commitImport(
   });
 
   await applyParentLinks(selected, conceptIdOf, dictionaryIds, groupSetIds, batch, result);
+  await applyHighlightWords(wordSources, batch, result);
   return result;
 }
 
@@ -392,6 +411,44 @@ async function applyParentLinks(
   // there; links and blank parents may be all this import did.
   if (await db.importBatches.get(batch.id)) await db.importBatches.put({ ...batch, updatedAt: Date.now() });
   else await db.importBatches.add({ ...batch, updatedAt: Date.now() });
+  result.batchId = batch.id;
+}
+
+// "Also learn the highlighted phrase as a Word" for the examples of concept rows
+// (PO 2026-11-11): each single-part phrase becomes, or is matched to, a Word that
+// keeps its own copy of the example. The Vietnamese meaning from the file is set
+// only on a Word that has none. Runs after the main write like the links, and the
+// batch records what it made so the undo takes it away too.
+async function applyHighlightWords(
+  sources: Array<{ example: Example; lang: Lang; meaning?: string }>,
+  batch: ImportBatch,
+  result: CommitResult,
+): Promise<void> {
+  if (sources.length === 0) return;
+  let changed = false;
+  for (const { example, lang, meaning } of sources) {
+    const made = await createWordFromHighlight(example, lang);
+    if (!made) continue;
+    if (made.created) {
+      batch.createdConceptIds.push(made.word.id);
+      result.wordsCreated++;
+      changed = true;
+    }
+    if (made.example) {
+      batch.createdExampleIds.push(made.example.id);
+      changed = true;
+    }
+    const text = meaning?.trim();
+    if (text && made.word.meanings.length === 0) {
+      await conceptRepository.update(made.word.id, { meanings: [text] });
+      if (!made.created) {
+        batch.updatedConcepts.push({ id: made.word.id, before: { meanings: [] } });
+        changed = true;
+      }
+    }
+  }
+  if (!changed) return;
+  await db.importBatches.put({ ...batch, updatedAt: Date.now() });
   result.batchId = batch.id;
 }
 

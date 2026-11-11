@@ -1,0 +1,105 @@
+{
+  "concepts": [
+    {
+      "text": "archenemy",
+      "examples": [
+        {
+          "sentence": "Batman's archenemy is the Joker.",
+          "highlight": "archenemy",
+          "tone": "Neutral",
+          "mode": "Neutral",
+          "register": "Neutral",
+          "nuance": "Neutral",
+          "dialect": "Neutral",
+          "note": "Ví dụ minh họa cho test, không phải dữ liệu thật"
+        },
+        {
+          "sentence": "He's my sworn enemy, the guy I can't stand.",
+          "highlight": "sworn enemy",
+          "tone": "Informal",
+          "mode": "Spoken",
+          "register": "Neutral",
+          "nuance": "Neutral",
+          "dialect": "Neutral",
+          "note": "đồng nghĩa gần, không hoàn toàn",
+          "highlight_meaning": "kẻ thù không đội trời chung"
+        },
+        {
+          "sentence": "The two nations remained implacable foes for centuries.",
+          "highlight": "implacable foes",
+          "tone": "Formal",
+          "mode": "Written",
+          "register": "Literature",
+          "nuance": "Neutral",
+          "dialect": "Neutral",
+          "note": "",
+          "highlight_meaning": "kẻ thù không thể xoa dịu"
+        }
+      ]
+    },
+    {
+      "text": "polar opposite",
+      "unchecked": true,
+      "examples": [
+        {
+          "sentence": "Their views are polar opposites.",
+          "highlight": "polar opposites",
+          "tone": "Neutral",
+          "mode": "Neutral",
+          "register": "Neutral",
+          "nuance": "Neutral",
+          "dialect": "Neutral",
+          "note": "",
+          "highlight_meaning": "những điều đối cực"
+        },
+        {
+          "sentence": "We're total opposites, honestly.",
+          "highlight": "total opposites",
+          "tone": "Informal",
+          "mode": "Spoken",
+          "register": "Neutral",
+          "nuance": "Neutral",
+          "dialect": "Neutral",
+          "note": "",
+          "highlight_meaning": "hoàn toàn trái ngược nhau"
+        }
+      ],
+      "fewer_reason": "Chưa tìm được cách nói formal tự nhiên và khác nghĩa, không bịa."
+    },
+    {
+      "text": "debate",
+      "examples": [
+        {
+          "sentence": "Back and forth went the debate",
+          "highlight": "debate",
+          "tone": "Neutral",
+          "mode": "Written",
+          "register": "Literature",
+          "nuance": "Neutral",
+          "dialect": "Neutral",
+          "note": "câu PO đưa, nguyên văn"
+        },
+        {
+          "sentence": "Let's not debate this again.",
+          "highlight": "debate",
+          "tone": "Informal",
+          "mode": "Spoken",
+          "register": "Neutral",
+          "nuance": "Neutral",
+          "dialect": "Neutral",
+          "note": ""
+        },
+        {
+          "sentence": "The committee will debate the proposal next week.",
+          "highlight": "debate",
+          "tone": "Formal",
+          "mode": "Written",
+          "register": "Business",
+          "nuance": "Neutral",
+          "dialect": "Neutral",
+          "note": ""
+        }
+      ]
+    }
+  ]
+}

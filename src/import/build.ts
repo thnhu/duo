@@ -1,6 +1,7 @@
 import type {
   AttributeValueSets,
   ConceptGrammar,
+  ConceptKind,
   ExampleAttributes,
   ExampleHighlight,
   Lang,
@@ -32,6 +33,8 @@ export interface ExampleDraft {
   // A sentence whose phrase could not be located: PO highlights by hand in
   // the review step (spec 6.4, `example` column).
   needsHighlight: boolean;
+  // Vietnamese meaning of the highlighted phrase, for the Word made from it.
+  highlightMeaning?: string;
   attributes?: Partial<ExampleAttributes>;
   note?: string;
 }
@@ -42,6 +45,9 @@ export interface ImportRow {
   text: string;
   lang: Lang;
   pos?: string;
+  // `word` (default) gets a minimal example when it has no sentence; `concept`
+  // is an idea on its own and never does (its examples are ways of saying it).
+  kind: ConceptKind;
   meanings: string[];
   lesson?: string;
   // Decks (word sets) named in the file (`deck` column, several separated by ;).
@@ -155,6 +161,12 @@ export function buildRows(
       grammar.verbForms = verbForms;
     }
 
+    // Kind of entry: blank = word (the old behaviour).
+    const kindCell = cell('kind').toLowerCase();
+    let kind: ConceptKind = 'word';
+    if (kindCell === 'concept') kind = 'concept';
+    else if (kindCell && kindCell !== 'word') errors.push(`kind: "${cell('kind')}" không hiểu (dùng word hoặc concept).`);
+
     // Parent concepts and how this concept relates to each (never guessed).
     const linkParse = parseLinkCells(cell('parent'), cell('relation'), MEANING_SEPARATOR, text);
     if (!linkParse.ok) errors.push(linkParse.message);
@@ -173,6 +185,7 @@ export function buildRows(
       text: exampleText || text,
       isMinimal: !exampleText,
       needsHighlight: false,
+      highlightMeaning: cell('highlightMeaning') || undefined,
       attributes: Object.keys(attributes).length > 0 ? attributes : undefined,
       note,
     };
@@ -212,7 +225,10 @@ export function buildRows(
           start = findInsensitive(exampleText, text);
           length = text.length;
         }
-        if (start === -1) {
+        if (start === -1 && kind === 'concept') {
+          // A concept's example is a way of saying the idea: the sentence need not
+          // contain the concept's name, so it is kept without a highlight.
+        } else if (start === -1) {
           example.needsHighlight = true;
           warnings.push('Không tìm thấy cụm cần học trong câu ví dụ — cần tô sáng tay.');
         } else {
@@ -228,6 +244,7 @@ export function buildRows(
       text,
       lang,
       pos: cell('pos') || undefined,
+      kind,
       meanings: cell('meaning')
         .split(MEANING_SEPARATOR)
         .map((m) => m.trim())

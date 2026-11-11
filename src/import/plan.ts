@@ -1,4 +1,4 @@
-import type { Concept, ConceptGrammar, Lang } from '../db/types';
+import type { Concept, ConceptGrammar, ConceptKind, Lang } from '../db/types';
 import type { ExampleDraft, ImportRow } from './build';
 import type { ParsedLink } from './relations';
 
@@ -13,6 +13,7 @@ export interface ImportGroup {
   lang: Lang;
   text: string;
   pos?: string;
+  kind: ConceptKind;
   meanings: string[];
   lesson?: string;
   // Word set names from the file's `set` column (merged over the rows).
@@ -59,6 +60,7 @@ export function planGroups(rows: ImportRow[], existingConcepts: Concept[]): Impo
         lang: row.lang,
         text: row.text,
         pos: row.pos,
+        kind: row.kind,
         meanings: [],
         setNames: [],
         links: [],
@@ -71,6 +73,7 @@ export function planGroups(rows: ImportRow[], existingConcepts: Concept[]): Impo
     }
     group.rowNumbers.push(row.rowNumber);
     group.pos ??= row.pos;
+    if (row.kind === 'concept') group.kind = 'concept';
     group.lesson ??= row.lesson;
     for (const name of row.setNames) {
       if (!group.setNames.some((n) => sameText(n, name))) group.setNames.push(name);
@@ -89,7 +92,7 @@ export function planGroups(rows: ImportRow[], existingConcepts: Concept[]): Impo
 
   for (const group of groups) {
     // A real sentence makes the bare "minimal" example redundant.
-    if (group.examples.some((e) => !e.isMinimal)) {
+    if (group.kind === 'concept' || group.examples.some((e) => !e.isMinimal)) {
       group.examples = group.examples.filter((e) => !e.isMinimal);
     }
     const candidates = existingConcepts.filter(

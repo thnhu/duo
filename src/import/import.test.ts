@@ -739,3 +739,154 @@ describe('parent + relation columns', () => {
     expect(result.linksCreated).toBe(2);
   });
 });
+
+describe('kind column: concepts without a minimal example', () => {
+  const FILE = [
+    'text,lang,kind,meaning,deck,parent,relation,example,highlight,tone,mode',
+    'Chiến tranh,en,concept,,D,,,,,,',
+    'Đối đầu,en,concept,,D,Chiến tranh,association,,,,',
+    'archenemy,en,concept,kẻ thù không đội trời chung,D,Đối đầu,association,Batman met his archenemy again.,,Neutral,Written',
+    'archenemy,en,concept,,D,Đối đầu,association,He is my sworn enemy.,sworn enemy,Informal,Spoken',
+    'plain,en,,,D,,,,,,',
+  ].join('\n');
+
+  it('makes a depth concept with no minimal example, and keeps a sentence without the name as an expression', async () => {
+    const { built, result } = await importCsv(FILE);
+    expect(built.errors).toEqual([]);
+    expect(built.warnings).toEqual([]);
+    expect(result.linkProblems).toEqual([]);
+    expect(result.parentsCreated).toBe(0);
+
+    const concepts = await conceptRepository.listActive();
+    const group = concepts.find((c) => c.text === 'Chiến tranh')!;
+    const mid = concepts.find((c) => c.text === 'Đối đầu')!;
+    const arch = concepts.find((c) => c.text === 'archenemy')!;
+    for (const c of [group, mid, arch]) {
+      expect(conceptKind(c)).toBe('concept');
+      expect(c.mode).toBe('depth');
+    }
+    const examples = await exampleRepository.listActive();
+    expect(examples.filter((e) => e.targetConceptId === group.id)).toHaveLength(0);
+    expect(examples.filter((e) => e.targetConceptId === mid.id)).toHaveLength(0);
+    const archExamples = examples.filter((e) => e.targetConceptId === arch.id);
+    expect(archExamples.map((e) => e.text).sort()).toEqual(['Batman met his archenemy again.', 'He is my sworn enemy.']);
+    expect(archExamples.every((e) => !e.isMinimal)).toBe(true);
+    // No name in the second sentence: kept as an expression, not sent to the inbox.
+    expect(examples.filter((e) => e.targetConceptId === undefined)).toHaveLength(0);
+
+    // Blank kind stays a word with a minimal example (old behaviour).
+    const plain = concepts.find((c) => c.text === 'plain')!;
+    expect(conceptKind(plain)).toBe('word');
+    expect(examples.filter((e) => e.targetConceptId === plain.id)).toHaveLength(1);
+
+    // The chain group > mid > archenemy is made from the file alone.
+    expect((await listNeighbours(arch.id)).parents.map((p) => p.concept.text)).toEqual(['Đối đầu']);
+    expect((await listNeighbours(mid.id)).parents.map((p) => p.concept.text)).toEqual(['Chiến tranh']);
+  });
+
+  it('rejects an unknown kind, and exports kind so it survives a round trip', async () => {
+    const bad = await importCsv('text,lang,kind\nx,en,thing');
+    expect(bad.built.errors[0].message).toContain('kind');
+
+    await importCsv(FILE);
+    const { exportTable } = await import('../backup/table');
+    const table = exportTable(await conceptRepository.listActive(), await exampleRepository.listActive(), [], [], await db.conceptLinks.toArray());
+    const kindCol = table[0].indexOf('kind');
+    const textCol = table[0].indexOf('text');
+    expect(table.slice(1).find((r) => r[textCol] === 'Đối đầu')![kindCol]).toBe('concept');
+    expect(table.slice(1).find((r) => r[textCol] === 'plain')![kindCol]).toBe('');
+  });
+});
+
+describe('vocab-import skill output (tools/vocab-import)', () => {
+  const files = import.meta.glob('../../tools/vocab-import/skill/vocab-import/**/*.{csv,py}', {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  }) as Record<string, string>;
+  const pick = (suffix: string) => Object.entries(files).find(([k]) => k.endsWith(suffix))![1];
+
+  it('the script keeps the same columns as importFields (update the script when fields change)', async () => {
+    const { importFields } = await import('./fields');
+    const py = pick('build_import.py');
+    const block = py.slice(py.indexOf('COLUMNS = ['), py.indexOf(']', py.indexOf('COLUMNS = [')));
+    const ids = [...block.matchAll(/'([A-Za-z0-9]+)'/g)].map((m) => m[1]);
+    expect(ids).toEqual(importFields.map((f) => f.id));
+  });
+
+  it('its CSV imports cleanly: groups, depth concepts, 3 expressions, no inbox, chain of associations', async () => {
+    const csv = pick('mini-import.csv');
+    const { built, result } = await importCsv(csv);
+    expect(built.errors).toEqual([]);
+    expect(built.warnings).toEqual([]);
+    expect(result.linkProblems).toEqual([]);
+    expect(result.parentsCreated).toBe(0);
+    expect(result.inboxExamples).toBe(0);
+
+    const concepts = await conceptRepository.listActive();
+    const examples = await exampleRepository.listActive();
+    const concepts_ = concepts.filter((c) => conceptKind(c) === 'concept');
+    expect(concepts_.map((c) => c.text).sort()).toEqual(
+      ['Chiến tranh & xung đột', 'Tranh luận & thuyết phục', 'Đối đầu', 'archenemy', 'debate', 'polar opposite'].sort(),
+    );
+    expect(concepts_.every((c) => c.mode === 'depth')).toBe(true);
+    const byText = (t: string) => concepts.find((c) => c.text === t)!;
+    expect(examples.filter((e) => e.targetConceptId === byText('Đối đầu').id && !e.isMinimal)).toHaveLength(0);
+    expect(examples.filter((e) => e.targetConceptId === byText('archenemy').id)).toHaveLength(3);
+    expect(examples.filter((e) => e.targetConceptId === byText('polar opposite').id)).toHaveLength(2);
+
+    // Each highlighted phrase became a Word (not the ones equal to the concept's own name),
+    // in the same deck, with its Vietnamese meaning and its own copy of the sentence.
+    expect(result.wordsCreated).toBe(4);
+    const words = concepts.filter((c) => conceptKind(c) === 'word');
+    expect(words.map((w) => w.text).sort()).toEqual(['implacable foes', 'polar opposites', 'sworn enemy', 'total opposites']);
+    expect(byText('sworn enemy').meanings).toEqual(['kẻ thù không đội trời chung']);
+    expect(byText('sworn enemy').setIds).toEqual(byText('archenemy').setIds);
+    expect(words.every((w) => w.meanings.length === 1)).toBe(true);
+    const wordExamples = examples.filter((e) => e.targetConceptId === byText('sworn enemy').id);
+    expect(wordExamples.map((e) => e.text)).toEqual(["He's my sworn enemy, the guy I can't stand."]);
+    expect(wordExamples[0].highlight).toBeDefined();
+    expect(examples.every((e) => e.attributesStatus === 'verified' && !e.isMinimal)).toBe(true);
+    expect(byText('archenemy').meanings).toEqual(['kẻ thù không đội trời chung']);
+
+    const parentOf = async (t: string) => (await listNeighbours(byText(t).id)).parents.map((p) => [p.concept.text, p.link.type]);
+    expect(await parentOf('archenemy')).toEqual([['Đối đầu', 'association']]);
+    expect(await parentOf('Đối đầu')).toEqual([['Chiến tranh & xung đột', 'association']]);
+    expect(await parentOf('debate')).toEqual([['Tranh luận & thuyết phục', 'association']]);
+  });
+});
+
+describe('highlighted phrases become words on import', () => {
+  const FILE = [
+    'text,lang,kind,meaning,example,highlight,highlightMeaning',
+    'archenemy,en,concept,kẻ thù không đội trời chung,He is my sworn enemy.,sworn enemy,kẻ thù không đội trời chung',
+    'foe,en,concept,kẻ thù,A sworn enemy attacked.,sworn enemy,',
+  ].join('\n');
+
+  it('reuses one word for the same phrase, keeps its meaning, and the undo removes the words too', async () => {
+    const { result } = await importCsv(FILE);
+    expect(result.wordsCreated).toBe(1);
+    const words = (await conceptRepository.listActive()).filter((c) => conceptKind(c) === 'word');
+    expect(words).toHaveLength(1);
+    expect(words[0].meanings).toEqual(['kẻ thù không đội trời chung']);
+    const ex = (await exampleRepository.listActive()).filter((e) => e.targetConceptId === words[0].id);
+    expect(ex).toHaveLength(2);
+
+    // Importing again changes nothing.
+    const again = await importCsv(FILE);
+    expect(again.result.wordsCreated).toBe(0);
+    expect((await exampleRepository.listActive()).filter((e) => e.targetConceptId === words[0].id)).toHaveLength(2);
+
+    // Undo the first import's batch (the second made nothing).
+    const batch = (await getLatestUndoableBatch())!;
+    expect(batch.id).toBe(result.batchId);
+    expect(await undoImport(batch.id)).toBe(true);
+    expect(await conceptRepository.listActive()).toHaveLength(0);
+    expect(await exampleRepository.listActive()).toHaveLength(0);
+  });
+
+  it('a word-kind row does not make words from its highlight', async () => {
+    const { result } = await importCsv('text,lang,example,highlight\nswallow,en,She swallowed the pill.,swallowed');
+    expect(result.wordsCreated).toBe(0);
+  });
+});
